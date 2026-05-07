@@ -11,7 +11,7 @@ import { ArrowLeft } from "lucide-react";
 // permitNumber, permitValidUntil, viaDescription
 // NOTE: originStation & destinationStation cannot be changed via update
 
-const ROUTE_TYPES = ["URBAN","SUBURBAN","RURAL","EXPRESS","SUPER_EXPRESS"];
+const ROUTE_TYPES = ["ordinary","semi_deluxe","deluxe","express","volvo_ac","xylo","sumo"];
 const inputCls = "border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:border-blue-400 focus:ring-1 focus:ring-blue-100 bg-white w-full";
 
 function Field({ label, children }) {

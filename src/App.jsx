@@ -19,7 +19,10 @@ import UserManagement from "./pages/UserManagement";
 import RouteManagement from "./pages/RouteManagement";
 import DepotForm      from "./pages/DepotForm";
 import StationForm    from "./pages/StationForm";
-import BusManagement  from "./pages/BusManagement";
+import BusListPage    from "./pages/bus/BusListPage"
+import BusFormPage    from "./pages/bus/BusFormPage"
+import BusDetailPage    from "./pages/bus/BusDetailPage"
+import BusTypesPage     from "./pages/bus/BusTypesPage"
 import BusStop        from "./pages/BusStop";
 import TicketType     from "./pages/TicketType";
 import QrManagement   from "./pages/QrManagement";
@@ -28,6 +31,11 @@ import AddRoute       from "./pages/AddRoute";
 import AdminPassengerProfile from "./components/admin/AdminPassengerProfile";
 import EditRoute from "./pages/EditRoute";
 import RouteDetailPage from "./pages/RouteDetailPage";
+import ScheduleManagement from "./pages/schedule/ScheduleManagement";
+import AddSchedule from "./pages/schedule/AddSchedule";
+import ScheduleDetails from "./pages/schedule/ScheduleDetails";
+import SeatInventoryManagement from "./pages/schedule/ScheduleInventoryManagement";
+import DutyAssignmentManagement from "./pages/schedule/DutyAssignmentManagement";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
@@ -87,7 +95,8 @@ function GuestRoute({ children }) {
 }
 
 // ── Public Website wrapper ──────────────────────────────────────────────────
-const MAIN_PAGES = ["/", "/our-history", "/routes"];
+// const MAIN_PAGES = ["/", "/our-history", "/routes"];
+const MAIN_PAGES = ["/ap", "/ap/our-history", "/ap/routes"];
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
@@ -97,14 +106,22 @@ function WebsiteLayout() {
     <div className="flex flex-col min-h-screen bg-white">
       {isMain ? <Navbar /> : <InnerNavbar />}
       <main className="flex-grow">
-        <Routes>
-          <Route path="/"               element={<Home />} />
+        {/* <Routes>
+          <Route path="/ap"               element={<Home />} />
           <Route path="/buses"          element={<BusList />} />
           <Route path="/seat-selection" element={<SeatSelection />} />
           <Route path="/our-history"    element={<OurHistory />} />
           <Route path="/routes"         element={<BusService />} />
           <Route path="*"               element={<Home />} />
-        </Routes>
+        </Routes> */}
+        <Routes>
+  <Route path="/ap" element={<Home />} />
+  <Route path="/buses" element={<BusList />} />
+  <Route path="/seat-selection" element={<SeatSelection />} />
+  <Route path="/our-history" element={<OurHistory />} />
+  <Route path="/routes" element={<BusService />} />
+  <Route path="*" element={<Home />} />
+</Routes>
       </main>
       {isMain ? <Footer /> : <InnerFooter />}
     </div>
@@ -174,7 +191,12 @@ function AppRoutes() {
         <Route path="/admin/routes"         element={<RouteManagement />} />
         <Route path="/admin/depot"          element={<DepotForm />} />
         <Route path="/admin/stations"       element={<StationForm />} />
-        <Route path="/admin/buses"          element={<BusManagement />} />
+        {/* <Route path="/admin/buses"          element={<BusManagement />} /> */}
+        <Route path="/admin/buses"          element={<BusListPage />} />
+        <Route path="/admin/buses/new"      element={<BusFormPage />} />
+        <Route path="/admin/buses/:id"      element={<BusDetailPage />} />
+        <Route path="/admin/buses/:id/edit" element={<BusFormPage />} />
+        <Route path="/admin/bus-types"      element={<BusTypesPage />} />
         <Route path="/admin/stops"          element={<BusStop />} />
         <Route path="/admin/tickets"        element={<TicketType />} />
         <Route path="/admin/qr"             element={<QrManagement />} />
@@ -183,10 +205,17 @@ function AppRoutes() {
         <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/>
         <Route path="/admin/routes/:id"      element={<RouteDetailPage />} />
         <Route path="/admin/routes/:id/edit" element={<EditRoute />} />
+        <Route path="/admin/schedules" element={<ScheduleManagement />} />
+        <Route path="/admin/schedules/add" element={<AddSchedule />} />
+        <Route path="/admin/schedules/:id" element={<ScheduleDetails />} />
+        <Route path="/admin/schedules/:id/seats" element={<SeatInventoryManagement />} />
+        <Route path="/admin/schedules/:id/duty" element={<DutyAssignmentManagement />} />
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}
-      <Route path="/*" element={<WebsiteLayout />} />
+      {/* <Route path="/*" element={<WebsiteLayout />} /> */}
+      <Route path="/" element={<Navigate to="/ap" replace />} />
+<Route path="/ap/*" element={<WebsiteLayout />} />
     </Routes>
   );
 }

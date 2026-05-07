@@ -3,7 +3,8 @@ import { useAuth } from "../../context/AuthContext";
 import {
   LayoutDashboard, Users, ShieldCheck, ScrollText,
   Ticket, CreditCard, RotateCcw, Wallet, LogOut,
-  Bus, Route, MapPin, Layers, QrCode, ChevronDown,
+  Bus, Route, MapPin, Layers, QrCode, ChevronDown, Armchair,
+  UserCheck,CalendarDays,
 } from "lucide-react";
 import logo from "../../assets/logo.png";
 import { useState } from "react";
@@ -19,6 +20,7 @@ const navItems = [
   { label: "Wallet",           path: "/admin/wallet",         icon: Wallet },
   { label: "Route Management", path: "/admin/routes",         icon: Route },
   { label: "Bus Management",   path: "/admin/buses",          icon: Bus },
+  { label: "Schedules",           path: "/admin/schedules",   icon: CalendarDays, perm: "schedule:view"},
   { label: "Bus Stops",        path: "/admin/stops",          icon: MapPin },
   { label: "Ticket Types",     path: "/admin/tickets",        icon: Ticket },
   { label: "QR Management",    path: "/admin/qr",             icon: QrCode },
@@ -27,6 +29,7 @@ const navItems = [
 const masterItems = [
   { label: "Depots",    path: "/admin/depot",    icon: Layers },
   { label: "Stations",  path: "/admin/stations", icon: MapPin },
+  { label: "Bus Types",        path: "/admin/bus-types",      icon: Layers },
 ];
 
 export default function Sidebar() {

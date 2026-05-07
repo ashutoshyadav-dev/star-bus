@@ -7,7 +7,7 @@ import { depotApi } from "../api/depot";
 import toast from "react-hot-toast";
 import { ArrowLeft } from "lucide-react";
 
-const ROUTE_TYPES = ["URBAN","SUBURBAN","RURAL","EXPRESS","SUPER_EXPRESS"];
+const ROUTE_TYPES = ["ordinary","semi_deluxe","deluxe","express","volvo_ac","xylo","sumo"];
 
 const EMPTY = {
   routeNumber:"", name:"", originStationId:"", destinationStationId:"",
