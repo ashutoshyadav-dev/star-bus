@@ -181,6 +181,27 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Back To Home Button */}
+<button
+  onClick={() => navigate("/ap")}
+  className="
+    absolute top-6 right-4 sm:right-6 lg:right-10
+    z-20
+    px-4 py-2
+    rounded-xl
+    bg-white/10
+    backdrop-blur-md
+    border border-white/20
+    text-white
+    text-sm font-medium
+    hover:bg-white/20
+    transition-all duration-200
+    shadow-lg
+  "
+>
+  ← Back to Home
+</button>
+
       {/* Card */}
       <div className="relative z-10 w-full max-w-sm sm:max-w-md bg-white/96 backdrop-blur-lg rounded-2xl shadow-2xl p-6 sm:p-8 mt-24 lg:mt-0">
         <h2 className="text-2xl font-bold text-center text-[#0F3D2E] mb-1">

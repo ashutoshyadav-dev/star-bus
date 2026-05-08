@@ -1,58 +1,112 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import banner from "../../assets/banner.png";
-import logo   from "../../assets/logo.png";
+import logo from "../../assets/logo.png";
 import { FaUserCircle, FaChevronDown } from "react-icons/fa";
 
 const MENUS = {
   about: [
-    { name: "Our History",       path: "/our-history" },
-    { name: "Bus Routes",        path: "/routes" },
-    { name: "Our Bus Services",  path: "/buses" },
-    { name: "RTI",               path: "/rti" },
-    { name: "Policies",          path: "/policies" },
-    { name: "Tenders",           path: "/tenders" },
+    { name: "Our History", path: "/our-history" },
+    { name: "Bus Routes", path: "/routes" },
+    { name: "Our Bus Services", path: "/buses" },
+    { name: "RTI", path: "/rti" },
+    { name: "Policies", path: "/policies" },
+    { name: "Tenders", path: "/tenders" },
   ],
+
   query: [
-    { name: "Timetable",   path: "/timetable" },
-    { name: "Help Desk",   path: "/helpdesk" },
-    { name: "Contact Us",  path: "/contact" },
-    { name: "FAQs",        path: "/faq" },
+    { name: "Timetable", path: "/timetable" },
+    { name: "Help Desk", path: "/helpdesk" },
+    { name: "Contact Us", path: "/contact" },
+    { name: "FAQs", path: "/faq" },
   ],
+
   services: [
-    { name: "Book Ticket",          path: "/user/book-ticket" },
-    { name: "My Bookings",          path: "/user/my-bookings" },
-    { name: "Cancel Ticket",        path: "/user/my-bookings" },
-    { name: "Download e-Ticket",    path: "/user/my-bookings" },
+    { name: "Book Ticket", path: "/user/book-ticket" },
+    { name: "My Bookings", path: "/user/my-bookings" },
+    { name: "Cancel Ticket", path: "/user/my-bookings" },
+    { name: "Download e-Ticket", path: "/user/my-bookings" },
   ],
+
   login: [
     { name: "Passenger Login", path: "/login" },
     { name: "Staff / Admin Login", path: "/login" },
   ],
 };
 
-function Dropdown({ label, menuKey, openMenu, setOpenMenu, navigate }) {
+function Dropdown({
+  label,
+  menuKey,
+  openMenu,
+  setOpenMenu,
+  navigate,
+  width = "w-56",
+}) {
   const items = MENUS[menuKey];
+
   return (
     <div
-      className="relative pt-2"
+      className="relative h-full flex items-center"
       onMouseEnter={() => setOpenMenu(menuKey)}
       onMouseLeave={() => setOpenMenu(null)}
     >
-      <div className="flex items-center gap-1 cursor-pointer hover:text-orange-400 select-none">
-        {label} <FaChevronDown size={11} />
+      {/* MENU BUTTON */}
+      <div
+        className="
+          h-full flex items-center
+          gap-1 cursor-pointer
+          text-[14px] font-medium
+          hover:text-orange-300
+          transition-all duration-200
+          select-none
+        "
+      >
+        {label}
+        <FaChevronDown size={10} className="mt-[1px]" />
       </div>
+
+      {/* DROPDOWN */}
       {openMenu === menuKey && (
-        <div className="absolute top-full left-0 w-52 rounded-xl py-2 shadow-2xl bg-gradient-to-br from-[#0a2540] to-[#14532d] z-[999] border border-white/10">
-          {items.map((item) => (
-            <p
-              key={item.name}
-              onClick={() => { navigate(item.path); setOpenMenu(null); }}
-              className="px-4 py-2.5 text-sm rounded-lg cursor-pointer hover:bg-white/10 transition-colors"
-            >
-              {item.name}
-            </p>
-          ))}
+        <div
+          className={`
+            absolute top-full left-0
+            pt-2
+            ${width}
+            z-[9999]
+          `}
+        >
+          <div
+            className="
+              rounded-xl overflow-hidden
+              backdrop-blur-xl
+              bg-[#0b1f2c]/95
+              border border-white/10
+              shadow-[0_10px_40px_rgba(0,0,0,0.45)]
+            "
+          >
+            <div className="py-2">
+              {items.map((item) => (
+                <p
+                  key={item.name}
+                  onClick={() => {
+                    navigate(item.path);
+                    setOpenMenu(null);
+                  }}
+                  className="
+                    px-4 py-3
+                    text-[13px]
+                    text-white/90
+                    cursor-pointer
+                    transition-all duration-200
+                    hover:bg-white/10
+                    hover:text-white
+                  "
+                >
+                  {item.name}
+                </p>
+              ))}
+            </div>
+          </div>
         </div>
       )}
     </div>
@@ -65,60 +119,170 @@ export default function Navbar() {
 
   return (
     <div className="absolute top-0 left-0 w-full z-[999]">
-      {/* Banner background */}
+      {/* BACKGROUND IMAGE */}
       <div
-        className="absolute inset-0 w-full h-full bg-center bg-cover pointer-events-none"
-        style={{ backgroundImage: `url(${banner})` }}
+        className="absolute inset-0 bg-cover bg-center pointer-events-none"
+        style={{
+          backgroundImage: `url(${banner})`,
+        }}
       />
-      <div className="absolute inset-0 bg-gradient-to-r from-[#0a2540]/92 via-[#0f3d3e]/85 to-[#14532d]/92 pointer-events-none" />
 
-      <div className="relative flex items-center justify-between px-8 py-4 text-white">
-        {/* Logo + name */}
+      {/* OVERLAY */}
+      <div className="absolute inset-0 bg-gradient-to-r from-[#072235]/90 via-[#0b3240]/80 to-[#0d4a2f]/85 backdrop-blur-[2px]" />
+
+      {/* NAVBAR */}
+      <div
+        className="
+          relative flex items-center justify-between
+          px-10 lg:px-12
+          h-[64px]
+          text-white
+          border-b border-white/10
+        "
+      >
+        {/* LEFT LOGO */}
         <div
-          className="flex items-center gap-3 cursor-pointer"
           onClick={() => navigate("/")}
+          className="flex items-center gap-3 cursor-pointer min-w-fit"
         >
-          <img src={logo} className="w-9 h-9 rounded-full object-cover border border-white/30" alt="APSTS" />
-          <div>
-            <p className="text-[13px] font-semibold leading-tight">
+          <img
+            src={logo}
+            alt="APSTS"
+            className="
+              w-9 h-9 rounded-full object-cover
+              border border-white/30
+              shadow-md
+            "
+          />
+
+          <div className="leading-tight">
+            <p className="text-[14px] font-semibold tracking-wide">
               Arunachal Pradesh State Transport Services
             </p>
-            <p className="text-[10px] opacity-70">Version 4.0</p>
+
+            <p className="text-[11px] text-white/70">
+              Version 4.0
+            </p>
           </div>
         </div>
 
-        {/* Nav links */}
-        <div className="flex items-center gap-8 text-sm">
-          <span onClick={() => navigate("/")} className="cursor-pointer hover:text-orange-400 transition-colors">
+        {/* CENTER NAV */}
+        <div className="flex items-center gap-10 text-white h-full">
+          {/* HOME */}
+          <span
+            onClick={() => navigate("/")}
+            className="
+              h-full flex items-center
+              cursor-pointer
+              text-[14px]
+              font-medium
+              hover:text-orange-300
+              transition-all duration-200
+            "
+          >
             Home
           </span>
-          <Dropdown label="About Us"       menuKey="about"    openMenu={openMenu} setOpenMenu={setOpenMenu} navigate={navigate} />
-          <Dropdown label="Any Query"      menuKey="query"    openMenu={openMenu} setOpenMenu={setOpenMenu} navigate={navigate} />
-          <Dropdown label="Online Services" menuKey="services" openMenu={openMenu} setOpenMenu={setOpenMenu} navigate={navigate} />
+
+          {/* ABOUT */}
+          <Dropdown
+            label="About Us"
+            menuKey="about"
+            openMenu={openMenu}
+            setOpenMenu={setOpenMenu}
+            navigate={navigate}
+            width="w-56"
+          />
+
+          {/* QUERY */}
+          <Dropdown
+            label="Any Query"
+            menuKey="query"
+            openMenu={openMenu}
+            setOpenMenu={setOpenMenu}
+            navigate={navigate}
+            width="w-48"
+          />
+
+          {/* SERVICES */}
+          <Dropdown
+            label="Online Services"
+            menuKey="services"
+            openMenu={openMenu}
+            setOpenMenu={setOpenMenu}
+            navigate={navigate}
+            width="w-56"
+          />
         </div>
 
-        {/* Login dropdown */}
+        {/* LOGIN */}
         <div
-          className="relative"
+          className="relative h-full flex items-center"
           onMouseEnter={() => setOpenMenu("login")}
           onMouseLeave={() => setOpenMenu(null)}
         >
-          <div className="flex items-center gap-2 px-4 py-2 rounded-full cursor-pointer bg-white/10 hover:bg-white/20 transition-colors border border-white/20">
-            <FaUserCircle size={17} />
-            <span className="text-sm">Login</span>
-            <FaChevronDown size={11} />
+          {/* LOGIN BUTTON */}
+          <div
+            className="
+              flex items-center gap-2
+              px-5 py-2
+              rounded-full
+              cursor-pointer
+              text-[14px]
+              font-medium
+              bg-white/10
+              border border-white/10
+              backdrop-blur-md
+              hover:bg-white/20
+              transition-all duration-200
+            "
+          >
+            <FaUserCircle size={16} />
+            <span>Login</span>
+            <FaChevronDown size={10} />
           </div>
+
+          {/* LOGIN DROPDOWN */}
           {openMenu === "login" && (
-            <div className="absolute top-full right-0 mt-1 w-48 rounded-xl py-2 shadow-2xl bg-gradient-to-br from-[#0a2540] to-[#14532d] z-[9999] border border-white/10">
-              {MENUS.login.map((item) => (
-                <p
-                  key={item.name}
-                  onClick={() => { navigate(item.path); setOpenMenu(null); }}
-                  className="px-4 py-2.5 text-sm cursor-pointer hover:bg-white/10 transition-colors"
-                >
-                  {item.name}
-                </p>
-              ))}
+            <div
+              className="
+                absolute top-full right-0
+                pt-2
+                w-52
+                z-[9999]
+              "
+            >
+              <div
+                className="
+                  rounded-xl overflow-hidden
+                  bg-[#0b1f2c]/95
+                  backdrop-blur-xl
+                  border border-white/10
+                  shadow-[0_10px_40px_rgba(0,0,0,0.45)]
+                "
+              >
+                <div className="py-2">
+                  {MENUS.login.map((item) => (
+                    <p
+                      key={item.name}
+                      onClick={() => {
+                        navigate(item.path);
+                        setOpenMenu(null);
+                      }}
+                      className="
+                        px-4 py-3
+                        text-[13px]
+                        text-white/90
+                        cursor-pointer
+                        transition-all duration-200
+                        hover:bg-white/10
+                        hover:text-white
+                      "
+                    >
+                      {item.name}
+                    </p>
+                  ))}
+                </div>
+              </div>
             </div>
           )}
         </div>
