@@ -104,7 +104,8 @@ function WebsiteLayout() {
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {isMain ? <Navbar /> : <InnerNavbar />}
+      {/* {isMain ? <Navbar /> : <InnerNavbar />} */}
+      <Navbar />
       <main className="flex-grow">
         {/* <Routes>
           <Route path="/ap"               element={<Home />} />
@@ -114,12 +115,14 @@ function WebsiteLayout() {
           <Route path="/routes"         element={<BusService />} />
           <Route path="*"               element={<Home />} />
         </Routes> */}
-        <Routes>
-  <Route path="/ap" element={<Home />} />
-  <Route path="/buses" element={<BusList />} />
-  <Route path="/seat-selection" element={<SeatSelection />} />
-  <Route path="/our-history" element={<OurHistory />} />
-  <Route path="/routes" element={<BusService />} />
+     <Routes>
+  <Route index element={<Home />} />
+
+  <Route path="buses" element={<BusList />} />
+  <Route path="seat-selection" element={<SeatSelection />} />
+  <Route path="our-history" element={<OurHistory />} />
+  <Route path="routes" element={<BusService />} />
+
   <Route path="*" element={<Home />} />
 </Routes>
       </main>

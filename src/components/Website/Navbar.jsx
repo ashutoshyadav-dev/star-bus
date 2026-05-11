@@ -1,24 +1,26 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
+
 import banner from "../../assets/banner.png";
 import logo from "../../assets/logo.png";
-import { FaUserCircle, FaChevronDown } from "react-icons/fa";
+
+import { FaChevronDown, FaUserCircle } from "react-icons/fa";
 
 const MENUS = {
   about: [
-    { name: "Our History", path: "/our-history" },
-    { name: "Bus Routes", path: "/routes" },
-    { name: "Our Bus Services", path: "/buses" },
-    { name: "RTI", path: "/rti" },
-    { name: "Policies", path: "/policies" },
-    { name: "Tenders", path: "/tenders" },
+    { name: "Our History", path: "/ap/our-history" },
+    { name: "Bus Routes", path: "/ap/routes" },
+    { name: "Our Bus Services", path: "/ap/buses" },
+    { name: "RTI", path: "/ap/rti" },
+    { name: "Policies", path: "/ap/policies" },
+    { name: "Tenders", path: "/ap/tenders" },
   ],
 
   query: [
-    { name: "Timetable", path: "/timetable" },
-    { name: "Help Desk", path: "/helpdesk" },
-    { name: "Contact Us", path: "/contact" },
-    { name: "FAQs", path: "/faq" },
+    { name: "Timetable", path: "/ap/timetable" },
+    { name: "Help Desk", path: "/ap/helpdesk" },
+    { name: "Contact Us", path: "/ap/contact" },
+    { name: "FAQs", path: "/ap/faq" },
   ],
 
   services: [
@@ -39,7 +41,6 @@ function Dropdown({
   menuKey,
   openMenu,
   setOpenMenu,
-  navigate,
   width = "w-56",
 }) {
   const items = MENUS[menuKey];
@@ -86,13 +87,12 @@ function Dropdown({
           >
             <div className="py-2">
               {items.map((item) => (
-                <p
+                <Link
                   key={item.name}
-                  onClick={() => {
-                    navigate(item.path);
-                    setOpenMenu(null);
-                  }}
+                  to={item.path}
+                  onClick={() => setOpenMenu(null)}
                   className="
+                    block
                     px-4 py-3
                     text-[13px]
                     text-white/90
@@ -103,7 +103,7 @@ function Dropdown({
                   "
                 >
                   {item.name}
-                </p>
+                </Link>
               ))}
             </div>
           </div>
@@ -115,6 +115,7 @@ function Dropdown({
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
+
   const navigate = useNavigate();
 
   return (
@@ -142,7 +143,7 @@ export default function Navbar() {
       >
         {/* LEFT LOGO */}
         <div
-          onClick={() => navigate("/")}
+          onClick={() => navigate("/ap")}
           className="flex items-center gap-3 cursor-pointer min-w-fit"
         >
           <img
@@ -170,7 +171,7 @@ export default function Navbar() {
         <div className="flex items-center gap-10 text-white h-full">
           {/* HOME */}
           <span
-            onClick={() => navigate("/")}
+            onClick={() => navigate("/ap")}
             className="
               h-full flex items-center
               cursor-pointer
@@ -189,7 +190,6 @@ export default function Navbar() {
             menuKey="about"
             openMenu={openMenu}
             setOpenMenu={setOpenMenu}
-            navigate={navigate}
             width="w-56"
           />
 
@@ -199,7 +199,6 @@ export default function Navbar() {
             menuKey="query"
             openMenu={openMenu}
             setOpenMenu={setOpenMenu}
-            navigate={navigate}
             width="w-48"
           />
 
@@ -209,7 +208,6 @@ export default function Navbar() {
             menuKey="services"
             openMenu={openMenu}
             setOpenMenu={setOpenMenu}
-            navigate={navigate}
             width="w-56"
           />
         </div>
@@ -262,13 +260,12 @@ export default function Navbar() {
               >
                 <div className="py-2">
                   {MENUS.login.map((item) => (
-                    <p
+                    <Link
                       key={item.name}
-                      onClick={() => {
-                        navigate(item.path);
-                        setOpenMenu(null);
-                      }}
+                      to={item.path}
+                      onClick={() => setOpenMenu(null)}
                       className="
+                        block
                         px-4 py-3
                         text-[13px]
                         text-white/90
@@ -279,7 +276,7 @@ export default function Navbar() {
                       "
                     >
                       {item.name}
-                    </p>
+                    </Link>
                   ))}
                 </div>
               </div>

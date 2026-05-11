@@ -9,7 +9,7 @@ function Hero() {
   return (
     <div className="relative w-full">
 
-      <Navbar />
+      {/* <Navbar /> */}
 
       {/* HERO */}
       <div className="relative min-h-[100vh] pb-28 overflow-visible">
@@ -97,7 +97,7 @@ function Hero() {
     {/* BUTTON */}
     <div className="w-full mt-2 md:w-auto md:mt-5">
       <button
-        onClick={() => navigate("/buses")}
+        onClick={() => navigate("/ap/buses")}
         className="bg-orange-500 hover:bg-orange-600 text-white px-8 h-[45px] rounded-full text-sm font-semibold w-full md:w-auto"
       >
         Search
