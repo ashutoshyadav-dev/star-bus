@@ -8,7 +8,7 @@ function BusList() {
 
   return (
     <div
-      className="w-full px-10 py-6 text-white bg-center bg-cover"
+      className="w-full px-10 py-20 text-white bg-center bg-cover"
      
       style={{
         backgroundImage: `
@@ -175,7 +175,7 @@ function BusList() {
                 <p className="text-sm text-gray-300">Per seat</p>
 
                 <button
-                  onClick={() => navigate("/seat-selection")}
+                  onClick={() => navigate("/ap/seat-selection")}
                   className="px-6 py-2 mt-4 font-semibold bg-orange-500 rounded-lg hover:bg-orange-600"
                 >
                   Book Now

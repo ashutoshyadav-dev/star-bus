@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { getAllBuses, updateBusStatus, deactivateBus } from "../../api/bus";
+import { FiEye, FiEdit2, FiPower } from "react-icons/fi"; // Added icons
 
 const BUS_STATUSES = ["active", "in_maintenance", "breakdown", "retired", "condemned"];
 
@@ -65,8 +66,8 @@ export default function BusListPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Buses</h1>
-          <p className="text-sm text-gray-500 mt-0.5">{buses.length} vehicles in fleet</p>
+          <h1 className="text-2xl font-bold text-white">Buses</h1>
+          <p className="text-sm text-white mt-0.5">{buses.length} vehicles in fleet</p>
         </div>
         <button
           onClick={() => navigate("/admin/buses/new")}
@@ -117,13 +118,13 @@ export default function BusListPage() {
             <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 {["Reg. No.", "Type", "Make / Model", "Year", "Seats", "Fuel", "Status", "Active", "Actions"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-100">
+            <tbody>
               {filtered.map((bus) => (
-                <tr key={bus.id} className="hover:bg-gray-50 transition-colors">
+                <tr key={bus.id} className="hover:bg-gray-50 transition-colors border-b border-gray-100">
                   <td className="px-4 py-3">
                     <button onClick={() => navigate(`/admin/buses/${bus.id}`)} className="text-blue-600 hover:underline font-mono font-medium">
                       {bus.registrationNumber}
@@ -149,11 +150,31 @@ export default function BusListPage() {
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-2">
-                      <button onClick={() => navigate(`/admin/buses/${bus.id}`)} className="text-blue-600 hover:underline text-xs">View</button>
-                      <button onClick={() => navigate(`/admin/buses/${bus.id}/edit`)} className="text-green-600 hover:underline text-xs">Edit</button>
+                    <div className="flex gap-3 items-center">
+                      <button
+                        onClick={() => navigate(`/admin/buses/${bus.id}`)}
+                        className="text-blue-600 hover:text-blue-800"
+                        title="View"
+                      >
+                        <FiEye />
+                      </button>
+
+                      <button
+                        onClick={() => navigate(`/admin/buses/${bus.id}/edit`)}
+                        className="text-green-600 hover:text-green-800"
+                        title="Edit"
+                      >
+                        <FiEdit2 />
+                      </button>
+
                       {bus.isActive && (
-                        <button onClick={() => handleDeactivate(bus.id)} className="text-red-500 hover:underline text-xs">Deactivate</button>
+                        <button
+                          onClick={() => handleDeactivate(bus.id)}
+                          className="text-red-500 hover:text-red-700"
+                          title="Deactivate"
+                        >
+                          <FiPower />
+                        </button>
                       )}
                     </div>
                   </td>
