@@ -175,7 +175,7 @@ function BusList() {
                 <p className="text-sm text-gray-300">Per seat</p>
 
                 <button
-                  onClick={() => navigate("/seat-selection")}
+                  onClick={() => navigate("/ap/seat-selection")}
                   className="px-6 py-2 mt-4 font-semibold bg-orange-500 rounded-lg hover:bg-orange-600"
                 >
                   Book Now

@@ -89,10 +89,10 @@ const farePerSeat = 780;
 const totalFare = selectedSeats.length * farePerSeat;
 const progressWidth = ((step - 1) / 4) * 100;
   return (
-    <div className="w-full text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 py-4">
+   <div className="w-full text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-10 pb-4">
 
       {/* 🔝 PROGRESS */}
-      <div className="p-4 mb-6 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl">
+      <div className="p-4 mb-6 mt-10 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl">
         <div className="relative flex items-center justify-between">
           <div className="absolute w-full h-[2px] bg-white/20 top-4"></div>
          <div

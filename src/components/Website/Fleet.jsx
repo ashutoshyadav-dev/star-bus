@@ -67,7 +67,7 @@ const vehicles = [
 
       <div className="flex gap-2 mt-4">
         <button
-          onClick={() => navigate("/routes", { state: { bus: item.name } })}
+          onClick={() => navigate("/ap/routes", { state: { bus: item.name } })}
           className="bg-[#0f2c3f] text-white px-3 py-1 rounded text-sm"
         >
           Routes

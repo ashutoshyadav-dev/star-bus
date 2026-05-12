@@ -30,6 +30,27 @@ const empty = {
   gpsDeviceId: "",
 };
 
+// ---------------- Field Component (moved outside) ----------------
+function Field({ label, name, type = "text", required, children, value, onChange, className = "" }) {
+  return (
+    <div className={className}>
+      <label className="block text-xs font-semibold text-gray-600 mb-1">
+        {label}{required && " *"}
+      </label>
+      {children ?? (
+        <input
+          type={type}
+          name={name}
+          value={value}
+          onChange={onChange}
+          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+        />
+      )}
+    </div>
+  );
+}
+
+// ---------------- Main Form Page ----------------
 export default function BusFormPage() {
   const { id } = useParams();
   const isEdit = Boolean(id);
@@ -42,7 +63,10 @@ export default function BusFormPage() {
   const [error, setError] = useState("");
 
   useEffect(() => {
-    getAllBusTypes(false).then(({ data }) => setBusTypes(data)).catch(() => {});
+    getAllBusTypes(false)
+      .then(({ data }) => setBusTypes(data))
+      .catch(() => { });
+
     if (isEdit) {
       getBusById(id)
         .then(({ data }) => {
@@ -111,114 +135,104 @@ export default function BusFormPage() {
 
   if (loading) return <div className="p-8 text-center text-gray-400">Loading bus data…</div>;
 
-  const Field = ({ label, name, type = "text", required, children, className = "" }) => (
-    <div className={className}>
-      <label className="block text-xs font-semibold text-gray-600 mb-1">{label}{required && " *"}</label>
-      {children ?? (
-        <input
-          type={type}
-          name={name}
-          value={form[name]}
-          onChange={handleChange}
-          className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-      )}
-    </div>
-  );
-
   return (
     <div className="p-6 max-w-4xl mx-auto">
       {/* Header */}
-      <div className="flex items-center gap-3 mb-6">
-        <button onClick={() => navigate("/admin/buses")} className="text-gray-400 hover:text-gray-700 transition-colors">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white">{isEdit ? "Edit Bus" : "Register New Bus"}</h1>
+          <p className="text-sm text-white">{isEdit ? `Editing bus #${id}` : "Add a new vehicle to the fleet"}</p>
+        </div>
+        <button
+          onClick={() => navigate("/admin/buses")}
+          className="text-white hover:text-white transition-colors"
+        >
           ← Back
         </button>
-        <div>
-          <h1 className="text-2xl font-bold text-gray-800">{isEdit ? "Edit Bus" : "Register New Bus"}</h1>
-          <p className="text-sm text-gray-500">{isEdit ? `Editing bus #${id}` : "Add a new vehicle to the fleet"}</p>
-        </div>
       </div>
 
       <div className="space-y-6">
-        {/* Section: Basic Info */}
-        <Section title="Basic Information">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Registration Number" name="registrationNumber" required />
-            <Field label="Bus Type" name="busTypeId" required>
-              <select name="busTypeId" value={form.busTypeId} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                <option value="">Select bus type</option>
-                {busTypes.map((bt) => <option key={bt.id} value={bt.id}>{bt.name} ({bt.code})</option>)}
-              </select>
-            </Field>
-            <Field label="Home Depot ID" name="homeDepotId" type="number" required />
-            <Field label="Make" name="make" />
-            <Field label="Model" name="model" />
-            <Field label="Manufacturing Year" name="manufacturingYear" type="number" />
-          </div>
-        </Section>
-
-        {/* Section: Technical */}
-        <Section title="Technical Details">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Chassis Number" name="chassisNumber" />
-            <Field label="Engine Number" name="engineNumber" />
-            <Field label="Seating Capacity" name="seatingCapacity" type="number" required />
-            <Field label="Standing Capacity" name="standingCapacity" type="number" />
-            <Field label="Fuel Type" name="fuelType">
-              <select name="fuelType" value={form.fuelType} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {FUEL_TYPES.map((f) => <option key={f} value={f}>{f}</option>)}
-              </select>
-            </Field>
-            <Field label="Odometer (km)" name="odometerKm" type="number" />
-          </div>
-        </Section>
-
-        {/* Section: Compliance */}
-        <Section title="Compliance & Documents">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Fitness Certificate No." name="fitnessCertificateNumber" />
-            <Field label="Fitness Valid Until" name="fitnessValidUntil" type="date" />
-            <Field label="Insurance Policy No." name="insurancePolicyNumber" />
-            <Field label="Insurance Valid Until" name="insuranceValidUntil" type="date" />
-            <Field label="Permit Number" name="permitNumber" />
-            <Field label="Permit Valid Until" name="permitValidUntil" type="date" />
-          </div>
-        </Section>
-
-        {/* Section: Status & GPS */}
-        <Section title="Status & GPS">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <Field label="Status" name="status">
-              <select name="status" value={form.status} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                {BUS_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-              </select>
-            </Field>
-            <Field label="GPS Device ID" name="gpsDeviceId" />
-            <div className="flex items-center gap-2 pt-5">
-              <input type="checkbox" name="isActive" id="isActive" checked={form.isActive} onChange={handleChange} className="rounded accent-blue-600" />
-              <label htmlFor="isActive" className="text-sm text-gray-700 cursor-pointer">Active</label>
-            </div>
-          </div>
-        </Section>
-
-        {error && (
-          <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">{error}</div>
-        )}
-
-        {/* Actions */}
-        <div className="flex justify-end gap-3 pt-2">
-          <button onClick={() => navigate("/admin/buses")} className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm hover:bg-gray-50 transition-colors">
-            Cancel
-          </button>
-          <button onClick={handleSubmit} disabled={saving} className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
-            {saving ? "Saving…" : isEdit ? "Update Bus" : "Register Bus"}
-          </button>
+       
+      {/* Section: Basic Info */}
+      <Section title="Basic Information">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Registration Number" name="registrationNumber" required value={form.registrationNumber} onChange={handleChange} />
+          <Field label="Bus Type" name="busTypeId" required value={form.busTypeId} onChange={handleChange}>
+            <select name="busTypeId" value={form.busTypeId} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              <option value="">Select bus type</option>
+              {busTypes.map((bt) => <option key={bt.id} value={bt.id}>{bt.name} ({bt.code})</option>)}
+            </select>
+          </Field>
+          <Field label="Home Depot ID" name="homeDepotId" type="number" required value={form.homeDepotId} onChange={handleChange} />
+          <Field label="Make" name="make" value={form.make} onChange={handleChange} />
+          <Field label="Model" name="model" value={form.model} onChange={handleChange} />
+          <Field label="Manufacturing Year" name="manufacturingYear" type="number" value={form.manufacturingYear} onChange={handleChange} />
         </div>
+      </Section>
+
+      {/* Section: Technical */}
+      <Section title="Technical Details">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Chassis Number" name="chassisNumber" value={form.chassisNumber} onChange={handleChange} />
+          <Field label="Engine Number" name="engineNumber" value={form.engineNumber} onChange={handleChange} />
+          <Field label="Seating Capacity" name="seatingCapacity" type="number" required value={form.seatingCapacity} onChange={handleChange} />
+          <Field label="Standing Capacity" name="standingCapacity" type="number" value={form.standingCapacity} onChange={handleChange} />
+          <Field label="Fuel Type" name="fuelType" value={form.fuelType} onChange={handleChange}>
+            <select name="fuelType" value={form.fuelType} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              {FUEL_TYPES.map((f) => <option key={f} value={f}>{f}</option>)}
+            </select>
+          </Field>
+          <Field label="Odometer (km)" name="odometerKm" type="number" value={form.odometerKm} onChange={handleChange} />
+        </div>
+      </Section>
+
+      {/* Section: Compliance */}
+      <Section title="Compliance & Documents">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Fitness Certificate No." name="fitnessCertificateNumber" value={form.fitnessCertificateNumber} onChange={handleChange} />
+          <Field label="Fitness Valid Until" name="fitnessValidUntil" type="date" value={form.fitnessValidUntil} onChange={handleChange} />
+          <Field label="Insurance Policy No." name="insurancePolicyNumber" value={form.insurancePolicyNumber} onChange={handleChange} />
+          <Field label="Insurance Valid Until" name="insuranceValidUntil" type="date" value={form.insuranceValidUntil} onChange={handleChange} />
+          <Field label="Permit Number" name="permitNumber" value={form.permitNumber} onChange={handleChange} />
+          <Field label="Permit Valid Until" name="permitValidUntil" type="date" value={form.permitValidUntil} onChange={handleChange} />
+        </div>
+      </Section>
+
+      {/* Section: Status & GPS */}
+      <Section title="Status & GPS">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <Field label="Status" name="status" value={form.status} onChange={handleChange}>
+            <select name="status" value={form.status} onChange={handleChange} className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
+              {BUS_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+            </select>
+          </Field>
+          <Field label="GPS Device ID" name="gpsDeviceId" value={form.gpsDeviceId} onChange={handleChange} />
+          <div className="flex items-center gap-2 pt-5">
+            <input type="checkbox" name="isActive" id="isActive" checked={form.isActive} onChange={handleChange} className="rounded accent-blue-600" />
+            <label htmlFor="isActive" className="text-sm text-gray-700 cursor-pointer">Active</label>
+          </div>
+        </div>
+      </Section>
+
+      {error && (
+        <div className="bg-red-50 border border-red-200 text-red-600 rounded-xl px-4 py-3 text-sm">{error}</div>
+      )}
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3 pt-2">
+        <button onClick={() => navigate("/admin/buses")} className="px-5 py-2.5 rounded-xl border border-gray-200 text-sm hover:bg-gray-50 transition-colors">
+          Cancel
+        </button>
+        <button onClick={handleSubmit} disabled={saving} className="px-5 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium transition-colors disabled:opacity-50">
+          {saving ? "Saving…" : isEdit ? "Update Bus" : "Register Bus"}
+        </button>
       </div>
     </div>
+    </div >
   );
 }
 
+// ---------------- Section Component ----------------
 function Section({ title, children }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
