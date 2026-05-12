@@ -41,7 +41,7 @@ import RouteDetailPage from "./pages/RouteDetailPage";
 import ScheduleManagement from "./pages/schedule/ScheduleManagement";
 import AddSchedule from "./pages/schedule/AddSchedule";
 import ScheduleDetails from "./pages/schedule/ScheduleDetails";
-import SeatInventoryManagement from "./pages/schedule/ScheduleInventoryManagement";
+import ScheduleInventoryManagement from "./pages/schedule/ScheduleInventoryManagement";
 import DutyAssignmentManagement from "./pages/schedule/DutyAssignmentManagement";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
@@ -205,125 +205,38 @@ function AppRoutes() {
           </AdminRoute>
         }
       >
-        <Route
-          path="/admin/dashboard"
-          element={<DashboardPage />}
-        />
 
-        <Route path="/admin/users" element={<UsersPage />} />
-        <Route path="/admin/roles" element={<RolesPage />} />
-        <Route path="/admin/audit" element={<AuditPage />} />
-        <Route
-          path="/admin/bookings"
-          element={<BookingsPage />}
-        />
-
-        <Route
-          path="/admin/payments"
-          element={<PaymentsPage />}
-        />
-
-        <Route
-          path="/admin/refunds"
-          element={<RefundsPage />}
-        />
-
-        <Route path="/admin/wallet" element={<WalletPage />} />
-
-        <Route
-          path="/admin/usermanagement"
-          element={<UserManagement />}
-        />
-
-        <Route
-          path="/admin/routes"
-          element={<RouteManagement />}
-        />
-
-        <Route path="/admin/depot" element={<DepotForm />} />
-
-        <Route
-          path="/admin/stations"
-          element={<StationForm />}
-        />
-
-        <Route path="/admin/buses" element={<BusListPage />} />
-
-        <Route
-          path="/admin/buses/new"
-          element={<BusFormPage />}
-        />
-
-        <Route
-          path="/admin/buses/:id"
-          element={<BusDetailPage />}
-        />
-
-        <Route
-          path="/admin/buses/:id/edit"
-          element={<BusFormPage />}
-        />
-
-        <Route
-          path="/admin/bus-types"
-          element={<BusTypesPage />}
-        />
-
-        <Route path="/admin/stops" element={<BusStop />} />
-
-        <Route
-          path="/admin/tickets"
-          element={<TicketType />}
-        />
-
-        <Route path="/admin/qr" element={<QrManagement />} />
-
-        <Route path="/admin/adduser" element={<AddUser />} />
-
-        <Route
-          path="/admin/addroute"
-          element={<AddRoute />}
-        />
-
-        <Route
-          path="/admin/passengerProfile/:id"
-          element={<AdminPassengerProfile />}
-        />
-
-        <Route
-          path="/admin/routes/:id"
-          element={<RouteDetailPage />}
-        />
-
-        <Route
-          path="/admin/routes/:id/edit"
-          element={<EditRoute />}
-        />
-
-        <Route
-          path="/admin/schedules"
-          element={<ScheduleManagement />}
-        />
-
-        <Route
-          path="/admin/schedules/add"
-          element={<AddSchedule />}
-        />
-
-        <Route
-          path="/admin/schedules/:id"
-          element={<ScheduleDetails />}
-        />
-
-        <Route
-          path="/admin/schedules/:id/seats"
-          element={<SeatInventoryManagement />}
-        />
-
-        <Route
-          path="/admin/schedules/:id/duty"
-          element={<DutyAssignmentManagement />}
-        />
+        <Route path="/admin/dashboard"      element={<DashboardPage />} />
+        <Route path="/admin/users"          element={<UsersPage />} />
+        <Route path="/admin/roles"          element={<RolesPage />} />
+        <Route path="/admin/audit"          element={<AuditPage />} />
+        <Route path="/admin/bookings"       element={<BookingsPage />} />
+        <Route path="/admin/payments"       element={<PaymentsPage />} />
+        <Route path="/admin/refunds"        element={<RefundsPage />} />
+        <Route path="/admin/wallet"         element={<WalletPage />} />
+        <Route path="/admin/usermanagement" element={<UserManagement />} />
+        <Route path="/admin/routes"         element={<RouteManagement />} />
+        <Route path="/admin/depot"          element={<DepotForm />} />
+        <Route path="/admin/stations"       element={<StationForm />} />
+        {/* <Route path="/admin/buses"          element={<BusManagement />} /> */}
+        <Route path="/admin/buses"          element={<BusListPage />} />
+        <Route path="/admin/buses/new"      element={<BusFormPage />} />
+        <Route path="/admin/buses/:id"      element={<BusDetailPage />} />
+        <Route path="/admin/buses/:id/edit" element={<BusFormPage />} />
+        <Route path="/admin/bus-types"      element={<BusTypesPage />} />
+        <Route path="/admin/stops"          element={<BusStop />} />
+        <Route path="/admin/tickets"        element={<TicketType />} />
+        <Route path="/admin/qr"             element={<QrManagement />} />
+        <Route path="/admin/adduser"        element={<AddUser />} />
+        <Route path="/admin/addroute"       element={<AddRoute />} />
+        <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/>
+        <Route path="/admin/routes/:id"      element={<RouteDetailPage />} />
+        <Route path="/admin/routes/:id/edit" element={<EditRoute />} />
+        <Route path="/admin/schedules" element={<ScheduleManagement />} />
+        <Route path="/admin/schedules/add" element={<AddSchedule />} />
+        <Route path="/admin/schedules/:id" element={<ScheduleDetails />} />
+        <Route path="/admin/schedules/:id/seats" element={<ScheduleInventoryManagement />} />
+        <Route path="/admin/schedules/:id/duty" element={<DutyAssignmentManagement />} />
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}

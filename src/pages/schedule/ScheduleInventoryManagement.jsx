@@ -12,7 +12,11 @@ export default function SeatInventoryManagement() {
     () => getScheduleSeats(id)
   );
 
+  console.log("seatsres",data);
+  
   const seats = data?.data || [];
+  console.log("seats",seats);
+  
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

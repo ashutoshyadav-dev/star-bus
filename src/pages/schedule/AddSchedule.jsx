@@ -50,9 +50,8 @@ export default function AddSchedule() {
     response.data
     and direct array response
   */
-
-  const routes = Array.isArray(routesResponse?.data)
-  ? routesResponse.data
+const routes = Array.isArray(routesResponse?.data?.data)
+  ? routesResponse.data.data
   : [];
 
 const buses = Array.isArray(busesResponse?.data)
@@ -87,18 +86,20 @@ const buses = Array.isArray(busesResponse?.data)
     });
   };
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+const handleSubmit = (e) => {
+  e.preventDefault();
 
-    createMutation.mutate({
-      routeId: Number(form.routeId),
-      busId: Number(form.busId),
-      journeyDate: form.journeyDate,
-      departureTime: form.departureTime,
-      bookingClosesAt:
-        form.bookingClosesAt || null,
-    });
-  };
+  createMutation.mutate({
+    routeId: Number(form.routeId),
+    busId: Number(form.busId),
+    journeyDate: form.journeyDate,
+    departureTime: form.departureTime + ":00",
+
+    bookingClosesAt: form.bookingClosesAt
+      ? new Date(form.bookingClosesAt).toISOString()
+      : null,
+  });
+};
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">

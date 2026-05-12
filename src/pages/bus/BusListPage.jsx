@@ -73,7 +73,7 @@ export default function BusListPage() {
           onClick={() => navigate("/admin/buses/new")}
           className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit"
         >
-          + Register Bus
+          + Register Bus 
         </button>
       </div>
 
