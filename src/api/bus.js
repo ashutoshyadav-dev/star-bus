@@ -38,5 +38,4 @@ export const getMaintenanceByBus   = (busId, activeOnly = false) => api.get(`/ma
 export const getMaintenanceById    = (id)               => api.get(`/maintenances/maintenance/${id}`);
 export const createMaintenance     = (payload)          => api.post("/maintenances/maintenance", payload);
 export const updateMaintenance     = (id, payload)      => api.put(`/maintenances/maintenance/${id}`, payload);
-export const completeMaintenance   = (id, completedAt)  =>
-  api.patch(`/maintenances/maintenance/${id}/complete${completedAt ? `?completedAt=${completedAt}` : ""}`);
+export const completeMaintenance   = (id, completedAt)  => api.patch(`/maintenances/maintenance/${id}/complete${completedAt ? `?completedAt=${completedAt}` : ""}`);
