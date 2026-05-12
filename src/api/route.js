@@ -10,6 +10,8 @@ export const createRoute         = (payload)    => api.post("/admin/routes", pay
 export const updateRoute         = (id, payload)=> api.put(`/admin/routes/${id}`, payload);
 export const suspendRoute        = (id, payload)=> api.post(`/admin/routes/${id}/suspend`, payload);
 export const activateRoute       = (id)         => api.post(`/admin/routes/${id}/activate`);
+export const getRoutesBetweenStations = (originId, destinationId) => api.get("/admin/routes/between", { params: { originId, destinationId } });
+
 
 // Stops
 export const getStops            = (routeId)          => api.get(`/admin/routes/${routeId}/stops`);

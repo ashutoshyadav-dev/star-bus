@@ -108,8 +108,9 @@ function UserRoute({ children }) {
 }
 
 function GuestRoute({ children }) {
-  const { user } = useAuth();
-
+  const { user , isInitialized} = useAuth();
+   console.log("GuestRoute:", { isInitialized, user });
+if (!isInitialized) return <PageLoader />;
   if (!user) return children;
 
   const isAdmin = user?.roles?.some((r) =>

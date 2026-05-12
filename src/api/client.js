@@ -158,12 +158,23 @@ api.interceptors.response.use(
         processQueue(null, accessToken);
         original.headers.Authorization = `Bearer ${accessToken}`;
         return api(original);
-      } catch (refreshError) {
-        processQueue(refreshError, null);
-        localStorage.clear();
-        window.location.href = "/login";
-        return Promise.reject(refreshError);
-      } finally {
+       } 
+      // catch (refreshError) {
+      //   processQueue(refreshError, null);
+      //   localStorage.clear();
+      //   window.location.href = "/login";
+      //   return Promise.reject(refreshError);
+      // } 
+      catch (refreshError) {
+            processQueue(refreshError, null);
+            const hadSession = !!localStorage.getItem("refreshToken");
+            localStorage.clear();
+            if (hadSession) {
+              window.location.href = "/login";
+            }
+            return Promise.reject(refreshError);
+      }
+      finally {
         isRefreshing = false;
       }
     }
