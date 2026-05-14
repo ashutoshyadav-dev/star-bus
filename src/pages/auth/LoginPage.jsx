@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom"; // ← added useSearchParams
 import { useAuth } from "../../context/AuthContext";
 import { authApi } from "../../api/auth";
 import toast from "react-hot-toast";
@@ -30,6 +30,10 @@ export default function LoginPage() {
   const { saveTokens } = useAuth();
   const navigate = useNavigate();
 
+  // ── Read redirect param ──────────────────────────────────────────────────
+  const [searchParams] = useSearchParams();                          // ← added
+  const redirectTo = searchParams.get("redirect");                   // ← added
+
   const fullPhone = `+91${phone}`;
 
   // ── Start OTP countdown timer ────────────────────────────────────────────
@@ -44,10 +48,17 @@ export default function LoginPage() {
   };
 
   // ── Redirect based on roles ──────────────────────────────────────────────
-  const redirect = (userData) => {
+  const redirect = (userData) => {                                   // ← updated
     const isAdminUser = userData?.roles?.some((r) =>
       ADMIN_ROLES.includes(r.toUpperCase())
     );
+
+    // Honor redirect param — only allow internal paths (security: prevent open redirect)
+    if (redirectTo && redirectTo.startsWith("/")) {
+      navigate(redirectTo, { replace: true });
+      return;
+    }
+
     navigate(isAdminUser ? "/admin/dashboard" : "/user/dashboard", { replace: true });
   };
 
@@ -92,11 +103,9 @@ export default function LoginPage() {
       if (mode === "register") {
         response = await authApi.registerPassenger(payload);
       } else {
-        // Try login; if user doesn't exist yet, auto-register then login
         try {
           response = await authApi.loginWithOtp(payload);
-          console.log("auth response",response);
-          
+          console.log("auth response", response);
         } catch (loginErr) {
           const status  = loginErr?.response?.status;
           const message = (loginErr?.response?.data?.message ?? "").toLowerCase();
@@ -109,7 +118,6 @@ export default function LoginPage() {
 
           if (!isNewUser) throw loginErr;
 
-          // Auto-create account, then login
           const toastId = toast.loading("Creating your account…");
           await authApi.registerPassenger(payload);
           toast.dismiss(toastId);
@@ -138,8 +146,7 @@ export default function LoginPage() {
     try {
       const { data } = await authApi.loginStaff({ phone: fullPhone, password });
       const res = data.data;
-      console.log("staff/admin",res);
-      
+      console.log("staff/admin", res);
       const userData = buildUserData(res);
       saveTokens(res.accessToken, res.refreshToken, userData);
       toast.success("Welcome back!");
@@ -182,25 +189,18 @@ export default function LoginPage() {
       </div>
 
       {/* Back To Home Button */}
-<button
-  onClick={() => navigate("/ap")}
-  className="
-    absolute top-6 right-4 sm:right-6 lg:right-10
-    z-20
-    px-4 py-2
-    rounded-xl
-    bg-white/10
-    backdrop-blur-md
-    border border-white/20
-    text-white
-    text-sm font-medium
-    hover:bg-white/20
-    transition-all duration-200
-    shadow-lg
-  "
->
-  ← Back to Home
-</button>
+      <button
+        onClick={() => navigate("/ap")}
+        className="
+          absolute top-6 right-4 sm:right-6 lg:right-10
+          z-20 px-4 py-2 rounded-xl
+          bg-white/10 backdrop-blur-md border border-white/20
+          text-white text-sm font-medium
+          hover:bg-white/20 transition-all duration-200 shadow-lg
+        "
+      >
+        ← Back to Home
+      </button>
 
       {/* Card */}
       <div className="relative z-10 w-full max-w-sm sm:max-w-md bg-white/96 backdrop-blur-lg rounded-2xl shadow-2xl p-6 sm:p-8 mt-24 lg:mt-0">
@@ -212,6 +212,13 @@ export default function LoginPage() {
             ? "Register to start your journey"
             : "Login using OTP or Staff Password"}
         </p>
+
+        {/* Redirect hint — show where user will land after login */}
+        {redirectTo && (
+          <div className="mb-4 px-3 py-2 rounded-lg bg-orange-50 border border-orange-200 text-xs text-orange-700 text-center">
+            Login to continue your booking
+          </div>
+        )}
 
         {/* Mode toggle */}
         <div className="flex rounded-xl bg-gray-100 p-1 mb-5 gap-1">
