@@ -12,6 +12,7 @@ export const bookingApi = {
 
 export const paymentApi = {
   initiate:       (data)       => api.post('/payments/initiate', data),
+  webhook:        (data)       => api.post('/payments/webhook', data),
   getByBookingId: (bookingId)  => api.get(`/payments/booking/${bookingId}`),
   getById:        (id)         => api.get(`/payments/${id}`),
 }

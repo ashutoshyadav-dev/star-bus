@@ -19,6 +19,7 @@ export const addStop             = (routeId, payload)  => api.post(`/admin/route
 export const updateStop          = (stopId, payload)   => api.put(`/admin/routes/stops/${stopId}`, payload);
 export const removeStop          = (stopId)            => api.delete(`/admin/routes/stops/${stopId}`);
 
+
 // Via Points
 export const getViaPoints        = (routeId)          => api.get(`/admin/routes/${routeId}/via-points`);
 export const addViaPoint         = (routeId, payload)  => api.post(`/admin/routes/${routeId}/via-points`, payload);
