@@ -22,7 +22,7 @@ export default function BookingTable() {
     },
     {
       pnr: "APSU5454",
-      route: "Itanagar → Dibrugarh",
+      route: "Itanagar → Dibrugarh ",
       date: "10 May, 2025",
       seats: "C1",
       amount: "₹ 900",
