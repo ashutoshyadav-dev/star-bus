@@ -1,13 +1,14 @@
 import api from './client'
 
 export const bookingApi = {
-  create:         (data)       => api.post('/bookings', data),
-  getById:        (id)         => api.get(`/bookings/${id}`),
-  getByPnr:       (pnr)        => api.get(`/bookings/pnr/${pnr}`),
-  getMine:        ()           => api.get('/bookings/my'),
-  cancel:         (id, data)   => api.post(`/bookings/${id}/cancel`, data),
-  adminGetBySchedule: (scheduleId) => api.get(`/bookings/admin/schedule/${scheduleId}`),
-  adminCancel:    (id, data)   => api.post(`/bookings/admin/${id}/cancel`, data),
+  create:             (data)         => api.post('/bookings', data),
+  getById:            (id)           => api.get(`/bookings/${id}`),
+  getByPnr:           (pnr)          => api.get(`/bookings/pnr/${pnr}`),
+  getMine:            ()             => api.get('/bookings/my'),
+  getMyDetails:       ()             => api.get('/bookings/my/details'),   // ← new
+  cancel:             (id, data)     => api.post(`/bookings/${id}/cancel`, data),
+  adminGetBySchedule: (scheduleId)   => api.get(`/bookings/admin/schedule/${scheduleId}`),
+  adminCancel:        (id, data)     => api.post(`/bookings/admin/${id}/cancel`, data),
 }
 
 export const paymentApi = {
@@ -24,7 +25,7 @@ export const refundApi = {
 }
 
 export const walletApi = {
-  get:          ()     => api.get('/wallet'),
-  topUp:        (data) => api.post('/wallet/topup', data),
+  get:          ()       => api.get('/wallet'),
+  topUp:        (data)   => api.post('/wallet/topup', data),
   getStatement: (params) => api.get('/wallet/statement', { params }),
 }

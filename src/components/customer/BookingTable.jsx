@@ -6,7 +6,7 @@ export default function BookingTable() {
   const bookings = [
     {
       pnr: "APSU5456",
-      route: "Itanagar → Guwahati",
+      route:"XYZ → Guwahati",
       date: "25 May, 2025",
       seats: "A1, A2",
       amount: "₹ 2,400",
