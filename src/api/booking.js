@@ -7,7 +7,9 @@ export const bookingApi = {
   getMine:        ()           => api.get('/bookings/my'),
   cancel:         (id, data)   => api.post(`/bookings/${id}/cancel`, data),
   adminGetBySchedule: (scheduleId) => api.get(`/bookings/admin/schedule/${scheduleId}`),
+  adminGetByPnr: (pnr) => api.get(`/bookings/admin/pnr/${pnr}`),
   adminCancel:    (id, data)   => api.post(`/bookings/admin/${id}/cancel`, data),
+   adminSearch:        (q)          => api.get('/bookings/admin/search', { params: { q, limit: 10 } }),
 }
 
 export const paymentApi = {

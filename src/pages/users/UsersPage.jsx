@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { useNavigate } from 'react-router-dom'
 import { usersApi } from '../../api/users'
 import { rolesApi } from '../../api/roles'
+import { depotApi } from '../../api/depot'
 import toast from 'react-hot-toast'
 import { UserPlus, Search, ShieldOff, ShieldCheck, Eye } from 'lucide-react'
 import PageHeader from '../../components/common/PageHeader'
@@ -23,81 +24,103 @@ function StatusBadge({ isActive }) {
 
 /* ---------------- EMPTY FORM STATE ---------------- */
 const EMPTY_FORM = {
-  phone: '',
-  fullName: '',
-  password: '',
-  depotId: '',
-  employeeCode: '',
-  designation: '',
-  dateOfBirth: '',
-  joiningDate: '',
-  employmentType: '',
-  roleId: '',
-  email: '',
-  licenseNumber: '',
+  phone:             '',
+  fullName:          '',
+  password:          '',
+  depotId:           '',
+  employeeCode:      '',
+  designation:       '',
+  dateOfBirth:       '',
+  joiningDate:       '',
+  employmentType:    '',
+  roleId:            '',
+  email:             '',
+  licenseNumber:     '',
   licenseExpiryDate: ''
 }
 
-/* ---------------- MAIN PAGE ---------------- */
+/* ================================================================
+   MAIN PAGE
+================================================================ */
 export default function UsersPage() {
-  const qc = useQueryClient()
+  const qc       = useQueryClient()
   const navigate = useNavigate()
 
-  const [page, setPage] = useState(0)
+  /* ── table state ── */
+  const [page,   setPage]   = useState(0)
   const [search, setSearch] = useState('')
-  const [showCreate, setShowCreate] = useState(false)
-  const [createForm, setCreateForm] = useState(EMPTY_FORM)
 
-  /* ---------------- PHONE HELPERS ---------------- */
-  const formatPhone = (phone) => {
-    if (!phone) return '—'
+  /* ── create modal state ── */
+  const [showCreate,        setShowCreate]        = useState(false)
+  const [createForm,        setCreateForm]        = useState(EMPTY_FORM)
+
+  /* ── employee-code conflict confirmation ── */
+  const [showEmpConfirm, setShowEmpConfirm] = useState(false)
+  const [pendingPayload,  setPendingPayload]  = useState(null)
+
+  /* ================================================================
+     PHONE HELPERS
+  ================================================================ */
+  const stripCountryCode = (phone) => {
+    if (!phone) return ''
     return phone.replace(/^(\+91|91)/, '').slice(-10)
   }
 
   const formatPhonePretty = (phone) => {
-    if (!phone) return '—'
-    const p = formatPhone(phone)
+    const p = stripCountryCode(phone)
+    if (!p) return '—'
     return p.replace(/(\d{5})(\d{5})/, '$1 $2')
   }
 
-  /* ---------------- NORMALIZED SEARCH ---------------- */
+  /* ================================================================
+     FETCH USERS
+  ================================================================ */
   const formattedSearch = search ? `+91${search.replace(/^91/, '')}` : ''
 
-  /* ---------------- FETCH USERS ---------------- */
   const { data, isLoading } = useQuery(
     ['users', page, formattedSearch],
     () => usersApi.getAll({ page, size: 20, search: formattedSearch }),
     { keepPreviousData: true }
   )
 
-  const usersRaw = data?.data?.data?.content ?? []
+  const usersRaw   = data?.data?.data?.content  ?? []
   const totalPages = data?.data?.data?.totalPages ?? 1
 
-  /* ---------------- FALLBACK FILTER ---------------- */
+  /* fallback client-side filter */
   const users = usersRaw.filter(u =>
-    formatPhone(u.phoneNumber).includes(search)
+    stripCountryCode(u.phoneNumber).includes(search)
   )
 
-  /* ---------------- FETCH ROLES (for dropdown) ---------------- */
-  // Only fetch once the modal opens; cache for 5 min
+  /* ================================================================
+     FETCH ROLES  (only when modal is open)
+  ================================================================ */
   const { data: rolesData, isLoading: rolesLoading } = useQuery(
     ['roles'],
     rolesApi.getAll,
-    {
-      enabled: showCreate,
-      staleTime: 5 * 60 * 1000
-    }
+    { enabled: showCreate, staleTime: 5 * 60 * 1000 }
   )
-  // Handle different response shapes: array at root, or nested under data/data
   const roles = Array.isArray(rolesData?.data)
     ? rolesData.data
     : rolesData?.data?.data ?? []
 
-  /* ---------------------------------------------------------------
-     AUTO-FILL: when the phone field reaches 10 digits, look for a
-     matching user in the already-loaded list and fetch their staff
-     profile to pre-populate the form. Password is never pre-filled.
-  --------------------------------------------------------------- */
+  /* ================================================================
+     FETCH DEPOTS  (only when modal is open)
+  ================================================================ */
+  const { data: depotsData, isLoading: depotsLoading } = useQuery(
+    ['depots'],
+    depotApi.getAllDepots,
+    { enabled: showCreate, staleTime: 10 * 60 * 1000 }
+  )
+  const depots = Array.isArray(depotsData?.data)
+    ? depotsData.data
+    : depotsData?.data?.data ?? []
+
+  /* ================================================================
+     AUTO-FILL
+     When the phone field hits 10 digits, find the matching user in
+     the already-loaded list and pull their staff profile to
+     pre-populate the form. Password is intentionally never filled.
+  ================================================================ */
   const phoneDigits = createForm.phone.replace(/\D/g, '')
   const lookupPhone = phoneDigits.length === 10 ? `+91${phoneDigits}` : null
 
@@ -113,15 +136,15 @@ export default function UsersPage() {
 
         setCreateForm(prev => ({
           ...prev,
-          fullName:          sp.fullName          ?? matched.fullName        ?? prev.fullName,
-          email:             sp.email             ?? matched.email           ?? prev.email,
-          depotId:           sp.depotId           != null ? String(sp.depotId)   : prev.depotId,
+          fullName:          sp.fullName          ?? matched.fullName ?? prev.fullName,
+          email:             sp.email             ?? matched.email    ?? prev.email,
+          depotId:           sp.depotId           != null ? String(sp.depotId)  : prev.depotId,
           employeeCode:      sp.employeeCode       ?? prev.employeeCode,
           designation:       sp.designation        ?? prev.designation,
           dateOfBirth:       sp.dateOfBirth        ?? prev.dateOfBirth,
           joiningDate:       sp.joiningDate        ?? prev.joiningDate,
           employmentType:    sp.employmentType      ?? prev.employmentType,
-          roleId:            sp.roleId            != null ? String(sp.roleId)    : prev.roleId,
+          roleId:            sp.roleId            != null ? String(sp.roleId)   : prev.roleId,
           licenseNumber:     sp.licenseNumber      ?? prev.licenseNumber,
           licenseExpiryDate: sp.licenseExpiryDate  ?? prev.licenseExpiryDate,
           // password intentionally left blank
@@ -130,12 +153,14 @@ export default function UsersPage() {
         toast.success('Existing staff data loaded', { icon: '📋' })
       })
       .catch(() => {
-        // Not a staff account or no profile yet — user fills manually
+        // passenger only — admin fills manually
       })
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lookupPhone, showCreate])
 
-  /* ---------------- MUTATIONS ---------------- */
+  /* ================================================================
+     MUTATIONS
+  ================================================================ */
   const suspendMut = useMutation(usersApi.suspend, {
     onSuccess: () => { toast.success('User suspended');  qc.invalidateQueries('users') },
     onError:   () =>   toast.error('Failed to suspend user')
@@ -151,12 +176,71 @@ export default function UsersPage() {
       toast.success('Staff account created')
       qc.invalidateQueries('users')
       setShowCreate(false)
+      setShowEmpConfirm(false)
+      setPendingPayload(null)
       setCreateForm(EMPTY_FORM)
     },
-    onError: () => toast.error('Failed to create staff account')
+    onError: (err) => {
+      const msg = err?.response?.data?.message ?? ''
+      if (msg.startsWith('EMPLOYEE_CODE_EXISTS')) {
+        // backend signals conflict — show confirmation dialog
+        setShowEmpConfirm(true)
+      } else {
+        toast.error(msg || 'Failed to create staff account')
+      }
+    }
   })
 
-  /* ---------------- TABLE COLUMNS ---------------- */
+  /* ================================================================
+     BUILD PAYLOAD  (shared between first attempt & force-update)
+  ================================================================ */
+  const buildPayload = (forceUpdate = false) => {
+    const cleanPhone = createForm.phone.replace(/\D/g, '')
+    return {
+      phoneNumber:       `+91${cleanPhone}`,
+      fullName:          createForm.fullName,
+      password:          createForm.password,
+      depotId:           Number(createForm.depotId),
+      employeeCode:      createForm.employeeCode,
+      designation:       createForm.designation,
+      dateOfBirth:       createForm.dateOfBirth,
+      joiningDate:       createForm.joiningDate,
+      employmentType:    createForm.employmentType,
+      roleId:            Number(createForm.roleId),
+      email:             createForm.email             || null,
+      licenseNumber:     createForm.licenseNumber     || null,
+      licenseExpiryDate: createForm.licenseExpiryDate || null,
+      forceUpdate,
+    }
+  }
+
+  /* ================================================================
+     FORM SUBMIT — first attempt (forceUpdate = false)
+  ================================================================ */
+  const handleCreateSubmit = (e) => {
+    e.preventDefault()
+
+    const cleanPhone = createForm.phone.replace(/\D/g, '')
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      toast.error('Invalid phone number')
+      return
+    }
+
+    const payload = buildPayload(false)
+    setPendingPayload(payload)
+    createMut.mutate(payload)
+  }
+
+  /* ================================================================
+     FORCE UPDATE — admin confirmed employee-code overwrite
+  ================================================================ */
+  const handleForceCreate = () => {
+    createMut.mutate({ ...pendingPayload, forceUpdate: true })
+  }
+
+  /* ================================================================
+     TABLE COLUMNS
+  ================================================================ */
   const columns = [
     {
       key: 'phoneNumber',
@@ -196,20 +280,19 @@ export default function UsersPage() {
       key: 'actions',
       label: 'Actions',
       render: r => (
-        <div
-          className="flex gap-1"
-          onClick={e => e.stopPropagation()}
-        >
-          {/* 👁 VIEW — navigates to /users/:id */}
+        <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+
+          {/* 👁 VIEW */}
           <button
-            onClick={() => navigate(`/admin/passengerProfile/${r.id}`)}
+            // onClick={() => navigate(`/admin/passengerProfile/${r.id}`)}
+            onClick={() =>navigate(`/admin/user-profile/${r.id}/${r.accountType}`)}
             title="View profile"
             className="p-1.5 rounded hover:bg-blue-900/30 text-surface-400 hover:text-blue-400 transition-colors"
           >
             <Eye className="w-3.5 h-3.5" />
           </button>
 
-          {/* 🟢 ACTIVATE — visible only when suspended */}
+          {/* 🟢 ACTIVATE — only when suspended */}
           {!r.isActive && (
             <button
               onClick={() => activateMut.mutate(r.id)}
@@ -221,7 +304,7 @@ export default function UsersPage() {
             </button>
           )}
 
-          {/* 🔴 SUSPEND — visible only when active */}
+          {/* 🔴 SUSPEND — only when active */}
           {r.isActive && (
             <button
               onClick={() => suspendMut.mutate(r.id)}
@@ -237,34 +320,9 @@ export default function UsersPage() {
     }
   ]
 
-  /* ---------------- FORM SUBMIT ---------------- */
-  const handleCreateSubmit = (e) => {
-    e.preventDefault()
-
-    const cleanPhone = createForm.phone.replace(/\D/g, '')
-    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
-      toast.error('Invalid phone number')
-      return
-    }
-
-    createMut.mutate({
-      phoneNumber:       `+91${cleanPhone}`,
-      fullName:          createForm.fullName,
-      password:          createForm.password,
-      depotId:           Number(createForm.depotId),
-      employeeCode:      createForm.employeeCode,
-      designation:       createForm.designation,
-      dateOfBirth:       createForm.dateOfBirth,
-      joiningDate:       createForm.joiningDate,
-      employmentType:    createForm.employmentType,
-      roleId:            Number(createForm.roleId),   // send id only
-      email:             createForm.email             || null,
-      licenseNumber:     createForm.licenseNumber     || null,
-      licenseExpiryDate: createForm.licenseExpiryDate || null
-    })
-  }
-
-  /* ---------------- UI ---------------- */
+  /* ================================================================
+     RENDER
+  ================================================================ */
   return (
     <div>
       <PageHeader
@@ -284,8 +342,8 @@ export default function UsersPage() {
         }
       />
 
+      {/* ── USERS TABLE CARD ── */}
       <div className="card">
-        {/* 🔍 SEARCH */}
         <div className="p-4 border-b border-surface-700">
           <div className="relative max-w-xs">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500" />
@@ -294,22 +352,20 @@ export default function UsersPage() {
               placeholder="Search by phone..."
               value={search}
               onChange={e => {
-                const value = e.target.value.replace(/\D/g, '')
-                setSearch(value)
+                setSearch(e.target.value.replace(/\D/g, ''))
                 setPage(0)
               }}
             />
           </div>
         </div>
 
-        {/* 📊 TABLE */}
         <Table columns={columns} data={users} loading={isLoading} />
-
-        {/* 📄 PAGINATION */}
         <Pagination page={page} totalPages={totalPages} onChange={setPage} />
       </div>
 
-      {/* ➕ CREATE STAFF MODAL */}
+      {/* ================================================================
+          CREATE STAFF MODAL
+      ================================================================ */}
       <Modal
         open={showCreate}
         onClose={() => {
@@ -324,7 +380,7 @@ export default function UsersPage() {
             {/* SCROLLABLE FORM BODY */}
             <div className="overflow-y-auto pr-2 pb-4 grid grid-cols-1 md:grid-cols-2 gap-4">
 
-              {/* ── PHONE — triggers auto-fill on 10 digits ── */}
+              {/* ── PHONE ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">
                   Phone
@@ -348,7 +404,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* FULL NAME */}
+              {/* ── FULL NAME ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Full Name</label>
                 <input
@@ -360,7 +416,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* PASSWORD */}
+              {/* ── PASSWORD ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Password</label>
                 <input
@@ -372,7 +428,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* EMPLOYEE CODE */}
+              {/* ── EMPLOYEE CODE ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Employee Code</label>
                 <input
@@ -384,19 +440,32 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* DEPOT ID */}
+              {/* ── DEPOT — shows name, sends id ── */}
               <div className="flex flex-col">
-                <label className="text-xs text-surface-400 mb-1.5">Depot ID</label>
-                <input
-                  className="input"
-                  type="number"
-                  value={createForm.depotId}
-                  onChange={e => setCreateForm(p => ({ ...p, depotId: e.target.value }))}
-                  required
-                />
+                <label className="text-xs text-surface-400 mb-1.5">Depot</label>
+                {depotsLoading ? (
+                  <div className="input flex items-center gap-2 text-surface-500">
+                    <Spinner size="sm" />
+                    <span className="text-xs">Loading depots…</span>
+                  </div>
+                ) : (
+                  <select
+                    className="input"
+                    value={createForm.depotId}
+                    onChange={e => setCreateForm(p => ({ ...p, depotId: e.target.value }))}
+                    required
+                  >
+                    <option value="">Select depot</option>
+                    {depots.map(d => (
+                      <option key={d.id} value={d.id}>
+                        {d.name}
+                      </option>
+                    ))}
+                  </select>
+                )}
               </div>
 
-              {/* EMAIL */}
+              {/* ── EMAIL ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">
                   Email <span className="text-surface-500 italic">(optional)</span>
@@ -409,7 +478,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* DATE OF BIRTH */}
+              {/* ── DATE OF BIRTH ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Date of Birth</label>
                 <input
@@ -421,7 +490,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* JOINING DATE */}
+              {/* ── JOINING DATE ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Joining Date</label>
                 <input
@@ -433,7 +502,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* LICENSE NUMBER */}
+              {/* ── LICENSE NUMBER ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">
                   License Number <span className="text-surface-500 italic">(optional)</span>
@@ -446,7 +515,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* LICENSE EXPIRY */}
+              {/* ── LICENSE EXPIRY ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">
                   License Expiry <span className="text-surface-500 italic">(optional)</span>
@@ -459,7 +528,7 @@ export default function UsersPage() {
                 />
               </div>
 
-              {/* DESIGNATION */}
+              {/* ── DESIGNATION ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Designation</label>
                 <select
@@ -469,13 +538,14 @@ export default function UsersPage() {
                   required
                 >
                   <option value="">Select</option>
-                  <option value="DRIVER">Driver</option>
-                  <option value="CONDUCTOR">Conductor</option>
-                  <option value="ADMIN">Admin</option>
+                  <option value="driver">Driver</option>
+                  <option value="conductor">Conductor</option>
+                  <option value="depot_manager">Depot Manager</option>
+                  <option value="ticket_checker">Ticket Checker</option>
                 </select>
               </div>
 
-              {/* EMPLOYMENT TYPE */}
+              {/* ── EMPLOYMENT TYPE ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Employment Type</label>
                 <select
@@ -485,12 +555,14 @@ export default function UsersPage() {
                   required
                 >
                   <option value="">Select</option>
-                  <option value="FULL_TIME">Full Time</option>
-                  <option value="CONTRACT">Contract</option>
+                  <option value="permanent">Permanent</option>
+                  <option value="contract">Contract</option>
+                  <option value="probation">Probation</option>
+                  <option value="daily_wage">Daily Wage</option>
                 </select>
               </div>
 
-              {/* ── ROLE — fetched from backend, shows name, sends id ── */}
+              {/* ── ROLE — shows name, sends id ── */}
               <div className="flex flex-col">
                 <label className="text-xs text-surface-400 mb-1.5">Role</label>
                 {rolesLoading ? (
@@ -502,9 +574,7 @@ export default function UsersPage() {
                   <select
                     className="input"
                     value={createForm.roleId}
-                    onChange={e =>
-                      setCreateForm(p => ({ ...p, roleId: e.target.value }))
-                    }
+                    onChange={e => setCreateForm(p => ({ ...p, roleId: e.target.value }))}
                     required
                   >
                     <option value="">Select role</option>
@@ -531,7 +601,6 @@ export default function UsersPage() {
               >
                 Cancel
               </button>
-
               <button
                 type="submit"
                 disabled={createMut.isLoading}
@@ -544,6 +613,44 @@ export default function UsersPage() {
           </form>
         </div>
       </Modal>
+
+      {/* ================================================================
+          EMPLOYEE CODE CONFLICT — CONFIRMATION MODAL
+      ================================================================ */}
+      <Modal
+        open={showEmpConfirm}
+        onClose={() => setShowEmpConfirm(false)}
+        title="Employee Code Already Exists"
+      >
+        <div className="flex flex-col gap-4 p-2 max-w-sm">
+          <p className="text-sm text-surface-300">
+            Employee code{' '}
+            <span className="font-mono font-semibold text-white">
+              {createForm.employeeCode}
+            </span>{' '}
+            is already assigned to another staff member.
+          </p>
+          <p className="text-sm text-surface-400">
+            Do you want to reassign this code and update their profile with the new details?
+          </p>
+          <div className="flex gap-2 pt-1">
+            <button
+              className="btn-secondary flex-1"
+              onClick={() => setShowEmpConfirm(false)}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn-primary flex-1 flex justify-center"
+              disabled={createMut.isLoading}
+              onClick={handleForceCreate}
+            >
+              {createMut.isLoading ? <Spinner size="sm" /> : 'Yes, Update'}
+            </button>
+          </div>
+        </div>
+      </Modal>
+
     </div>
   )
 }

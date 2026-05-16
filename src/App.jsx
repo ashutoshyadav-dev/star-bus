@@ -36,6 +36,7 @@ import QrManagement from "./pages/QrManagement";
 import AddUser from "./pages/AddUser";
 import AddRoute from "./pages/AddRoute";
 import AdminPassengerProfile from "./components/admin/AdminPassengerProfile";
+import AdminUserProfile from "./components/admin/AdminUserProfile";
 import EditRoute from "./pages/EditRoute";
 import RouteDetailPage from "./pages/RouteDetailPage";
 import ScheduleManagement from "./pages/schedule/ScheduleManagement";
@@ -230,7 +231,8 @@ function AppRoutes() {
         <Route path="/admin/qr"             element={<QrManagement />} />
         <Route path="/admin/adduser"        element={<AddUser />} />
         <Route path="/admin/addroute"       element={<AddRoute />} />
-        <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/>
+        {/* <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/> */}
+        <Route path="/admin/user-profile/:id/:type" element={<AdminUserProfile />}/>
         <Route path="/admin/routes/:id"      element={<RouteDetailPage />} />
         <Route path="/admin/routes/:id/edit" element={<EditRoute />} />
         <Route path="/admin/schedules" element={<ScheduleManagement />} />

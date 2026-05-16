@@ -1,80 +1,130 @@
 import { useState } from 'react'
 import { useQuery } from 'react-query'
 import { paymentApi } from '../../api/booking'
-import { Search } from 'lucide-react'
 import { format } from 'date-fns'
-import PageHeader from '../../components/common/PageHeader'
-import Spinner from '../../components/common/Spinner'
+import { ArrowLeft } from 'lucide-react'
+import { useNavigate } from 'react-router-dom'
+import BookingSearchCombobox from '../../components/common/BookingSearchCombobox'
 
+/* ── Status badge ── */
 function PaymentStatusBadge({ status }) {
   const map = {
-    SUCCESS: 'badge-green', INITIATED: 'badge-yellow', PENDING: 'badge-yellow',
-    FAILED: 'badge-red', REFUNDED: 'badge-blue', PARTIALLY_REFUNDED: 'badge-blue',
+    SUCCESS:            'bg-green-50 text-green-800',
+    INITIATED:          'bg-yellow-50 text-yellow-800',
+    PENDING:            'bg-yellow-50 text-yellow-800',
+    FAILED:             'bg-red-50 text-red-800',
+    REFUNDED:           'bg-blue-50 text-blue-800',
+    PARTIALLY_REFUNDED: 'bg-blue-50 text-blue-800',
   }
-  return <span className={map[status] ?? 'badge-gray'}>{status}</span>
+  return (
+    <span className={`px-3 py-1 rounded-full text-xs font-medium ${map[status] ?? 'bg-gray-100 text-gray-600'}`}>
+      {status}
+    </span>
+  )
 }
 
-export default function PaymentsPage() {
-  const [bookingId, setBookingId]   = useState('')
-  const [searchId, setSearchId]     = useState('')
-
-  const { data, isLoading, isError } = useQuery(
-    ['payment', searchId],
-    () => paymentApi.getByBookingId(searchId),
-    { enabled: !!searchId, retry: false }
+/* ── Info tile ── */
+function Tile({ label, value }) {
+  return (
+    <div className="bg-gray-50 rounded-xl p-4">
+      <p className="text-[11px] text-gray-400 mb-1.5">{label}</p>
+      <p className="text-sm font-medium font-mono text-gray-800 break-all">
+        {value ?? '—'}
+      </p>
+    </div>
   )
-  const payment = data?.data?.data
+}
+
+/* ── Page ── */
+export default function PaymentsPage() {
+  const navigate = useNavigate()
+  const [bookingId, setBookingId] = useState(null)
+
+ const {
+  data: paymentData,
+  isLoading,
+  isError,
+} = useQuery(
+  ['payment', bookingId],
+  () => {
+    return paymentApi.getByBookingId(bookingId)
+  },
+  { enabled: !!bookingId, retry: false }
+)
+
+
+
+  const payment = paymentData?.data?.data
+  const fmt = (ts) => ts ? format(new Date(ts), 'dd MMM yyyy HH:mm') : '—'
 
   return (
-    <div>
-      <PageHeader title="Payments" subtitle="Look up payment details by booking ID" />
+    <div className="min-h-screen bg-gray-50 p-6">
+      <div className="max-w-4xl mx-auto">
 
-      <div className="card p-5 mb-4">
-        <p className="text-xs text-surface-400 mb-3">Search by Booking ID</p>
-        <div className="flex gap-2 max-w-md">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-surface-500" />
-            <input className="input pl-9 font-mono text-xs" placeholder="Booking UUID"
-              value={bookingId} onChange={e => setBookingId(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && setSearchId(bookingId)} />
+        <button
+          onClick={() => navigate(-1)}
+          className="flex items-center gap-2 text-sm text-blue-600 mb-5 hover:underline"
+        >
+          <ArrowLeft size={16} />
+          Back
+        </button>
+
+        {/* Search card */}
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-visible mb-4">
+          <div className="p-6 border-b border-gray-100">
+            <h1 className="text-xl font-semibold text-gray-800">Payments</h1>
+            <p className="text-xs text-gray-400 mt-0.5">
+              Search by passenger name or PNR — select a booking to load its payment
+            </p>
           </div>
-          <button className="btn-primary" onClick={() => setSearchId(bookingId)}>Look Up</button>
+          <div className="p-6">
+            <BookingSearchCombobox
+              className="max-w-lg"
+              onSelect={(booking) => {
+  console.log('onSelect received:', booking)           
+  console.log('bookingId being set:', booking?.bookingId)  
+  setBookingId(booking?.bookingId ?? null)
+}}
+            />
+          </div>
         </div>
-      </div>
 
-      {isLoading && <div className="flex justify-center py-12"><Spinner /></div>}
-      {isError   && <p className="text-center text-surface-500 py-12">Payment not found for this booking ID.</p>}
-
-      {payment && (
-        <div className="card p-6">
-          <div className="flex items-start justify-between mb-6">
-            <div>
-              <p className="text-xs text-surface-400">Payment ID</p>
-              <p className="font-mono text-sm text-surface-200 mt-0.5">{payment.paymentId}</p>
-            </div>
-            <PaymentStatusBadge status={payment.paymentStatus} />
+        {/* States */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <span className="text-sm text-gray-400 animate-pulse">Loading payment…</span>
           </div>
+        )}
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-5">
-            {[
-              ['Amount',       `₹${payment.amount}`],
-              ['Method',       payment.paymentMethod],
-              ['Gateway',      payment.gatewayName ?? '—'],
-              ['Gateway Order',payment.gatewayOrderId ?? '—'],
-              ['Gateway Pay',  payment.gatewayPaymentId ?? '—'],
-              ['UPI Tx ID',    payment.upiTransactionId ?? '—'],
-              ['Bank Ref',     payment.bankRefNumber ?? '—'],
-              ['Initiated At', payment.initiatedAt ? format(new Date(payment.initiatedAt), 'dd MMM yyyy HH:mm') : '—'],
-              ['Completed At', payment.completedAt ? format(new Date(payment.completedAt), 'dd MMM yyyy HH:mm') : '—'],
-            ].map(([k, v]) => (
-              <div key={k}>
-                <p className="text-xs text-surface-400">{k}</p>
-                <p className="text-sm text-surface-200 font-mono mt-0.5 break-all">{v}</p>
+        {isError && !isLoading && (
+          <p className="text-center text-gray-400 py-12">No payment found for this booking.</p>
+        )}
+
+        {/* Payment detail */}
+        {payment && !isLoading && (
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+            <div className="flex items-start justify-between p-6 border-b border-gray-100">
+              <div>
+                <p className="text-xs text-gray-400">Payment ID</p>
+                <p className="font-mono text-sm text-gray-700 mt-0.5">{payment.paymentId}</p>
               </div>
-            ))}
+              <PaymentStatusBadge status={payment.paymentStatus} />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 p-6">
+              <Tile label="Amount"        value={`₹${payment.amount?.toLocaleString('en-IN')}`} />
+              <Tile label="Method"        value={payment.paymentMethod} />
+              <Tile label="Gateway"       value={payment.gatewayName} />
+              <Tile label="Gateway order" value={payment.gatewayOrderId} />
+              <Tile label="Gateway pay"   value={payment.gatewayPaymentId} />
+              <Tile label="UPI Tx ID"     value={payment.upiTransactionId} />
+              <Tile label="Bank ref"      value={payment.bankRefNumber} />
+              <Tile label="Initiated at"  value={fmt(payment.initiatedAt)} />
+              <Tile label="Completed at"  value={fmt(payment.completedAt)} />
+            </div>
           </div>
-        </div>
-      )}
+        )}
+
+      </div>
     </div>
   )
 }
