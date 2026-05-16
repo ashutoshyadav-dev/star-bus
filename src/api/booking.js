@@ -5,6 +5,7 @@ export const bookingApi = {
   getById:        (id)         => api.get(`/bookings/${id}`),
   getByPnr:       (pnr)        => api.get(`/bookings/pnr/${pnr}`),
   getMine:        ()           => api.get('/bookings/my'),
+  getMyDetails:       ()             => api.get('/bookings/my/details'),
   cancel:         (id, data)   => api.post(`/bookings/${id}/cancel`, data),
   adminGetBySchedule: (scheduleId) => api.get(`/bookings/admin/schedule/${scheduleId}`),
   adminGetByPnr: (pnr) => api.get(`/bookings/admin/pnr/${pnr}`),
@@ -27,7 +28,7 @@ export const refundApi = {
 }
 
 export const walletApi = {
-  get:          ()     => api.get('/wallet'),
-  topUp:        (data) => api.post('/wallet/topup', data),
+  get:          ()       => api.get('/wallet'),
+  topUp:        (data)   => api.post('/wallet/topup', data),
   getStatement: (params) => api.get('/wallet/statement', { params }),
 }
