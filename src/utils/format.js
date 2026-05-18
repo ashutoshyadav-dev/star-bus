@@ -34,3 +34,18 @@ export function formatCurrency(amount) {
     maximumFractionDigits: 0,
   }).format(amount ?? 0);
 }
+
+
+// utils/datetime.js
+export function toOffsetDateTime(localDt) {
+  if (!localDt) return null
+  // localDt = "2026-05-19T13:57" from datetime-local input
+  const withSeconds = localDt.length === 16 ? localDt + ':00' : localDt
+  // Get local offset, e.g. "+05:30"
+  const date = new Date(withSeconds)
+  const off = -date.getTimezoneOffset()          // minutes
+  const sign = off >= 0 ? '+' : '-'
+  const hh = String(Math.floor(Math.abs(off) / 60)).padStart(2, '0')
+  const mm = String(Math.abs(off) % 60).padStart(2, '0')
+  return `${withSeconds}${sign}${hh}:${mm}`
+}

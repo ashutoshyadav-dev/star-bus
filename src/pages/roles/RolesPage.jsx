@@ -2,40 +2,50 @@ import { useState, useRef, useEffect, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from 'react-query'
 import { rolesApi, permissionsApi } from '../../api/roles'
 import { usersApi } from '../../api/users'
+import { toOffsetDateTime } from '../../utils/format'
 import toast from 'react-hot-toast'
 import {
-  Plus, Trash2, ChevronDown, ChevronRight,
-  Search, X, Shield, User, Check, AlertTriangle
+  Plus, ChevronDown, ChevronRight,
+  Search, X, Shield, User, Check,
+  ArrowLeft, UserCheck, Lock
 } from 'lucide-react'
 import { useNavigate } from 'react-router-dom'
-import { ArrowLeft } from 'lucide-react'
 
-/* ══════════════════════════════════════════════════════
-   USER SEARCH COMBOBOX  (same pattern as BookingSearchCombobox)
-══════════════════════════════════════════════════════ */
+/* ─────────────────────────────────────────────
+   SHARED STYLE CONSTANTS
+───────────────────────────────────────────── */
+const inputCls = `w-full h-10 px-3 text-sm text-slate-800 bg-white border border-slate-200
+  rounded-lg outline-none transition-all
+  focus:border-blue-400 focus:ring-2 focus:ring-blue-100
+  placeholder:text-slate-300`
 
+function Spin({ size = 16 }) {
+  return (
+    <span className="inline-block rounded-full border-2 border-current border-t-transparent animate-spin"
+      style={{ width: size, height: size }} />
+  )
+}
+
+/* ═══════════════════════════════════════════
+   USER SEARCH COMBOBOX
+═══════════════════════════════════════════ */
 function UserSearchCombobox({ onSelect, placeholder = 'Search by name, phone or email…' }) {
   const [inputValue, setInputValue] = useState('')
-  const [query, setQuery]           = useState('')
-  const [open, setOpen]             = useState(false)
-  const [activeIdx, setActiveIdx]   = useState(-1)
+  const [query,      setQuery]      = useState('')
+  const [open,       setOpen]       = useState(false)
+  const [activeIdx,  setActiveIdx]  = useState(-1)
 
   const wrapRef     = useRef(null)
   const debounceRef = useRef(null)
-  const listRef     = useRef(null)
 
   const { data, isFetching } = useQuery(
     ['user-search', query],
     () => usersApi.search(query),
     { enabled: query.length >= 2, keepPreviousData: true, staleTime: 30_000 }
   )
-
-  // usersApi.search returns { data: [...] } or { data: { data: [...] } }
-  // handle both shapes
   const raw     = data?.data
   const results = Array.isArray(raw) ? raw : (raw?.data ?? [])
 
-  /* close on outside click */
   useEffect(() => {
     const h = (e) => { if (wrapRef.current && !wrapRef.current.contains(e.target)) setOpen(false) }
     document.addEventListener('mousedown', h)
@@ -53,61 +63,57 @@ function UserSearchCombobox({ onSelect, placeholder = 'Search by name, phone or 
 
   const handleKeyDown = (e) => {
     if (!open || !results.length) return
-    if (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, results.length - 1)) }
-    else if (e.key === 'ArrowUp') { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
-    else if (e.key === 'Enter') { e.preventDefault(); if (activeIdx >= 0) selectItem(results[activeIdx]) }
-    else if (e.key === 'Escape') setOpen(false)
+    if      (e.key === 'ArrowDown') { e.preventDefault(); setActiveIdx(i => Math.min(i + 1, results.length - 1)) }
+    else if (e.key === 'ArrowUp')   { e.preventDefault(); setActiveIdx(i => Math.max(i - 1, 0)) }
+    else if (e.key === 'Enter')     { e.preventDefault(); if (activeIdx >= 0) select(results[activeIdx]) }
+    else if (e.key === 'Escape')    setOpen(false)
   }
 
-  const selectItem = (user) => {
+  const select = (user) => {
     const label = user.staffProfile?.fullName ?? user.phoneNumber ?? user.email ?? user.id
-    setInputValue(`${label}`)
+    setInputValue(label)
     setOpen(false)
     setQuery('')
     onSelect?.(user)
   }
 
-  const clear = () => {
-    setInputValue(''); setQuery(''); setOpen(false); setActiveIdx(-1); onSelect?.(null)
-  }
-
-  const showDropdown = open && query.length >= 2
+  const clear = () => { setInputValue(''); setQuery(''); setOpen(false); setActiveIdx(-1); onSelect?.(null) }
+  const show  = open && query.length >= 2
 
   return (
     <div ref={wrapRef} className="relative">
-      <div className={`flex items-center border rounded-xl bg-white transition-all ${showDropdown ? 'border-blue-500 ring-2 ring-blue-100' : 'border-gray-200'}`}>
-        <span className="pl-3 text-gray-400">
+      <div className={`flex items-center border rounded-lg bg-white transition-all
+        ${show ? 'border-blue-400 ring-2 ring-blue-100' : 'border-slate-200'}`}>
+        <span className="pl-3 text-slate-400">
           {isFetching
-            ? <span className="inline-block w-4 h-4 border-2 border-gray-200 border-t-blue-500 rounded-full animate-spin" />
-            : <Search className="w-4 h-4" />}
+            ? <Spin size={14} />
+            : <Search className="w-3.5 h-3.5" />}
         </span>
         <input
-          type="text"
-          value={inputValue}
-          onChange={handleInput}
+          type="text" value={inputValue} onChange={handleInput}
           onKeyDown={handleKeyDown}
           onFocus={() => { if (query.length >= 2) setOpen(true) }}
           placeholder={placeholder}
-          className="flex-1 h-10 bg-transparent text-sm text-gray-800 placeholder-gray-400 outline-none px-2"
+          className="flex-1 h-10 bg-transparent text-sm text-slate-800 placeholder-slate-300 outline-none px-2"
         />
         {inputValue && (
-          <button onClick={clear} className="pr-3 text-gray-400 hover:text-gray-600"><X className="w-4 h-4" /></button>
+          <button onClick={clear} className="pr-3 text-slate-400 hover:text-slate-600">
+            <X className="w-3.5 h-3.5" />
+          </button>
         )}
       </div>
 
-      {showDropdown && (
-        <ul
-          onMouseDown={(e) => e.preventDefault()}
-          className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-white border border-gray-200 rounded-xl overflow-hidden max-h-64 overflow-y-auto shadow-lg"
-        >
+      {show && (
+        <ul onMouseDown={e => e.preventDefault()}
+          className="absolute top-[calc(100%+6px)] left-0 right-0 z-50 bg-white border border-slate-200 rounded-xl overflow-hidden max-h-60 overflow-y-auto shadow-lg shadow-slate-100">
           {isFetching && !results.length && (
-            <li className="px-4 py-3 text-sm text-gray-400">Searching…</li>
+            <li className="px-4 py-3 text-sm text-slate-400">Searching…</li>
           )}
           {!isFetching && !results.length && (
-            <li className="px-4 py-3 text-sm text-gray-400">No users found</li>
+            <li className="px-4 py-3 text-sm text-slate-400">No users found</li>
           )}
           {results.length > 0 && (
-            <li className="px-4 py-2 text-[11px] text-gray-400 uppercase tracking-wide border-b border-gray-100">
+            <li className="px-4 py-2 text-[10px] text-slate-400 uppercase tracking-wider border-b border-slate-100 font-medium">
               Matching users
             </li>
           )}
@@ -116,20 +122,18 @@ function UserSearchCombobox({ onSelect, placeholder = 'Search by name, phone or 
             const phone = user.phoneNumber ?? '—'
             const type  = user.accountType ?? ''
             return (
-              <li
-                key={user.id}
-                onClick={() => selectItem(user)}
-                onMouseEnter={() => setActiveIdx(idx)}
-                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer border-b border-gray-50 last:border-0 ${idx === activeIdx ? 'bg-gray-50' : 'hover:bg-gray-50'}`}
-              >
-                <div className="w-8 h-8 rounded-full bg-indigo-50 flex items-center justify-center text-xs font-medium text-indigo-700 flex-shrink-0">
-                  <User className="w-4 h-4" />
+              <li key={user.id} onClick={() => select(user)} onMouseEnter={() => setActiveIdx(idx)}
+                className={`flex items-center gap-3 px-4 py-2.5 cursor-pointer border-b border-slate-50 last:border-0
+                  ${idx === activeIdx ? 'bg-slate-50' : 'hover:bg-slate-50/70'} transition-colors`}>
+                <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center flex-shrink-0">
+                  <User className="w-4 h-4 text-blue-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-gray-800 truncate">{name}</p>
-                  <p className="text-xs text-gray-400 font-mono mt-0.5">{phone}</p>
+                  <p className="text-sm font-medium text-slate-800 truncate">{name}</p>
+                  <p className="text-xs text-slate-400 font-mono mt-0.5">{phone}</p>
                 </div>
-                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium ${type === 'staff' ? 'bg-blue-50 text-blue-700' : 'bg-gray-100 text-gray-500'}`}>
+                <span className={`text-[10px] px-2 py-0.5 rounded-full font-medium
+                  ${type === 'staff' ? 'bg-blue-50 text-blue-600' : 'bg-slate-100 text-slate-500'}`}>
                   {type}
                 </span>
               </li>
@@ -141,10 +145,11 @@ function UserSearchCombobox({ onSelect, placeholder = 'Search by name, phone or 
   )
 }
 
-/* ══════════════════════════════════════════════════════
-   PERMISSION TOGGLE — single permission row inside a role
-══════════════════════════════════════════════════════ */
-
+/* ═══════════════════════════════════════════
+   PERMISSION TOGGLE
+   Green = has it (click to remove)
+   Gray  = doesn't have it (click to add)
+═══════════════════════════════════════════ */
 function PermissionToggle({ roleId, permission, hasIt }) {
   const qc = useQueryClient()
 
@@ -163,38 +168,35 @@ function PermissionToggle({ roleId, permission, hasIt }) {
     }
   )
 
-  const loading = addMut.isLoading || removeMut.isLoading
+  const busy = addMut.isLoading || removeMut.isLoading
 
   return (
     <button
       onClick={() => hasIt ? removeMut.mutate() : addMut.mutate()}
-      disabled={loading}
-      className={`
-        flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium border transition-all
+      disabled={busy}
+      title={hasIt ? 'Click to remove' : 'Click to add'}
+      className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg text-[11px] font-medium border transition-all
         ${hasIt
-          ? 'bg-green-50 border-green-200 text-green-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
-          : 'bg-gray-50 border-gray-200 text-gray-500 hover:bg-green-50 hover:border-green-200 hover:text-green-700'}
-        ${loading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}
-      `}
-    >
-      {loading
-        ? <span className="w-3 h-3 border-2 border-current border-t-transparent rounded-full animate-spin" />
+          ? 'bg-emerald-50 border-emerald-200 text-emerald-700 hover:bg-red-50 hover:border-red-200 hover:text-red-600'
+          : 'bg-slate-50 border-slate-200 text-slate-500 hover:bg-emerald-50 hover:border-emerald-200 hover:text-emerald-700'}
+        ${busy ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}>
+      {busy
+        ? <Spin size={10} />
         : hasIt ? <Check className="w-3 h-3" /> : <Plus className="w-3 h-3" />}
       {permission.name}
     </button>
   )
 }
 
-/* ══════════════════════════════════════════════════════
-   ROLE ROW — expandable card with permission editor
-══════════════════════════════════════════════════════ */
-
+/* ═══════════════════════════════════════════
+   ROLE ROW — expandable with permission editor
+═══════════════════════════════════════════ */
 function RoleRow({ role, allPermissions }) {
   const [expanded, setExpanded] = useState(false)
+  const [search,   setSearch]   = useState('')
 
   const rolePermIds = new Set((role.permissions ?? []).map(p => p.id))
 
-  // Group all permissions by module
   const byModule = allPermissions.reduce((acc, p) => {
     const mod = p.module ?? 'Other'
     if (!acc[mod]) acc[mod] = []
@@ -202,39 +204,59 @@ function RoleRow({ role, allPermissions }) {
     return acc
   }, {})
 
+  const filteredModules = Object.entries(byModule).reduce((acc, [mod, perms]) => {
+    const filtered = search
+      ? perms.filter(p => p.name.toLowerCase().includes(search.toLowerCase()))
+      : perms
+    if (filtered.length) acc[mod] = filtered
+    return acc
+  }, {})
+
+  const grantedCount = (role.permissions ?? []).length
+
   return (
-    <div className="border border-gray-100 rounded-xl overflow-hidden">
-      {/* Header row */}
-      <button
-        onClick={() => setExpanded(v => !v)}
-        className="w-full flex items-center gap-4 px-5 py-4 bg-white hover:bg-gray-50 transition-colors text-left"
-      >
-        <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center flex-shrink-0">
-          <Shield className="w-4 h-4 text-indigo-600" />
+    <div className="border border-slate-200/80 rounded-xl overflow-hidden transition-shadow hover:shadow-sm">
+      {/* Header */}
+      <button onClick={() => setExpanded(v => !v)}
+        className="w-full flex items-center gap-3 px-5 py-4 bg-white hover:bg-slate-50/70 transition-colors text-left">
+        <div className="w-9 h-9 rounded-xl bg-indigo-50 flex items-center justify-center flex-shrink-0">
+          <Shield className="w-4 h-4 text-indigo-500" />
         </div>
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium text-gray-800">{role.displayName ?? role.name}</p>
-          <p className="text-xs text-gray-400 mt-0.5">{role.permissions?.length ?? 0} permissions</p>
+          <p className="text-sm font-medium text-slate-800">{role.displayName ?? role.name}</p>
+          <p className="text-xs text-slate-400 mt-0.5">{grantedCount} permission{grantedCount !== 1 ? 's' : ''} granted</p>
         </div>
         <div className="flex items-center gap-2">
-          {role.isSystem && (
-            <span className="text-[10px] px-2 py-0.5 rounded-full bg-blue-50 text-blue-700 font-medium border border-blue-100">
-              System
+          {role.isSystemRole && (
+            <span className="flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500 font-medium">
+              <Lock className="w-2.5 h-2.5" />System
             </span>
           )}
           {expanded
-            ? <ChevronDown className="w-4 h-4 text-gray-400" />
-            : <ChevronRight className="w-4 h-4 text-gray-400" />}
+            ? <ChevronDown className="w-4 h-4 text-slate-400" />
+            : <ChevronRight className="w-4 h-4 text-slate-400" />}
         </div>
       </button>
 
-      {/* Expanded permission editor */}
+      {/* Expanded Editor */}
       {expanded && (
-        <div className="border-t border-gray-100 bg-gray-50 px-5 py-4 space-y-4">
-          {Object.entries(byModule).map(([module, perms]) => (
+        <div className="border-t border-slate-100 bg-slate-50/50 px-5 py-4 space-y-4">
+
+          {/* Permission search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3 h-3 text-slate-400" />
+            <input
+              className="w-full h-8 pl-8 pr-3 text-xs bg-white border border-slate-200 rounded-lg outline-none focus:border-blue-400 focus:ring-2 focus:ring-blue-100 transition-all placeholder:text-slate-300"
+              placeholder="Filter permissions…"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+            />
+          </div>
+
+          {Object.entries(filteredModules).map(([module, perms]) => (
             <div key={module}>
-              <p className="text-[11px] uppercase tracking-wide text-gray-400 font-medium mb-2">{module}</p>
-              <div className="flex flex-wrap gap-2">
+              <p className="text-[10px] uppercase tracking-widest text-slate-400 font-semibold mb-2">{module}</p>
+              <div className="flex flex-wrap gap-1.5">
                 {perms.map(p => (
                   <PermissionToggle
                     key={p.id}
@@ -246,24 +268,32 @@ function RoleRow({ role, allPermissions }) {
               </div>
             </div>
           ))}
+
+          {Object.keys(filteredModules).length === 0 && (
+            <p className="text-xs text-slate-400 text-center py-2">No permissions match "{search}"</p>
+          )}
         </div>
       )}
     </div>
   )
 }
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    ASSIGN ROLE MODAL
-══════════════════════════════════════════════════════ */
-
+   Purpose: assign / revoke roles for an existing user
+   (separate from createStaff — that handles new users)
+═══════════════════════════════════════════ */
 function AssignRoleModal({ open, onClose, roles }) {
   const qc = useQueryClient()
   const [selectedUser, setSelectedUser] = useState(null)
-  const [roleId, setRoleId]             = useState('')
-  const [validFrom, setValidFrom]       = useState('')
-  const [validUntil, setValidUntil]     = useState('')
+  const [roleId,       setRoleId]       = useState('')
+  const [validFrom,    setValidFrom]    = useState('')
+  const [validUntil,   setValidUntil]   = useState('')
 
-  // Load current roles for selected user
+  useEffect(() => {
+    if (!open) { setSelectedUser(null); setRoleId(''); setValidFrom(''); setValidUntil('') }
+  }, [open])
+
   const { data: userRolesData } = useQuery(
     ['user-roles', selectedUser?.id],
     () => rolesApi.getUserRoles(selectedUser.id),
@@ -275,12 +305,12 @@ function AssignRoleModal({ open, onClose, roles }) {
     () => rolesApi.assign({
       userId:     selectedUser.id,
       roleId:     Number(roleId),
-      validFrom:  validFrom  || null,
-      validUntil: validUntil || null,
+      validFrom:  toOffsetDateTime(validFrom),
+      validUntil: toOffsetDateTime(validUntil),
     }),
     {
       onSuccess: () => {
-        toast.success('Role assigned successfully')
+        toast.success('Role assigned')
         qc.invalidateQueries(['user-roles', selectedUser?.id])
         setRoleId(''); setValidFrom(''); setValidUntil('')
       },
@@ -291,64 +321,76 @@ function AssignRoleModal({ open, onClose, roles }) {
   const revokeMut = useMutation(
     (rid) => rolesApi.revoke(selectedUser.id, rid),
     {
-      onSuccess: () => {
-        toast.success('Role revoked')
-        qc.invalidateQueries(['user-roles', selectedUser?.id])
-      },
-      onError: (err) => toast.error(err?.response?.data?.message ?? 'Cannot revoke system role'),
+      onSuccess: () => { toast.success('Role revoked'); qc.invalidateQueries(['user-roles', selectedUser?.id]) },
+      onError:   (err) => toast.error(err?.response?.data?.message ?? 'Cannot revoke system role'),
     }
   )
 
   if (!open) return null
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative bg-white rounded-2xl shadow-xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+    <div className="fixed inset-0 z-40 flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-slate-900/30 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-white rounded-2xl shadow-2xl shadow-slate-200/80 w-full max-w-lg max-h-[90vh] overflow-y-auto ring-1 ring-slate-200/60">
 
-        {/* Modal header */}
-        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-          <h2 className="text-base font-semibold text-gray-800">Assign Role to User</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600"><X className="w-5 h-5" /></button>
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-indigo-50 flex items-center justify-center">
+              <UserCheck className="w-4 h-4 text-indigo-600" />
+            </div>
+            <div>
+              <h2 className="text-sm font-semibold text-slate-800">Assign Role to User</h2>
+              <p className="text-xs text-slate-400 mt-0.5">Search for an existing user and assign a role</p>
+            </div>
+          </div>
+          <button onClick={onClose} className="p-1.5 rounded-lg hover:bg-slate-100 text-slate-400 hover:text-slate-600 transition-colors">
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="px-6 py-5 space-y-5">
 
-          {/* Step 1 — pick user */}
+          {/* Step 1 — search user */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Search User</label>
+            <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1.5">
+              Search User
+            </label>
             <UserSearchCombobox onSelect={setSelectedUser} />
           </div>
 
-          {/* Selected user info */}
+          {/* Selected user card */}
           {selectedUser && (
             <div className="bg-indigo-50 border border-indigo-100 rounded-xl px-4 py-3 flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-indigo-100 flex items-center justify-center">
+              <div className="w-9 h-9 rounded-full bg-indigo-100 flex items-center justify-center flex-shrink-0">
                 <User className="w-4 h-4 text-indigo-600" />
               </div>
-              <div>
-                <p className="text-sm font-medium text-indigo-900">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-medium text-indigo-900 truncate">
                   {selectedUser.staffProfile?.fullName ?? selectedUser.phoneNumber}
                 </p>
-                <p className="text-xs text-indigo-500 font-mono">{selectedUser.id}</p>
+                <p className="text-[11px] text-indigo-400 font-mono mt-0.5">{selectedUser.id}</p>
               </div>
             </div>
           )}
 
-          {/* Current roles on this user */}
+          {/* Current roles */}
           {selectedUser && userRoles.length > 0 && (
             <div>
-              <p className="text-xs text-gray-400 mb-2">Current Roles</p>
+              <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-2">
+                Current Roles
+              </label>
               <div className="flex flex-wrap gap-2">
                 {userRoles.map(r => (
-                  <span key={r.id} className="flex items-center gap-1.5 pl-3 pr-2 py-1 bg-gray-100 rounded-lg text-xs text-gray-700">
+                  <span key={r.id}
+                    className="flex items-center gap-1.5 pl-3 pr-1.5 py-1 bg-white border border-slate-200 rounded-lg text-xs text-slate-700 shadow-sm">
+                    <Shield className="w-3 h-3 text-indigo-400" />
                     {r.displayName ?? r.name}
                     <button
                       onClick={() => revokeMut.mutate(r.id)}
                       disabled={revokeMut.isLoading}
-                      className="text-gray-400 hover:text-red-500 transition-colors"
-                      title="Revoke role"
-                    >
+                      title="Revoke"
+                      className="ml-0.5 text-slate-400 hover:text-red-500 transition-colors disabled:opacity-40">
                       <X className="w-3 h-3" />
                     </button>
                   </span>
@@ -359,12 +401,10 @@ function AssignRoleModal({ open, onClose, roles }) {
 
           {/* Step 2 — pick role */}
           <div>
-            <label className="block text-xs text-gray-400 mb-1.5">Role to Assign</label>
-            <select
-              className="w-full h-10 border border-gray-200 rounded-xl px-3 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-white"
-              value={roleId}
-              onChange={e => setRoleId(e.target.value)}
-            >
+            <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1.5">
+              Role to Assign
+            </label>
+            <select className={inputCls} value={roleId} onChange={e => setRoleId(e.target.value)}>
               <option value="">Select a role…</option>
               {roles.map(r => (
                 <option key={r.id} value={r.id}>{r.displayName ?? r.name}</option>
@@ -372,36 +412,40 @@ function AssignRoleModal({ open, onClose, roles }) {
             </select>
           </div>
 
-          {/* Optional validity window */}
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Valid From (optional)</label>
-              <input type="datetime-local" value={validFrom} onChange={e => setValidFrom(e.target.value)}
-                className="w-full h-10 border border-gray-200 rounded-xl px-3 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
-            </div>
-            <div>
-              <label className="block text-xs text-gray-400 mb-1.5">Valid Until (optional)</label>
-              <input type="datetime-local" value={validUntil} onChange={e => setValidUntil(e.target.value)}
-                className="w-full h-10 border border-gray-200 rounded-xl px-3 text-sm text-gray-800 outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100" />
+          {/* Validity window */}
+          <div>
+            <label className="block text-[11px] font-medium text-slate-500 uppercase tracking-wider mb-1.5">
+              Validity Window <span className="text-slate-400 normal-case font-normal">(optional)</span>
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <p className="text-[11px] text-slate-400 mb-1">From</p>
+                <input type="datetime-local" value={validFrom}
+                  onChange={e => setValidFrom(e.target.value)}
+                  className={inputCls} />
+              </div>
+              <div>
+                <p className="text-[11px] text-slate-400 mb-1">Until</p>
+                <input type="datetime-local" value={validUntil}
+                  onChange={e => setValidUntil(e.target.value)}
+                  className={inputCls} />
+              </div>
             </div>
           </div>
 
           {/* Actions */}
           <div className="flex gap-2 pt-1">
-            <button
-              onClick={onClose}
-              className="flex-1 h-10 rounded-xl border border-gray-200 text-sm text-gray-600 hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={onClose}
+              className="flex-1 h-10 rounded-lg border border-slate-200 text-sm text-slate-600 hover:bg-slate-50 transition-colors">
               Cancel
             </button>
             <button
               onClick={() => assignMut.mutate()}
               disabled={!selectedUser || !roleId || assignMut.isLoading}
-              className="flex-1 h-10 rounded-xl bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors"
-            >
+              className="flex-1 h-10 rounded-lg bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white text-sm font-medium flex items-center justify-center gap-2 transition-colors">
               {assignMut.isLoading
-                ? <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                : <><Plus className="w-4 h-4" /> Assign Role</>}
+                ? <Spin size={14} />
+                : <><Plus className="w-4 h-4" />Assign Role</>}
             </button>
           </div>
         </div>
@@ -410,12 +454,11 @@ function AssignRoleModal({ open, onClose, roles }) {
   )
 }
 
-/* ══════════════════════════════════════════════════════
+/* ═══════════════════════════════════════════
    MAIN PAGE
-══════════════════════════════════════════════════════ */
-
+═══════════════════════════════════════════ */
 export default function RolesPage() {
-  const navigate = useNavigate()
+  const navigate    = useNavigate()
   const [showAssign, setShowAssign] = useState(false)
 
   const { data: rolesData, isLoading: rolesLoading } = useQuery('roles', rolesApi.getAll)
@@ -423,47 +466,47 @@ export default function RolesPage() {
 
   const roles          = rolesData?.data?.data ?? rolesData?.data ?? []
   const allPermissions = permsData?.data?.data ?? permsData?.data ?? []
-
-  const loading = rolesLoading || permsLoading
+  const loading        = rolesLoading || permsLoading
 
   return (
-    <div className="min-h-screen bg-gray-50 p-6">
-      <div className="max-w-4xl mx-auto">
+    <div className="min-h-screen bg-slate-50">
+      <div className="max-w-4xl mx-auto px-6 py-8">
 
-        <button onClick={() => navigate(-1)} className="flex items-center gap-2 text-sm text-blue-600 mb-5 hover:underline">
-          <ArrowLeft size={16} /> Back
+        {/* Back */}
+        <button onClick={() => navigate(-1)}
+          className="flex items-center gap-1.5 text-sm text-blue-600 hover:text-blue-700 mb-5 transition-colors">
+          <ArrowLeft className="w-4 h-4" /> Back
         </button>
 
         {/* Page header */}
         <div className="flex items-center justify-between mb-6">
           <div>
-            <h1 className="text-xl font-semibold text-gray-800">Roles & Permissions</h1>
-            <p className="text-xs text-gray-400 mt-0.5">
-              Click a role to expand and manage its permissions. Assign roles to users below.
+            <h1 className="text-xl font-semibold text-slate-800">Roles & Permissions</h1>
+            <p className="text-xs text-slate-400 mt-0.5">
+              Expand a role to manage its permissions · Use "Assign Role" to grant roles to users
             </p>
           </div>
           <button
             onClick={() => setShowAssign(true)}
-            className="flex items-center gap-2 h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" /> Assign Role
+            className="flex items-center gap-2 h-9 px-4 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm shadow-blue-200">
+            <UserCheck className="w-4 h-4" /> Assign Role
           </button>
         </div>
 
-        {/* Role list */}
-        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-          <div className="px-5 py-3.5 border-b border-gray-100 flex items-center justify-between">
-            <p className="text-sm font-medium text-gray-700">All Roles</p>
-            <p className="text-xs text-gray-400">{roles.length} roles · {allPermissions.length} permissions available</p>
+        {/* Role list card */}
+        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+          <div className="px-5 py-3.5 border-b border-slate-100 flex items-center justify-between">
+            <p className="text-sm font-medium text-slate-700">All Roles</p>
+            <p className="text-xs text-slate-400">
+              {roles.length} roles · {allPermissions.length} permissions
+            </p>
           </div>
 
-          {loading && (
-            <div className="flex justify-center py-12">
-              <span className="text-sm text-gray-400 animate-pulse">Loading…</span>
+          {loading ? (
+            <div className="flex justify-center items-center py-16">
+              <Spin size={20} />
             </div>
-          )}
-
-          {!loading && (
+          ) : (
             <div className="p-4 space-y-2">
               {roles.map(role => (
                 <RoleRow key={role.id} role={role} allPermissions={allPermissions} />

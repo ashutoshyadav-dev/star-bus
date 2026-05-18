@@ -21,9 +21,6 @@ const navItems = [
   { label: "Route Management", path: "/admin/routes",         icon: Route },
   { label: "Bus Management",   path: "/admin/buses",          icon: Bus },
   { label: "Schedules",           path: "/admin/schedules",   icon: CalendarDays, perm: "schedule:view"},
-  { label: "Bus Stops",        path: "/admin/stops",          icon: MapPin },
-  { label: "Ticket Types",     path: "/admin/tickets",        icon: Ticket },
-  { label: "QR Management",    path: "/admin/qr",             icon: QrCode },
 ];
 
 const masterItems = [

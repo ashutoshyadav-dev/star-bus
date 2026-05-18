@@ -30,9 +30,6 @@ import BusListPage from "./pages/bus/BusListPage";
 import BusFormPage from "./pages/bus/BusFormPage";
 import BusDetailPage from "./pages/bus/BusDetailPage";
 import BusTypesPage from "./pages/bus/BusTypesPage";
-import BusStop from "./pages/BusStop";
-import TicketType from "./pages/TicketType";
-import QrManagement from "./pages/QrManagement";
 import AddUser from "./pages/AddUser";
 import AddRoute from "./pages/AddRoute";
 import AdminPassengerProfile from "./components/admin/AdminPassengerProfile";
@@ -69,11 +66,9 @@ import BookingDetails from "./components/customer/BookingDetails";
 import Profile from "./components/customer/Profile";
 import Helpdesk from "./components/customer/Helpdesk";
 import BookTicket from "./components/customer/BookTicket";
-import SearchResults from "./components/customer/SearchResults";
-import Checkout from "./components/customer/Checkout";
-import Payment from "./components/customer/Payment";
-import TicketConfirmation from "./components/customer/TicketConfirmation";
-import SeatSelection2 from "./components/customer/SeatSelection2";
+
+
+
 
 // ── Role constants ──────────────────────────────────────────────────────────
 const ADMIN_ROLES = [
@@ -185,14 +180,6 @@ function AppRoutes() {
 
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="book-ticket" element={<BookTicket />} />
-        <Route path="search-results" element={<SearchResults />} />
-        <Route path="seat" element={<SeatSelection2 />} />
-        <Route path="checkout" element={<Checkout />} />
-        <Route path="payment" element={<Payment />} />
-        <Route
-          path="ticket-confirmation"
-          element={<TicketConfirmation />}
-        />
         <Route path="my-bookings" element={<MyBookings />} />
         <Route path="booking/:id" element={<BookingDetails />} />
         <Route path="profile" element={<Profile />} />
@@ -226,9 +213,6 @@ function AppRoutes() {
         <Route path="/admin/buses/:id"      element={<BusDetailPage />} />
         <Route path="/admin/buses/:id/edit" element={<BusFormPage />} />
         <Route path="/admin/bus-types"      element={<BusTypesPage />} />
-        <Route path="/admin/stops"          element={<BusStop />} />
-        <Route path="/admin/tickets"        element={<TicketType />} />
-        <Route path="/admin/qr"             element={<QrManagement />} />
         <Route path="/admin/adduser"        element={<AddUser />} />
         <Route path="/admin/addroute"       element={<AddRoute />} />
         {/* <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/> */}
