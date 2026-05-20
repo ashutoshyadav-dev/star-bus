@@ -25,22 +25,66 @@ export function AuthProvider({ children }) {
 
   const [isInitialized, setIsInitialized] = useState(false);
 
-  useEffect(() => {
-    // Validate stored token on mount
-    const token = localStorage.getItem("accessToken");
-    if (token) {
-      const payload = parseJwt(token);
-      if (payload && payload.exp * 1000 < Date.now()) {
-        // Token expired — attempt refresh or clear
-        const refreshToken = localStorage.getItem("refreshToken");
-        if (!refreshToken) {
+
+useEffect(() => {
+  const initAuth = async () => {
+    const accessToken  = localStorage.getItem("accessToken");
+    const refreshToken = localStorage.getItem("refreshToken");
+
+    if (!accessToken || !refreshToken) {
+      setIsInitialized(true);
+      return;
+    }
+
+    // Check if refresh token itself is expired
+    const refreshPayload = parseJwt(refreshToken);
+    if (!refreshPayload || refreshPayload.exp * 1000 < Date.now()) {
+      localStorage.clear();
+      setUser(null);
+      setIsInitialized(true);
+      return;
+    }
+
+    // Check if access token is expired — proactively refresh
+    const accessPayload = parseJwt(accessToken);
+    if (!accessPayload || accessPayload.exp * 1000 < Date.now()) {
+      try {
+        const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:7000/apbus/api/v1";
+        const { data } = await fetch(`${BASE_URL}/auth/token/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        }).then((r) => r.json());
+
+        const res = data?.data ?? data;
+        if (res?.accessToken) {
+          const jwtClaims    = parseJwt(res.accessToken);
+          const storedUser   = JSON.parse(localStorage.getItem("user") || "{}");
+          const resolvedUser = {
+            ...storedUser,
+            ...jwtClaims,
+            roles:       storedUser?.roles       ?? jwtClaims?.roles ?? [],
+            permissions: storedUser?.permissions ?? jwtClaims?.perms ?? [],
+          };
+          localStorage.setItem("accessToken",  res.accessToken);
+          localStorage.setItem("refreshToken", res.refreshToken ?? refreshToken);
+          localStorage.setItem("user", JSON.stringify(resolvedUser));
+          setUser(resolvedUser);
+        } else {
           localStorage.clear();
           setUser(null);
         }
+      } catch {
+        localStorage.clear();
+        setUser(null);
       }
     }
+
     setIsInitialized(true);
-  }, []);
+  };
+
+  initAuth();
+}, []);
 
   const saveTokens = useCallback((accessToken, refreshToken, userData) => {
     localStorage.setItem("accessToken", accessToken);

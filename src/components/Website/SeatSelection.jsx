@@ -9,6 +9,7 @@ import sideBg from "../../assets/side-bg.jpeg";
 import { getScheduleSeats, lockScheduleSeat } from "../../api/schedule";
 import { bookingApi, paymentApi } from "../../api/booking";
 import { ProgressBar } from "./BusList";
+import { loadRazorpay } from "../../utils/loadRazorpay";
 
 /* ─── Constants ─────────────────────────────────────────────────────────────── */
 
@@ -441,6 +442,16 @@ const handleInitiatePayment = async () => {
 
   setInitiating(true);
   setPaymentFailed(false);
+
+  //  Load Razorpay only when user actually pays (not on page load)
+  if (paymentMethod !== "WALLET") {
+    const loaded = await loadRazorpay();
+    if (!loaded) {
+      toast.error("Payment gateway failed to load. Check your internet connection.");
+      setInitiating(false);
+      return;
+    }
+  }
 
   try {
     const bookingId = booking.bookingId ?? booking.id;

@@ -35,6 +35,10 @@ function Sidebar({ isOpen }) {
           <FiSearch className="text-lg flex-shrink-0" />
           {isOpen && <span>Book Ticket</span>}
         </NavLink>
+        <NavLink to="/user/my-refunds"   className={linkClass}>
+          <FiCreditCard className="text-lg flex-shrink-0" />
+          {isOpen && <span>Refunds</span>}
+        </NavLink>
         <NavLink to="/user/profile"        className={linkClass}>
           <FiUser className="text-lg flex-shrink-0" />
           {isOpen && <span>Profile</span>}

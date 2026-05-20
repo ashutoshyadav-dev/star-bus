@@ -66,7 +66,7 @@ import BookingDetails from "./components/customer/BookingDetails";
 import Profile from "./components/customer/Profile";
 import Helpdesk from "./components/customer/Helpdesk";
 import BookTicket from "./components/customer/BookTicket";
-
+import MyRefunds from "./components/customer/MyRefund";
 
 
 
@@ -184,6 +184,7 @@ function AppRoutes() {
         <Route path="booking/:id" element={<BookingDetails />} />
         <Route path="profile" element={<Profile />} />
         <Route path="helpdesk" element={<Helpdesk />} />
+        <Route path="/user/my-refunds" element={<MyRefunds />} />
       </Route>
 
       {/* ── Admin Area ────────────────────────────────────── */}

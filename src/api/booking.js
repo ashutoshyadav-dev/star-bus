@@ -21,10 +21,14 @@ export const paymentApi = {
 }
 
 export const refundApi = {
+  getMine:        ()           => api.get('/refunds/my'),
   getByBookingId: (bookingId)  => api.get(`/refunds/booking/${bookingId}`),
   getById:        (id)         => api.get(`/refunds/${id}`),
+  getAll:         ()           => api.get('/refunds/admin/all'),      
   getPending:     ()           => api.get('/refunds/admin/pending'),
   process:        (data)       => api.post('/refunds/admin/process', data),
+  markCompleted:  (gwId)       => api.post('/refunds/webhook/completed', null,
+                                    { params: { gatewayRefundId: gwId } }),
 }
 
 export const walletApi = {
