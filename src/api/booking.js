@@ -31,8 +31,3 @@ export const refundApi = {
                                     { params: { gatewayRefundId: gwId } }),
 }
 
-export const walletApi = {
-  get:          ()       => api.get('/wallet'),
-  topUp:        (data)   => api.post('/wallet/topup', data),
-  getStatement: (params) => api.get('/wallet/statement', { params }),
-}

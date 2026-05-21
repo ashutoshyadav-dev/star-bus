@@ -21,7 +21,7 @@ import AuditPage from "./pages/audit/AuditPage";
 import BookingsPage from "./pages/booking/BookingsPage";
 import PaymentsPage from "./pages/payment/PaymentsPage";
 import RefundsPage from "./pages/refund/RefundsPage";
-import WalletPage from "./pages/wallet/WalletPage";
+import AdminWalletPage from "./pages/wallet/AdminWalletPage";
 import UserManagement from "./pages/UserManagement";
 import RouteManagement from "./pages/RouteManagement";
 import DepotForm from "./pages/DepotForm";
@@ -67,6 +67,7 @@ import Profile from "./components/customer/Profile";
 import Helpdesk from "./components/customer/Helpdesk";
 import BookTicket from "./components/customer/BookTicket";
 import MyRefunds from "./components/customer/MyRefund";
+import MyWallet from "./components/customer/CustomerWalletPage"
 
 
 
@@ -185,6 +186,7 @@ function AppRoutes() {
         <Route path="profile" element={<Profile />} />
         <Route path="helpdesk" element={<Helpdesk />} />
         <Route path="/user/my-refunds" element={<MyRefunds />} />
+        <Route path="/user/wallet" element={<MyWallet/>} />
       </Route>
 
       {/* ── Admin Area ────────────────────────────────────── */}
@@ -203,7 +205,7 @@ function AppRoutes() {
         <Route path="/admin/bookings"       element={<BookingsPage />} />
         <Route path="/admin/payments"       element={<PaymentsPage />} />
         <Route path="/admin/refunds"        element={<RefundsPage />} />
-        <Route path="/admin/wallet"         element={<WalletPage />} />
+        <Route path="/admin/wallet"         element={<AdminWalletPage />} />
         <Route path="/admin/usermanagement" element={<UserManagement />} />
         <Route path="/admin/routes"         element={<RouteManagement />} />
         <Route path="/admin/depot"          element={<DepotForm />} />

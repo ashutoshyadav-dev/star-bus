@@ -27,6 +27,10 @@ function Sidebar({ isOpen }) {
           <FiHome className="text-lg flex-shrink-0" />
           {isOpen && <span>Dashboard</span>}
         </NavLink>
+         <NavLink to="/user/profile"        className={linkClass}>
+          <FiUser className="text-lg flex-shrink-0" />
+          {isOpen && <span>Profile</span>}
+        </NavLink>
         <NavLink to="/user/my-bookings"    className={linkClass}>
           <FiCreditCard className="text-lg flex-shrink-0" />
           {isOpen && <span>My Bookings</span>}
@@ -39,9 +43,9 @@ function Sidebar({ isOpen }) {
           <FiCreditCard className="text-lg flex-shrink-0" />
           {isOpen && <span>Refunds</span>}
         </NavLink>
-        <NavLink to="/user/profile"        className={linkClass}>
+         <NavLink to="/user/wallet"        className={linkClass}>
           <FiUser className="text-lg flex-shrink-0" />
-          {isOpen && <span>Profile</span>}
+          {isOpen && <span>Wallet</span>}
         </NavLink>
         <NavLink to="/user/helpdesk"       className={linkClass}>
           <FiHeadphones className="text-lg flex-shrink-0" />
