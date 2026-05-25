@@ -31,7 +31,10 @@ export const updateScheduleStatus = (id, payload) =>
 export const toggleScheduleBooking = (id, open) =>
   api.patch(`/schedules/${id}/booking?open=${open}`);
 
-
+export const searchAvailableSchedules = (fromStationId, toStationId, date) =>
+    api.get('/schedules/search', {
+        params: { fromStationId, toStationId, date }
+    });
 /* ─────────────────────────────
    Seat Inventory APIs
 ───────────────────────────── */

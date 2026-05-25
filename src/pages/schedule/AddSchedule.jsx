@@ -1,21 +1,21 @@
-import React, { useState } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "react-query";
 import { useNavigate } from "react-router-dom";
 
 import {
   ArrowLeft,
+  Bus,
   Calendar,
   Clock,
-  Bus,
   Route as RouteIcon,
   Save,
 } from "lucide-react";
 
 import toast from "react-hot-toast";
 
-import { createSchedule } from "../../api/schedule";
-import { getAllRoutes } from "../../api/route";
 import { getAllBuses } from "../../api/bus";
+import { getAllRoutes, getStops } from "../../api/route";
+import { createSchedule } from "../../api/schedule";
 
 export default function AddSchedule() {
   const navigate = useNavigate();
@@ -27,6 +27,15 @@ export default function AddSchedule() {
     departureTime: "",
     bookingClosesAt: "",
   });
+
+
+  const { data: stopsData } = useQuery(
+  ["stops", form.routeId],
+  () => getStops(form.routeId),
+  { enabled: !!form.routeId }
+);
+const stopCount = stopsData?.data?.data?.length ?? 0;
+const routeHasEnoughStops = !form.routeId || stopCount >= 2;
 
   /* ROUTES */
   const {
@@ -50,9 +59,14 @@ export default function AddSchedule() {
     response.data
     and direct array response
   */
-const routes = Array.isArray(routesResponse?.data?.data)
+// const routes = Array.isArray(routesResponse?.data?.data)
+//   ? routesResponse.data.data
+//   : [];
+
+const allRoutes = Array.isArray(routesResponse?.data?.data)
   ? routesResponse.data.data
   : [];
+const routes = allRoutes.filter(r => r.status === "active" || r.status === "ACTIVE");
 
 const buses = Array.isArray(busesResponse?.data)
   ? busesResponse.data
@@ -280,7 +294,7 @@ const handleSubmit = (e) => {
             <div className="pt-4 flex justify-end">
               <button
                 type="submit"
-                disabled={createMutation.isLoading}
+                disabled={createMutation.isLoading || !routeHasEnoughStops}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-xl text-sm font-medium flex items-center gap-2 disabled:opacity-50"
               >
                 <Save size={18} />
@@ -290,6 +304,19 @@ const handleSubmit = (e) => {
                   : "Create Schedule"}
               </button>
             </div>
+
+            {form.routeId && stopCount < 2 && (
+                 <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700 flex items-start gap-2">
+                   <span className="text-amber-500 mt-0.5">⚠️</span>
+                   <div>
+                     <p className="font-medium">This route has {stopCount} stop{stopCount === 1 ? "" : "s"}.</p>
+                     <p className="text-xs mt-0.5">
+                       You need at least 2 stops before creating a schedule.
+                       Go to <strong>Route → Stops</strong> tab and add them first.
+                     </p>
+                   </div>
+                 </div>
+            )}
 
           </form>
         </div>

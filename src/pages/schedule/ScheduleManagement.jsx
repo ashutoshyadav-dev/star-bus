@@ -1,22 +1,22 @@
-import React, { useState } from "react";
 import {
-  Search,
-  Plus,
-  Eye,
-  Clock3,
   Bus,
-  Route,
+  CheckCircle,
+  Clock3,
+  Eye,
   Lock,
   LockOpen,
-  CheckCircle,
+  Plus,
+  Route,
+  Search,
   XCircle,
 } from "lucide-react";
+import { useState } from "react";
 
-import { useQuery, useMutation, useQueryClient } from "react-query";
-import { useNavigate } from "react-router-dom";
-import {getAllSchedules } from "../../api/schedule";
-import toast from "react-hot-toast";
 import { format } from "date-fns";
+import toast from "react-hot-toast";
+import { useMutation, useQuery, useQueryClient } from "react-query";
+import { useNavigate } from "react-router-dom";
+import { getAllSchedules, toggleScheduleBooking } from "../../api/schedule";
 
 const STATUS_COLORS = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -55,10 +55,11 @@ export default function ScheduleManagement() {
     }
   );
 
-  const schedules = data?.data ?? [];
+  // const schedules = data?.data ?? [];
+  const schedules = data?.data?.data ?? data?.data ?? [];
 
   const bookingMut = useMutation(
-    ({ id, open }) => scheduleApi.toggleBooking(id, open),
+    ({ id, open }) => toggleScheduleBooking(id, open),
     {
       onSuccess: () => {
         toast.success("Booking updated");
