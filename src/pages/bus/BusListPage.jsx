@@ -1,16 +1,25 @@
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { getAllBuses, updateBusStatus, deactivateBus } from "../../api/bus";
-import { FiEye, FiEdit2, FiPower } from "react-icons/fi"; // Added icons
+import toast from "react-hot-toast";
+import { getAllBuses, updateBusStatus, deactivateBus, updateBus } from "../../api/bus";
+import { FiEye, FiEdit2, FiPower } from "react-icons/fi";
 
 const BUS_STATUSES = ["active", "in_maintenance", "breakdown", "retired", "condemned"];
 
-const statusColor = {
-  active: "bg-green-100 text-green-700",
-  in_maintenance: "bg-yellow-100 text-yellow-700",
-  breakdown: "bg-red-100 text-red-600",
-  retired: "bg-gray-100 text-gray-500",
-  condemned: "bg-gray-200 text-gray-400",
+const STATUS_STYLE = {
+  active:         "bg-emerald-100 text-emerald-700",
+  in_maintenance: "bg-amber-100 text-amber-700",
+  breakdown:      "bg-red-100 text-red-600",
+  retired:        "bg-gray-100 text-gray-500",
+  condemned:      "bg-zinc-100 text-zinc-500",
+};
+
+const STATUS_CARD = {
+  active:         { bg: "bg-emerald-50", border: "border-emerald-200", text: "text-emerald-700", num: "text-emerald-800" },
+  in_maintenance: { bg: "bg-amber-50",   border: "border-amber-200",   text: "text-amber-700",   num: "text-amber-800"   },
+  breakdown:      { bg: "bg-red-50",     border: "border-red-200",     text: "text-red-600",     num: "text-red-800"     },
+  retired:        { bg: "bg-gray-50",    border: "border-gray-200",    text: "text-gray-500",    num: "text-gray-700"    },
+  condemned:      { bg: "bg-zinc-50",    border: "border-zinc-200",    text: "text-zinc-500",    num: "text-zinc-700"    },
 };
 
 export default function BusListPage() {
@@ -26,7 +35,7 @@ export default function BusListPage() {
       const { data } = await getAllBuses(statusFilter || undefined);
       setBuses(data);
     } catch {
-      alert("Failed to load buses.");
+      toast.error("Failed to load buses.");
     } finally {
       setLoading(false);
     }
@@ -37,19 +46,30 @@ export default function BusListPage() {
   const handleStatusChange = async (id, status) => {
     try {
       await updateBusStatus(id, status);
+      toast.success("Status updated.");
       load();
     } catch {
-      alert("Status update failed.");
+      toast.error("Status update failed.");
     }
   };
 
   const handleDeactivate = async (id) => {
-    if (!window.confirm("Deactivate this bus?")) return;
     try {
       await deactivateBus(id);
+      toast.success("Bus deactivated.");
       load();
     } catch {
-      alert("Deactivation failed.");
+      toast.error("Deactivation failed.");
+    }
+  };
+
+  const handleActivate = async (id) => {
+    try {
+      await updateBus(id, { isActive: true });
+      toast.success("Bus reactivated.");
+      load();
+    } catch {
+      toast.error("Activation failed.");
     }
   };
 
@@ -66,114 +86,125 @@ export default function BusListPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-white">Buses</h1>
-          <p className="text-sm text-white mt-0.5">{buses.length} vehicles in fleet</p>
+          <h1 className="text-2xl font-bold text-gray-900">Fleet Management</h1>
+          <p className="text-sm text-gray-500 mt-0.5">{buses.length} vehicles registered</p>
         </div>
         <button
           onClick={() => navigate("/admin/buses/new")}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors w-fit"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors w-fit shadow-sm"
         >
-          + Register Bus 
+          + Register Bus
         </button>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-3 mb-5">
-        <input
-          type="text"
-          placeholder="Search registration, make, model…"
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm w-full sm:max-w-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <select
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <option value="">All Statuses</option>
-          {BUS_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
-        </select>
-      </div>
-
       {/* Summary cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6">
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-5">
         {BUS_STATUSES.map((s) => {
           const count = buses.filter((b) => b.status === s).length;
+          const c = STATUS_CARD[s];
+          const active = statusFilter === s;
           return (
-            <div key={s} onClick={() => setStatusFilter(s === statusFilter ? "" : s)} className={`rounded-xl border p-3 cursor-pointer transition-all ${statusFilter === s ? "border-blue-500 bg-blue-50" : "border-gray-200 bg-white hover:border-blue-300"}`}>
-              <p className="text-xs text-gray-500 capitalize mb-1">{s.replace("_", " ")}</p>
-              <p className="text-2xl font-bold text-gray-800">{count}</p>
-            </div>
+            <button
+              key={s}
+              onClick={() => setStatusFilter(s === statusFilter ? "" : s)}
+              className={`rounded-xl border p-3 text-left transition-all ${
+                active
+                  ? `${c.bg} ${c.border} ring-2 ring-offset-1 ${c.text}`
+                  : "border-gray-200 bg-white hover:border-gray-300"
+              }`}
+            >
+              <p className={`text-xs capitalize mb-1 ${active ? c.text : "text-gray-400"}`}>{s.replace(/_/g, " ")}</p>
+              <p className={`text-2xl font-bold ${active ? c.num : "text-gray-800"}`}>{count}</p>
+            </button>
           );
         })}
       </div>
 
+      {/* Filters */}
+      <div className="flex flex-col sm:flex-row gap-3 mb-5">
+        <div className="relative sm:max-w-xs w-full">
+          <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-sm">🔍</span>
+          <input
+            type="text"
+            placeholder="Search reg. no., make, model…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="w-full border border-gray-200 rounded-xl pl-9 pr-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+          />
+        </div>
+        <select
+          value={statusFilter}
+          onChange={(e) => setStatusFilter(e.target.value)}
+          className="border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+        >
+          <option value="">All Statuses</option>
+          {BUS_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
+        </select>
+      </div>
+
       {/* Table */}
       {loading ? (
-        <div className="text-center py-16 text-gray-400">Loading…</div>
+        <div className="flex items-center justify-center py-20 text-gray-400">
+          <div className="flex flex-col items-center gap-3">
+            <div className="w-7 h-7 border-2 border-blue-400 border-t-transparent rounded-full animate-spin" />
+            <span className="text-sm">Loading buses…</span>
+          </div>
+        </div>
       ) : (
-        <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-x-auto">
-          <table className="w-full text-sm min-w-[900px]">
-            <thead className="bg-gray-50 border-b border-gray-200">
-              <tr>
+        <div className="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-x-auto">
+          <table className="w-full text-sm min-w-[920px]">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
                 {["Reg. No.", "Type", "Make / Model", "Year", "Seats", "Fuel", "Status", "Active", "Actions"].map((h) => (
-                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider border-b border-gray-100">{h}</th>
+                  <th key={h} className="px-4 py-3 text-left text-xs font-semibold text-gray-400 uppercase tracking-wider">{h}</th>
                 ))}
               </tr>
             </thead>
-            <tbody>
+            <tbody className="divide-y divide-gray-100">
               {filtered.map((bus) => (
-                <tr key={bus.id} className="hover:bg-gray-50 transition-colors border-b border-gray-100">
+                <tr key={bus.id} className="hover:bg-blue-50/30 transition-colors group">
                   <td className="px-4 py-3">
-                    <button onClick={() => navigate(`/admin/buses/${bus.id}`)} className="text-blue-600 hover:underline font-mono font-medium">
+                    <button
+                      onClick={() => navigate(`/admin/buses/${bus.id}`)}
+                      className="font-mono font-semibold text-blue-600 hover:text-blue-800 hover:underline underline-offset-2 text-sm tracking-wide"
+                    >
                       {bus.registrationNumber}
                     </button>
                   </td>
-                  <td className="px-4 py-3 text-gray-600">{bus.busTypeName ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-800">{[bus.make, bus.model].filter(Boolean).join(" ") || "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{bus.manufacturingYear ?? "—"}</td>
-                  <td className="px-4 py-3 text-gray-600">{bus.seatingCapacity}</td>
+                  <td className="px-4 py-3 text-gray-500 text-xs">{bus.busTypeName ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-800 font-medium">{[bus.make, bus.model].filter(Boolean).join(" ") || "—"}</td>
+                  <td className="px-4 py-3 text-gray-500">{bus.manufacturingYear ?? "—"}</td>
+                  <td className="px-4 py-3 text-gray-600">{bus.seatingCapacity ?? "—"}</td>
                   <td className="px-4 py-3 text-gray-600 capitalize">{bus.fuelType ?? "—"}</td>
                   <td className="px-4 py-3">
                     <select
                       value={bus.status}
                       onChange={(e) => handleStatusChange(bus.id, e.target.value)}
-                      className={`text-xs font-medium px-2 py-1 rounded-full border-0 cursor-pointer focus:outline-none ${statusColor[bus.status] ?? ""}`}
+                      className={`text-xs font-semibold px-2.5 py-1 rounded-full border-0 cursor-pointer focus:outline-none focus:ring-2 focus:ring-blue-400 ${STATUS_STYLE[bus.status] ?? ""}`}
                     >
-                      {BUS_STATUSES.map((s) => <option key={s} value={s}>{s.replace("_", " ")}</option>)}
+                      {BUS_STATUSES.map((s) => <option key={s} value={s}>{s.replace(/_/g, " ")}</option>)}
                     </select>
                   </td>
                   <td className="px-4 py-3">
-                    <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${bus.isActive ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"}`}>
+                    <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${bus.isActive ? "bg-emerald-100 text-emerald-700" : "bg-gray-100 text-gray-400"}`}>
                       {bus.isActive ? "Yes" : "No"}
                     </span>
                   </td>
                   <td className="px-4 py-3">
-                    <div className="flex gap-3 items-center">
-                      <button
-                        onClick={() => navigate(`/admin/buses/${bus.id}`)}
-                        className="text-blue-600 hover:text-blue-800"
-                        title="View"
-                      >
-                        <FiEye />
+                    <div className="flex gap-1 items-center opacity-60 group-hover:opacity-100 transition-opacity">
+                      <button onClick={() => navigate(`/admin/buses/${bus.id}`)} className="p-1.5 rounded-lg hover:bg-blue-100 text-blue-600 transition-colors" title="View">
+                        <FiEye size={14} />
                       </button>
-
-                      <button
-                        onClick={() => navigate(`/admin/buses/${bus.id}/edit`)}
-                        className="text-green-600 hover:text-green-800"
-                        title="Edit"
-                      >
-                        <FiEdit2 />
+                      <button onClick={() => navigate(`/admin/buses/${bus.id}/edit`)} className="p-1.5 rounded-lg hover:bg-green-100 text-green-600 transition-colors" title="Edit">
+                        <FiEdit2 size={14} />
                       </button>
-
-                      {bus.isActive && (
-                        <button
-                          onClick={() => handleDeactivate(bus.id)}
-                          className="text-red-500 hover:text-red-700"
-                          title="Deactivate"
-                        >
-                          <FiPower />
+                      {bus.isActive ? (
+                        <button onClick={() => handleDeactivate(bus.id)} className="p-1.5 rounded-lg hover:bg-red-100 text-red-500 transition-colors" title="Deactivate">
+                          <FiPower size={14} />
+                        </button>
+                      ) : (
+                        <button onClick={() => handleActivate(bus.id)} className="p-1.5 rounded-lg hover:bg-emerald-100 text-gray-400 hover:text-emerald-600 transition-colors" title="Reactivate">
+                          <FiPower size={14} />
                         </button>
                       )}
                     </div>
@@ -181,7 +212,14 @@ export default function BusListPage() {
                 </tr>
               ))}
               {filtered.length === 0 && (
-                <tr><td colSpan={9} className="text-center py-10 text-gray-400">No buses found.</td></tr>
+                <tr>
+                  <td colSpan={9} className="text-center py-16 text-gray-400">
+                    <div className="flex flex-col items-center gap-2">
+                      <span className="text-3xl">🚌</span>
+                      <span className="text-sm">No buses found.</span>
+                    </div>
+                  </td>
+                </tr>
               )}
             </tbody>
           </table>

@@ -1,12 +1,3 @@
-// src/pages/auth/LoginPage.jsx
-//
-// KEY FIXES:
-//  1. OTP purpose is explicitly set and sent with EVERY request and verify call.
-//  2. The auto-register-on-404 fallback is REMOVED from the login flow.
-//     Instead, when a 404 is detected during OTP login, the user is informed
-//     and given the option to switch to the Register tab.
-//  3. OTP timer is extracted into the useOtpTimer hook (no inline setInterval).
-//  4. Phone validation is consistent (no partial state leaks).
 
 import { useState } from "react";
 import toast from "react-hot-toast";

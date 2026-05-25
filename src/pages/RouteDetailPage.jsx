@@ -566,9 +566,11 @@ export default function RouteDetailPage() {
   if (isLoading) return <div className="p-8 text-center text-gray-400">Loading route details…</div>;
   if (!route)    return <div className="p-8 text-center text-red-400">Route not found.</div>;
 
-  const statusColor = route.status === "active" || route.status === "ACTIVE" ? "green"
-    : route.status === "suspended" || route.status === "SUSPENDED" ? "red"
-    : "gray";
+ const statusColor = route.status === "active"    ? "green"
+                  : route.status === "suspended" ? "red"
+                  : route.status === "cancelled" ? "gray"
+                  : route.status === "seasonal"  ? "yellow"
+                  : "gray";
 
   return (
     <div className="p-6 min-h-screen bg-gray-50 text-gray-800">

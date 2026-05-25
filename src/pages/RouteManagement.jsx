@@ -6,23 +6,28 @@ import { getAllRoutes, suspendRoute, activateRoute } from "../api/route";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 
+// Keys are lowercase to match backend RouteStatus enum
 const STATUS_COLORS = {
-  ACTIVE:    "bg-green-100 text-green-700",
-  SUSPENDED: "bg-red-100 text-red-600",
-  INACTIVE:  "bg-gray-200 text-gray-600",
+  active:    "bg-green-100 text-green-700",
+  suspended: "bg-red-100 text-red-600",
+  seasonal:  "bg-yellow-100 text-yellow-700",
+  cancelled: "bg-gray-200 text-gray-600",
 };
 
+// Keys are lowercase to match backend RouteType enum
 const ROUTE_TYPE_COLORS = {
-  EXPRESS:       "bg-purple-50 text-purple-700 border-purple-200",
-  SUPER_EXPRESS: "bg-pink-50 text-pink-700 border-pink-200",
-  URBAN:         "bg-blue-50 text-blue-700 border-blue-200",
-  SUBURBAN:      "bg-indigo-50 text-indigo-700 border-indigo-200",
-  RURAL:         "bg-amber-50 text-amber-700 border-amber-200",
+  ordinary:   "bg-indigo-50 text-indigo-700 border-indigo-200",
+  semi_deluxe:"bg-blue-50 text-blue-700 border-blue-200",
+  deluxe:     "bg-purple-50 text-purple-700 border-purple-200",
+  express:    "bg-pink-50 text-pink-700 border-pink-200",
+  volvo_ac:   "bg-cyan-50 text-cyan-700 border-cyan-200",
+  xylo:       "bg-amber-50 text-amber-700 border-amber-200",
+  sumo:       "bg-orange-50 text-orange-700 border-orange-200",
 };
 
 function StatusBadge({ status }) {
   const cls = STATUS_COLORS[status] ?? "bg-gray-100 text-gray-500";
-  const icon = status === "ACTIVE"
+  const icon = status === "active"
     ? <CheckCircle size={12} />
     : <Ban size={12} />;
   return (
@@ -53,7 +58,7 @@ export default function RouteManagement() {
   /* ── mutations ── */
   const suspendMut = useMutation(
     ({ id, reason }) =>
-      suspendRoute(id, { status: "SUSPENDED", suspensionReason: reason }),
+      suspendRoute(id, { status: "suspended", suspensionReason: reason }),
     {
       onSuccess: () => {
         toast.success("Route suspended");
@@ -111,7 +116,7 @@ export default function RouteManagement() {
             onClick={() => navigate("/admin/addroute")}
             className="bg-blue-600 text-white px-5 py-2 rounded-lg hover:bg-blue-700 flex items-center gap-2 text-sm"
           >
-            <Plus size={16} /> Add Route 
+            <Plus size={16} /> Add Route
           </button>
         </div>
 
@@ -127,24 +132,29 @@ export default function RouteManagement() {
               onChange={(e) => { setSearch(e.target.value); setCurrentPage(1); }}
             />
           </div>
+
+          {/* Status filter — values match backend RouteStatus enum exactly */}
           <select
             className="border rounded-lg px-3 py-2 text-sm outline-none"
             value={statusFilter}
             onChange={(e) => { setStatusFilter(e.target.value); setCurrentPage(1); }}
           >
             <option value="">All Status</option>
-            <option value="ACTIVE">Active</option>
-            <option value="SUSPENDED">Suspended</option>
-            <option value="INACTIVE">Inactive</option>
+            <option value="active">Active</option>
+            <option value="suspended">Suspended</option>
+            <option value="seasonal">Seasonal</option>
+            <option value="cancelled">Cancelled</option>
           </select>
+
+          {/* Type filter — values match backend RouteType enum exactly */}
           <select
             className="border rounded-lg px-3 py-2 text-sm outline-none"
             value={typeFilter}
             onChange={(e) => { setTypeFilter(e.target.value); setCurrentPage(1); }}
           >
             <option value="">All Types</option>
-            {["URBAN","SUBURBAN","RURAL","EXPRESS","SUPER_EXPRESS"].map(t => (
-              <option key={t} value={t}>{t.replace("_"," ")}</option>
+            {["ordinary","semi_deluxe","deluxe","express","volvo_ac","xylo","sumo"].map(t => (
+              <option key={t} value={t}>{t.replace(/_/g, " ")}</option>
             ))}
           </select>
         </div>
@@ -191,7 +201,7 @@ export default function RouteManagement() {
                       <td className="px-4 py-3 text-xs text-gray-500 whitespace-nowrap">{route.operatingDepotName ?? "—"}</td>
                       <td className="px-4 py-3">
                         <span className={`text-xs px-2 py-0.5 rounded-full border font-medium ${ROUTE_TYPE_COLORS[route.routeType] ?? "bg-gray-100 text-gray-600 border-gray-200"}`}>
-                          {route.routeType?.replace("_"," ") ?? "—"}
+                          {route.routeType?.replace(/_/g, " ") ?? "—"}
                         </span>
                       </td>
                       <td className="px-4 py-3 whitespace-nowrap text-gray-600">
@@ -216,7 +226,7 @@ export default function RouteManagement() {
                             title="Edit"
                             className="p-1.5 hover:bg-yellow-100 text-yellow-600 rounded"
                           ><Pencil size={15} /></button>
-                          {route.status !== "ACTIVE" && (
+                          {route.status !== "active" && (
                             <button
                               onClick={() => activateMut.mutate(route.id)}
                               title="Activate"
@@ -224,7 +234,7 @@ export default function RouteManagement() {
                               className="p-1.5 hover:bg-emerald-100 text-emerald-600 rounded disabled:opacity-40"
                             ><ShieldCheck size={15} /></button>
                           )}
-                          {route.status === "ACTIVE" && (
+                          {route.status === "active" && (
                             <button
                               onClick={() => { setSuspendTarget(route.id); setSuspendModal(true); }}
                               title="Suspend"

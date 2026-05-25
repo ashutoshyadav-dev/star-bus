@@ -24,6 +24,7 @@ export const createBus          = (payload)             => api.post("/buses", pa
 export const updateBus          = (id, payload)         => api.put(`/buses/${id}`, payload);
 export const updateBusStatus    = (id, status)          => api.patch(`/buses/${id}/status?status=${status}`);
 export const deactivateBus      = (id)                  => api.delete(`/buses/${id}`);
+export const activateBus        = (id)                  =>api.patch(`/buses/${id}/activate`);
 
 // ── Bus Seats ────────────────────────────────────────────────────────────────
 export const getSeatsByBus = (busId,activeOnly = false) =>api.get(`/busSeat/buses/${busId}/seats`, {params: {activeOnly,},});
