@@ -8,7 +8,9 @@ import {
   MapPin, Navigation,
   Pencil,
   Plus,
-  Trash2
+  Trash2,
+  ArrowUp, 
+  ArrowDown
 } from "lucide-react";
 import { useState } from "react";
 import toast from "react-hot-toast";
@@ -20,7 +22,8 @@ import {
   getRouteDetail, getStops, getViaPoints,
   removeStop,
   removeViaPoint,
-  updateStop
+  updateStop,
+  reorderStop
 } from "../api/route";
 import { stationApi } from "../api/station";
 
@@ -85,6 +88,14 @@ function StopsTab({ routeId }) {
     onSuccess: () => { toast.success("Stop removed"); qc.invalidateQueries(["stops", routeId]); },
     onError: () => toast.error("Failed to remove stop"),
   });
+
+  const reorderMut = useMutation(
+  ({ id, newSequence }) => reorderStop(id, newSequence),
+  {
+    onSuccess: () => { toast.success("Stop reordered"); qc.invalidateQueries(["stops", routeId]); },
+    onError: () => toast.error("Failed to reorder stop"),
+  }
+);
 
   // FIX: send null when sequence is empty (backend will auto-append at end)
   const handleAdd = () => {
@@ -188,6 +199,25 @@ function StopsTab({ routeId }) {
                   <td className="px-3 py-2">{s.isAlightingAllowed ? <Badge color="green">Yes</Badge> : <Badge color="red">No</Badge>}</td>
                   <td className="px-3 py-2">
                     <div className="flex gap-1">
+                      <button
+                        title="Move up"
+                        disabled={s.stopSequence === 1 || reorderMut.isLoading}
+                        onClick={() => reorderMut.mutate({ id: s.id, newSequence: s.stopSequence - 1 })}
+                        className="p-1.5 hover:bg-blue-100 text-blue-400 rounded disabled:opacity-20 disabled:cursor-not-allowed"
+                      >
+                        <ArrowUp size={13} />
+                      </button>
+                  
+                      {/* ── NEW: Move Down button — disabled for last stop ── */}
+                      <button
+                        title="Move down"
+                        disabled={s.stopSequence === stops.length || reorderMut.isLoading}
+                        onClick={() => reorderMut.mutate({ id: s.id, newSequence: s.stopSequence + 1 })}
+                        className="p-1.5 hover:bg-blue-100 text-blue-400 rounded disabled:opacity-20 disabled:cursor-not-allowed"
+                      >
+                        <ArrowDown size={13} />
+                      </button>
+
                       <button
                         onClick={() => {
                           setEditStop(s);

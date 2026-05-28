@@ -31,8 +31,8 @@ const MENUS = {
   ],
 
   login: [
-    { name: "Passenger Login", path: "/login" },
-    { name: "Staff / Admin Login", path: "/login" },
+    { name: "Passenger Login", path: "/ap/login" },
+    { name: "Staff / Admin Login", path: "/ap/login" },
   ],
 };
 

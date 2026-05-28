@@ -9,7 +9,7 @@ export default function Navbar() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/login");
+    navigate("/ap/login");
   };
 
   return (
@@ -19,7 +19,7 @@ export default function Navbar() {
         <img src={logo} alt="APSTS" className="w-7 h-7 rounded-full object-cover" />
         <div>
           <p className="text-sm font-semibold text-white leading-tight">
-            Arunachal Pradesh State Transport Services
+            Arunachal Pradesh State Transport Services 
           </p>
           <p className="text-[10px] text-gray-400">Admin Dashboard</p>
         </div>

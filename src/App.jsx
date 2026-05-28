@@ -41,6 +41,7 @@ import AddSchedule from "./pages/schedule/AddSchedule";
 import ScheduleDetails from "./pages/schedule/ScheduleDetails";
 import ScheduleInventoryManagement from "./pages/schedule/ScheduleInventoryManagement";
 import DutyAssignmentManagement from "./pages/schedule/DutyAssignmentManagement";
+import CmsFaqPage from "./pages/cms/faqPage";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
@@ -148,7 +149,7 @@ function AppRoutes() {
     <Routes>
       {/* ── Auth ──────────────────────────────────────────── */}
       <Route
-        path="/login"
+        path="/ap/login"
         element={
           <GuestRoute>
             <LoginPage />
@@ -158,7 +159,7 @@ function AppRoutes() {
 
       <Route
         path="/register"
-        element={<Navigate to="/login" replace />}
+        element={<Navigate to="/ap/login" replace />}
       />
 
       {/* ── Utility pages ─────────────────────────────────── */}
@@ -227,6 +228,7 @@ function AppRoutes() {
         <Route path="/admin/schedules/:id" element={<ScheduleDetails />} />
         <Route path="/admin/schedules/:id/seats" element={<ScheduleInventoryManagement />} />
         <Route path="/admin/schedules/:id/duty" element={<DutyAssignmentManagement />} />
+        <Route path="/admin/faq"  element={<CmsFaqPage />} />
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}
