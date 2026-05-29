@@ -51,6 +51,10 @@ function Sidebar({ isOpen }) {
           <FiHeadphones className="text-lg flex-shrink-0" />
           {isOpen && <span>Helpdesk</span>}
         </NavLink>
+        <NavLink to="/user/all-grievance"       className={linkClass}>
+          <FiHeadphones className="text-lg flex-shrink-0" />
+          {isOpen && <span>All Grievances</span>}
+        </NavLink>
       </nav>
     </div>
   );

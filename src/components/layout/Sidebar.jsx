@@ -88,6 +88,12 @@ const navItems = [
     icon: CalendarDays,
     perm: "schedule:view",
   },
+  {
+    label: "Grievance",
+    path: "/admin/grievance",
+    icon: CalendarDays,
+    
+  }
 ];
 
 const masterItems = [

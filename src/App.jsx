@@ -42,6 +42,7 @@ import ScheduleDetails from "./pages/schedule/ScheduleDetails";
 import ScheduleInventoryManagement from "./pages/schedule/ScheduleInventoryManagement";
 import DutyAssignmentManagement from "./pages/schedule/DutyAssignmentManagement";
 import CmsFaqPage from "./pages/cms/faqPage";
+import AdminGrievancePage from "./pages/grievance/AdminGrievancePage"
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
@@ -69,6 +70,7 @@ import Helpdesk from "./components/customer/Helpdesk";
 import BookTicket from "./components/customer/BookTicket";
 import MyRefunds from "./components/customer/MyRefund";
 import MyWallet from "./components/customer/CustomerWalletPage"
+import AllGrievance from "./components/customer/Allgrievances"
 
 
 
@@ -85,7 +87,7 @@ function AdminRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/ap/login" replace />;
 
   const isAdmin = user?.roles?.some((r) =>
     ADMIN_ROLES.includes(r.toUpperCase())
@@ -100,7 +102,7 @@ function UserRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/login" replace />;
+  if (!user) return <Navigate to="/ap/login" replace />;
 
   return children;
 }
@@ -188,6 +190,7 @@ function AppRoutes() {
         <Route path="helpdesk" element={<Helpdesk />} />
         <Route path="/user/my-refunds" element={<MyRefunds />} />
         <Route path="/user/wallet" element={<MyWallet/>} />
+        <Route path="/user/all-grievance" element={<AllGrievance/>} />
       </Route>
 
       {/* ── Admin Area ────────────────────────────────────── */}
@@ -229,6 +232,7 @@ function AppRoutes() {
         <Route path="/admin/schedules/:id/seats" element={<ScheduleInventoryManagement />} />
         <Route path="/admin/schedules/:id/duty" element={<DutyAssignmentManagement />} />
         <Route path="/admin/faq"  element={<CmsFaqPage />} />
+        <Route path="/admin/grievance" element={<AdminGrievancePage/>} />
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}
