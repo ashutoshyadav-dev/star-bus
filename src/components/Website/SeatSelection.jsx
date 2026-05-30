@@ -599,7 +599,7 @@ const handlePaymentSuccess = async (razorpayResponse, currentBooking) => {
           onClose={() => setShowLoginGate(false)}
           onLogin={() => {
             const redirect = encodeURIComponent(window.location.pathname + window.location.search);
-            navigate(`/login?redirect=${redirect}`);
+            navigate(`/ap/login?redirect=${redirect}`);
           }}
         />
       )}

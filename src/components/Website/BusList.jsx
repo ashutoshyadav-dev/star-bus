@@ -283,7 +283,7 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import bgroad from "../../assets/bgroad.jpeg";
 import busImg from "../../assets/bus.png";
 import sideBg from "../../assets/side-bg.jpeg";
-import { searchAvailableSchedules } from "../../api/schedule"; // ← only this import needed now
+import { searchAvailableSchedules } from "../../api/schedule"; // 
 import { stationApi } from "../../api/station";
 
 /* ─── helpers ──────────────────────────────────────────────────────────────── */
