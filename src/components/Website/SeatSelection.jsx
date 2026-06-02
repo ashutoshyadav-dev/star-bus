@@ -6,7 +6,9 @@ import { QRCodeCanvas } from "qrcode.react";
 import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import sideBg from "../../assets/side-bg.jpeg";
-import { getScheduleSeats, lockScheduleSeat } from "../../api/schedule";
+import { getScheduleSeats, lockSeatForJourney } from "../../api/schedule";
+import { getScheduleById } from "../../api/schedule";
+import api from "../../api/client";
 import { bookingApi, paymentApi } from "../../api/booking";
 import { ProgressBar } from "./BusList";
 import { loadRazorpay } from "../../utils/loadRazorpay";
@@ -224,6 +226,8 @@ export default function SeatSelection() {
   const [passengerDetails, setPassengerDetails] = useState({});
   const [showLoginGate,    setShowLoginGate]    = useState(false);
   const [showAbandon,      setShowAbandon]      = useState(false);
+  const [fromStopSeq, setFromStopSeq] = useState(null);
+  const [toStopSeq,   setToStopSeq]   = useState(null);
   // FIX: track where user wants to go when abandon modal shows
   const abandonTargetRef = useRef(null);
 
@@ -241,16 +245,42 @@ export default function SeatSelection() {
 
   /* ── Fetch seat inventory ── */
   const fetchSeats = useCallback(() => {
-    if (!scheduleId) { setSeatError("No schedule selected."); setLoadingSeats(false); return; }
-    setLoadingSeats(true);
-    setSeatError("");
-    getScheduleSeats(scheduleId)
-      .then((res) => setSeatMap(Array.isArray(res.data) ? res.data : (res.data?.data ?? [])))
-      .catch(() => setSeatError("Failed to load seat map. Please try again."))
-      .finally(() => setLoadingSeats(false));
-  }, [scheduleId]);
+  if (!scheduleId) { setSeatError("No schedule selected."); setLoadingSeats(false); return; }
+  setLoadingSeats(true);
+  setSeatError("");
+  getScheduleSeats(scheduleId, fromStopSeq, toStopSeq)  // ← pass sequences
+    .then((res) => setSeatMap(Array.isArray(res.data) ? res.data : (res.data?.data ?? [])))
+    .catch(() => setSeatError("Failed to load seat map. Please try again."))
+    .finally(() => setLoadingSeats(false));
+}, [scheduleId, fromStopSeq, toStopSeq]);
 
-  useEffect(() => { fetchSeats(); }, [fetchSeats]);
+  useEffect(() => {
+  if (fromStopSeq !== null && toStopSeq !== null) {
+    fetchSeats();
+  }
+}, [fetchSeats, fromStopSeq, toStopSeq]);
+
+
+  useEffect(() => {
+  if (!scheduleId || !fromId || !toId) return;
+
+  getScheduleById(scheduleId).then((res) => {
+    const schedule = res.data?.data ?? res.data;
+    const routeId  = schedule?.routeId ?? schedule?.route?.id;
+    if (!routeId) return;
+
+    // fetch route stops to resolve sequences
+    api.get(`/admin/routes/${routeId}/stops`).then((r) => {
+      const stops = r.data?.data ?? r.data ?? [];
+      const from  = stops.find((s) => s.stationId === fromId);
+      const to    = stops.find((s) => s.stationId === toId);
+      if (from) setFromStopSeq(from.stopSequence);
+      if (to)   setToStopSeq(to.stopSequence);
+    });
+  }).catch(() => {});
+}, [scheduleId, fromId, toId]);
+
+
 
   /* ── Grid ── */
   const maxRow        = seatMap.reduce((m, s) => Math.max(m, s.rowNumber ?? 0), 0);
@@ -305,6 +335,11 @@ export default function SeatSelection() {
 
   /* ── Step 3 → 4: create booking ── */
   const handleCreateBooking = async () => {
+    if (booking) {
+  setStep(4);
+  return;
+}
+
     if (!contact.mobile || contact.mobile.length < 10) {
       toast.error("Enter a valid 10-digit mobile number"); return;
     }
@@ -341,10 +376,17 @@ export default function SeatSelection() {
 
       // Lock seats — use seat inventory id (seat.id) for the lock endpoint
       await Promise.allSettled(
-        selectedSeats.map((seat) =>
-          lockScheduleSeat(seat.id, created.bookingId ?? created.id, lockExpiry)
-        )
-      );
+  selectedSeats.map((seat) =>
+    lockSeatForJourney(
+      seat.seatId ?? seat.id,          // the actual BusSeat id
+      scheduleId,
+      created.bookingId ?? created.id,
+      fromStopSeq,
+      toStopSeq,
+      lockExpiry
+    )
+  )
+);
 
       toast.success("Booking created! Complete payment within 10 minutes.");
       setPaymentFailed(false);
@@ -435,27 +477,146 @@ export default function SeatSelection() {
   }, []);
 
   /* ── Initiate payment ── */
+// const handleInitiatePayment = async () => {
+//   if (!paymentMethod) { toast.error("Please select a payment method"); return; }
+//   if (!booking) { toast.error("Booking not found."); return; }
+//   if (initiating) return;
+
+//   setInitiating(true);
+//   setPaymentFailed(false);
+
+//   //  Load Razorpay only when user actually pays (not on page load)
+//   if (paymentMethod !== "WALLET") {
+//     const loaded = await loadRazorpay();
+//     if (!loaded) {
+//       toast.error("Payment gateway failed to load. Check your internet connection.");
+//       setInitiating(false);
+//       return;
+//     }
+//   }
+
+//   try {
+//     const bookingId = booking.bookingId ?? booking.id;
+
+//     if (paymentFailed && booking) {
+//   const bookingId = booking.bookingId ?? booking.id;
+
+//   try {
+//     const existing = await paymentApi.getByBookingId(bookingId);
+//     const payment = existing.data?.data ?? existing.data;
+
+//     if (payment?.gatewayOrderId) {
+//       openRazorpay(
+//         payment,
+//         booking,
+//         contact,
+//         paymentMethod
+//       );
+//       return;
+//     }
+//   } catch (e) {
+//     console.error(e);
+//   }
+// }
+//     const res = await paymentApi.initiate({ bookingId, paymentMethod });
+//     const initiated = res.data?.data ?? res.data;
+
+//     if (paymentMethod === "WALLET") {
+//       toast.success("Payment successful via wallet! 🎉");
+//       setLockExpiresAt(null);
+//       setPaymentFailed(false);
+//       setInitiating(false);
+//       setStep(5);
+//       return;
+//     }
+
+//     openRazorpay(initiated, booking, contact, paymentMethod);
+
+//   } catch (err) {
+//     // FIX: 402 means a PENDING payment already exists for this booking
+//     // Fetch it and reuse its gatewayOrderId to reopen Razorpay
+//     if (err?.response?.status === 402) {
+//       try {
+//         const bookingId = booking.bookingId ?? booking.id;
+//         const existing = await paymentApi.getByBookingId(bookingId);
+//         const payment = existing.data?.data ?? existing.data;
+
+//         if (payment?.gatewayOrderId) {
+//           toast("Resuming your previous payment session.", { icon: "ℹ️" });
+//           openRazorpay(payment, booking, contact, paymentMethod);
+//           return; // openRazorpay resets initiating
+//         }
+//       } catch {
+//         // fall through to generic error
+//       }
+//     }
+
+//     setInitiating(false);
+//     setPaymentFailed(true);
+//     toast.error(err?.response?.data?.message ?? "Failed to initiate payment. Please try again.");
+//   }
+// };
+
 const handleInitiatePayment = async () => {
-  if (!paymentMethod) { toast.error("Please select a payment method"); return; }
-  if (!booking) { toast.error("Booking not found."); return; }
+  if (!paymentMethod) {
+    toast.error("Please select a payment method");
+    return;
+  }
+
+  if (!booking) {
+    toast.error("Booking not found.");
+    return;
+  }
+
   if (initiating) return;
 
   setInitiating(true);
-  setPaymentFailed(false);
-
-  //  Load Razorpay only when user actually pays (not on page load)
-  if (paymentMethod !== "WALLET") {
-    const loaded = await loadRazorpay();
-    if (!loaded) {
-      toast.error("Payment gateway failed to load. Check your internet connection.");
-      setInitiating(false);
-      return;
-    }
-  }
 
   try {
     const bookingId = booking.bookingId ?? booking.id;
-    const res = await paymentApi.initiate({ bookingId, paymentMethod });
+
+    // Retry existing pending payment
+    if (paymentFailed) {
+      try {
+        const existing = await paymentApi.getByBookingId(bookingId);
+        const payment = existing.data?.data ?? existing.data;
+
+        if (payment?.gatewayOrderId) {
+          setPaymentFailed(false);
+
+          openRazorpay(
+            payment,
+            booking,
+            contact,
+            paymentMethod
+          );
+
+          return;
+        }
+      } catch (e) {
+        console.error("Failed to resume payment", e);
+      }
+    }
+
+    setPaymentFailed(false);
+
+    if (paymentMethod !== "WALLET") {
+      const loaded = await loadRazorpay();
+
+      if (!loaded) {
+        toast.error(
+          "Payment gateway failed to load. Check your internet connection."
+        );
+        setInitiating(false);
+        return;
+      }
+    }
+
+    const res = await paymentApi.initiate({
+      bookingId,
+      paymentMethod,
+    });
+
     const initiated = res.data?.data ?? res.data;
 
     if (paymentMethod === "WALLET") {
@@ -467,30 +628,53 @@ const handleInitiatePayment = async () => {
       return;
     }
 
-    openRazorpay(initiated, booking, contact, paymentMethod);
+    openRazorpay(
+      initiated,
+      booking,
+      contact,
+      paymentMethod
+    );
 
   } catch (err) {
-    // FIX: 402 means a PENDING payment already exists for this booking
-    // Fetch it and reuse its gatewayOrderId to reopen Razorpay
+
     if (err?.response?.status === 402) {
       try {
         const bookingId = booking.bookingId ?? booking.id;
-        const existing = await paymentApi.getByBookingId(bookingId);
-        const payment = existing.data?.data ?? existing.data;
+
+        const existing = await paymentApi.getByBookingId(
+          bookingId
+        );
+
+        const payment =
+          existing.data?.data ?? existing.data;
 
         if (payment?.gatewayOrderId) {
-          toast("Resuming your previous payment session.", { icon: "ℹ️" });
-          openRazorpay(payment, booking, contact, paymentMethod);
-          return; // openRazorpay resets initiating
+          toast(
+            "Resuming your previous payment session.",
+            { icon: "ℹ️" }
+          );
+
+          openRazorpay(
+            payment,
+            booking,
+            contact,
+            paymentMethod
+          );
+
+          return;
         }
-      } catch {
-        // fall through to generic error
+      } catch (e) {
+        console.error(e);
       }
     }
 
     setInitiating(false);
     setPaymentFailed(true);
-    toast.error(err?.response?.data?.message ?? "Failed to initiate payment. Please try again.");
+
+    toast.error(
+      err?.response?.data?.message ??
+      "Failed to initiate payment. Please try again."
+    );
   }
 };
 
@@ -539,21 +723,36 @@ const handlePaymentSuccess = async (razorpayResponse, currentBooking) => {
     }
   };
 
+  // const handleAbandonLeave = () => {
+  //   setShowAbandon(false);
+  //   const target = abandonTargetRef.current;
+  //   abandonTargetRef.current = null;
+  //   if (target === "navigate" || target == null) {
+  //     navigate(-1);
+  //   } else {
+  //     // Going back within the flow — clear booking state so permission checks
+  //     // on later steps don't fire against a stale booking
+  //     setBooking(null);
+  //     setLockExpiresAt(null);
+  //     setPaymentFailed(false);
+  //     setStep(target);
+  //   }
+  // };
+
   const handleAbandonLeave = () => {
-    setShowAbandon(false);
-    const target = abandonTargetRef.current;
-    abandonTargetRef.current = null;
-    if (target === "navigate" || target == null) {
-      navigate(-1);
-    } else {
-      // Going back within the flow — clear booking state so permission checks
-      // on later steps don't fire against a stale booking
-      setBooking(null);
-      setLockExpiresAt(null);
-      setPaymentFailed(false);
-      setStep(target);
-    }
-  };
+  setShowAbandon(false);
+
+  const target = abandonTargetRef.current;
+  abandonTargetRef.current = null;
+
+  if (target === "navigate" || target == null) {
+    navigate(-1);
+    return;
+  }
+
+  // Keep existing booking and lock
+  setStep(target);
+};
 
   /* ── Handle logout during booking ── */
   const handleLogout = () => {

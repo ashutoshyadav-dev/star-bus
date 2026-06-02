@@ -39,9 +39,18 @@ export const searchAvailableSchedules = (fromStationId, toStationId, date) =>
    Seat Inventory APIs
 ───────────────────────────── */
 
-export const getScheduleSeats = (scheduleId, availableOnly = false) =>
+// export const getScheduleSeats = (scheduleId, availableOnly = false) =>
+//   api.get(`/scheduleSeatInventory/schedules/${scheduleId}/seats`, {
+//     params: { availableOnly },
+//   });
+
+// In schedule.js API file — add this helper
+export const getScheduleSeats = (scheduleId, fromStopSeq, toStopSeq) =>
   api.get(`/scheduleSeatInventory/schedules/${scheduleId}/seats`, {
-    params: { availableOnly },
+    params: {
+      fromStopSequence: fromStopSeq,
+      toStopSequence: toStopSeq,
+    },
   });
 
 export const getScheduleSeatById = (id) =>
@@ -59,6 +68,16 @@ export const lockScheduleSeat = (id, bookingId, lockExpiresAt) =>
         bookingId,
         lockExpiresAt,
       },
+    }
+  );
+
+ 
+export const lockSeatForJourney = (seatId, scheduleId, bookingId, fromSeq, toSeq, lockExpiresAt) =>
+  api.patch(
+    `/scheduleSeatInventory/schedules/${scheduleId}/seats/${seatId}/lock-journey`,
+    null,                              // ← no body
+    {
+      params: { bookingId, fromStopSequence: fromSeq, toStopSequence: toSeq, lockExpiresAt },
     }
   );
 
