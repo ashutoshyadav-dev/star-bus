@@ -837,7 +837,7 @@ const handlePaymentSuccess = async (razorpayResponse, currentBooking) => {
           <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full text-sm">
             <FiUser />
             <span className="hidden sm:block">
-              {user.name ?? user.phone ?? "Passengers"}
+              {user.name ?? user.phone ?? "Passenger"}
             </span>
           </div>
           <button
