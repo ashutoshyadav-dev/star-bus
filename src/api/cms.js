@@ -16,7 +16,7 @@ export const cmsApi = {
 
   // CREATE FAQ  [cmsFaq:create]
   createFaq: (data) =>
-    api.post("/cms/faqs/admin", data),
+    api.post("f/cms/aqs/admin", data),
 
   // UPDATE FAQ  [cmsFaq:update]
   updateFaq: (id, data) =>
@@ -25,4 +25,25 @@ export const cmsApi = {
   // DELETE FAQ  [cmsFaq:delete]
   deleteFaq: (id) =>
     api.delete(`/cms/faqs/admin/${id}`),
+
+  // ─── Timetable ────────────────────────────────────────────────────────────
+
+  search: ({ fromStationId, toStationId, date, serviceType }) =>
+    api.get("/timetable/search", {
+      params: {
+        fromStationId,
+        toStationId,
+        date,
+        serviceType,
+      },
+    }),
+
+  getRouteOfSchedule: ({ scheduleId }) => api.get(`/timetable/route/${scheduleId}`),
+
+
+
+
+  //─── contact ────────────────────────────────────────────────────────────
+  getContactByStationId: (id) =>
+    api.get(`/admin/stations/contacts`),
 };

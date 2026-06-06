@@ -12,14 +12,14 @@ const MENUS = {
     { name: "Bus Routes", path: "/ap/routes" },
     { name: "Our Bus Services", path: "/ap/buses" },
     { name: "RTI", path: "/ap/rti" },
-    { name: "Policies", path: "/ap/policies" },
-    { name: "Tenders", path: "/ap/tenders" },
+    { name: "Policies", path: "/ap/Cancellation-Policy" },
+    { name: "Tender", path: "/ap/tender" },
   ],
 
   query: [
-    { name: "Timetable", path: "/ap/timetable" },
-    { name: "Help Desk", path: "/ap/helpdesk" },
-    { name: "Contact Us", path: "/ap/contact" },
+    { name: "Timetable", path: "/ap/Time-table" },
+    { name: "Help Desk", path: "/ap/help-desk" },
+    { name: "Contact Us", path: "/ap/Contact us" },
     { name: "FAQs", path: "/ap/faq" },
   ],
 
