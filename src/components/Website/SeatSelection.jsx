@@ -317,7 +317,8 @@ function LockTimer({ expiresAt, onExpired }) {
 export default function SeatSelection() {
 
   const navigate       = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [
+  searchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const ticketRef      = useRef();
 
