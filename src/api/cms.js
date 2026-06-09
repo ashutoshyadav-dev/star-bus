@@ -37,7 +37,7 @@ export const cmsApi = {
         serviceType,
       },
     }),
-
+ 
   getRouteOfSchedule: ({ scheduleId }) => api.get(`/timetable/route/${scheduleId}`),
 
 
