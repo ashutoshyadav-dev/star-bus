@@ -27,7 +27,7 @@ function Footer() {
 
           <p className="mt-4 text-sm text-gray-300">
             Your trusted partner for exploring <br />
-            Arunachal Pradesh
+            Arunachal Pradesh 
           </p>
         </div>
 

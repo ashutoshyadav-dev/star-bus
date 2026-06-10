@@ -183,7 +183,7 @@ api.interceptors.response.use(
 
         // Only redirect if we actually had a session (avoids redirect loops
         // on pages that are already public or partially authenticated)
-        window.location.href = "/login";
+        window.location.href = "/ap/login";
 
         return Promise.reject(refreshError);
 
