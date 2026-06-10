@@ -177,21 +177,18 @@ export default function Profile() {
     }
 
     if (draft.idProofType === "voter_id") {
-      // EPIC: 3 letters + 7 digits, exactly 10 chars
       if (!/^[A-Z]{3}[0-9]{7}$/.test(draft.idProofNumber)) {
         newErrors.idProofNumber = "Invalid Voter ID format (e.g. ABC1234567)";
       }
     }
 
     if (draft.idProofType === "passport") {
-      // Indian passport: 1 letter + 7 digits, exactly 8 chars
       if (!/^[A-Z]{1}[0-9]{7}$/.test(draft.idProofNumber)) {
         newErrors.idProofNumber = "Invalid Passport number (e.g. A1234567)";
       }
     }
 
     if (draft.idProofType === "driving_license") {
-      // State code (2 letters) + digits, 15–16 chars total
       if (!/^[A-Z]{2}[0-9]{13,14}$/.test(draft.idProofNumber)) {
         newErrors.idProofNumber = "Invalid Driving Licence number (e.g. DL0120110012345)";
       }
@@ -305,12 +302,10 @@ export default function Profile() {
   // =========================
   // ID PROOF NUMBER RESTRICTIONS
   // =========================
-  // Allowed keys helper (shared across cases)
   const allowNav = ["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"];
 
   const getIdProofInputProps = () => {
     switch (draft.idProofType) {
-
       case "aadhaar":
         return {
           placeholder: "123412341234",
@@ -319,7 +314,6 @@ export default function Profile() {
             if (!/[0-9]/.test(e.key) && !allowNav.includes(e.key)) e.preventDefault();
           },
         };
-
       case "pan_card":
         return {
           placeholder: "ABCDE1234F",
@@ -328,9 +322,7 @@ export default function Profile() {
             if (!/[a-zA-Z0-9]/.test(e.key) && !allowNav.includes(e.key)) e.preventDefault();
           },
         };
-
       case "voter_id":
-        // EPIC format: 3 letters + 7 digits = 10 chars  e.g. ABC1234567
         return {
           placeholder: "ABC1234567",
           maxLength: 10,
@@ -338,9 +330,7 @@ export default function Profile() {
             if (!/[a-zA-Z0-9]/.test(e.key) && !allowNav.includes(e.key)) e.preventDefault();
           },
         };
-
       case "passport":
-        // Indian passport: 1 letter + 7 digits = 8 chars  e.g. A1234567
         return {
           placeholder: "A1234567",
           maxLength: 8,
@@ -348,9 +338,7 @@ export default function Profile() {
             if (!/[a-zA-Z0-9]/.test(e.key) && !allowNav.includes(e.key)) e.preventDefault();
           },
         };
-
       case "driving_license":
-        // Format varies by state/era; typically 15-16 chars  e.g. DL0120110012345
         return {
           placeholder: "DL0120110012345",
           maxLength: 16,
@@ -358,7 +346,6 @@ export default function Profile() {
             if (!/[a-zA-Z0-9]/.test(e.key) && !allowNav.includes(e.key)) e.preventDefault();
           },
         };
-
       default:
         return { placeholder: "ID number" };
     }
@@ -408,7 +395,6 @@ export default function Profile() {
               <FiX />
               Cancel
             </button>
-
             <button
               onClick={handleSave}
               disabled={updateProfileMutation.isPending || uploadingImage}
@@ -465,7 +451,6 @@ export default function Profile() {
             <p className="font-semibold text-gray-800 text-xl">
               {draft.fullName || "—"}
             </p>
-
             {editMode && (
               <div className="mt-2 space-y-0.5">
                 <p className="text-xs text-green-700 font-medium">
@@ -473,7 +458,6 @@ export default function Profile() {
                     ? "Uploading photo, please wait..."
                     : "Click the camera icon to upload a profile photo"}
                 </p>
-                {/* ── Photo upload guidance ── */}
                 <p className="text-xs text-gray-400">
                   Accepted formats: JPG, PNG, WEBP · Max size: 2 MB
                 </p>
@@ -523,7 +507,7 @@ export default function Profile() {
             )}
           </Field>
 
-          {/* Gender — added prefer_not_to_say */}
+          {/* Gender */}
           <Field label="Gender" error={errors.gender}>
             {editMode ? (
               <>
@@ -565,7 +549,7 @@ export default function Profile() {
             )}
           </Field>
 
-          {/* ID Proof Type — all 5 enum values */}
+          {/* ID Proof Type */}
           <Field label="ID Proof Type" error={errors.idProofType}>
             {editMode ? (
               <>
@@ -594,13 +578,13 @@ export default function Profile() {
             )}
           </Field>
 
-          {/* ID Proof Number — restricted by type */}
+          {/* ID Proof Number */}
           <Field
             label={
-              draft.idProofType === "aadhaar"        ? "Aadhaar Number"
-              : draft.idProofType === "pan_card"     ? "PAN Number"
-              : draft.idProofType === "voter_id"     ? "Voter ID (EPIC) Number"
-              : draft.idProofType === "passport"     ? "Passport Number"
+              draft.idProofType === "aadhaar"           ? "Aadhaar Number"
+              : draft.idProofType === "pan_card"        ? "PAN Number"
+              : draft.idProofType === "voter_id"        ? "Voter ID (EPIC) Number"
+              : draft.idProofType === "passport"        ? "Passport Number"
               : draft.idProofType === "driving_license" ? "Driving Licence Number"
               : "ID Number"
             }
@@ -612,7 +596,6 @@ export default function Profile() {
                   type="text"
                   value={draft.idProofNumber}
                   onChange={(e) => {
-                    // All types except aadhaar are uppercased
                     const val = draft.idProofType === "aadhaar"
                       ? e.target.value
                       : e.target.value.toUpperCase();
@@ -621,7 +604,6 @@ export default function Profile() {
                   className={inputCls}
                   {...idProps}
                 />
-                {/* Dynamic hint per ID type */}
                 {draft.idProofType === "aadhaar" && (
                   <p className="text-xs text-gray-400 mt-1">
                     Digits only · {draft.idProofNumber.length}/12
@@ -654,7 +636,7 @@ export default function Profile() {
             )}
           </Field>
 
-          {/* Emergency Contact Name — no digits */}
+          {/* Emergency Contact Name */}
           <Field label="Emergency Contact Name" error={errors.emergencyContactName}>
             {editMode ? (
               <>
@@ -677,7 +659,7 @@ export default function Profile() {
             )}
           </Field>
 
-          {/* Emergency Contact Phone — digits only, max 10 */}
+          {/* Emergency Contact Phone */}
           <Field label="Emergency Contact Phone" error={errors.emergencyContactPhone}>
             {editMode ? (
               <>
@@ -685,7 +667,6 @@ export default function Profile() {
                   type="tel"
                   value={draft.emergencyContactPhone}
                   onChange={(e) => {
-                    // strip +91 prefix for display, keep raw 10 digits
                     const raw = e.target.value.replace(/^\+91/, "").replace(/\D/g, "");
                     if (raw.length <= 10) {
                       setDraft((p) => ({ ...p, emergencyContactPhone: raw }));
@@ -717,7 +698,7 @@ export default function Profile() {
         </div>
       </div>
 
-      {/* Wallet & Account Info — improved */}
+      {/* Wallet & Account Info */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-800 mb-4">Account Info</h3>
 

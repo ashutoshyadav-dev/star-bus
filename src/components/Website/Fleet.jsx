@@ -1,11 +1,14 @@
+
 import car from "../../assets/car.png";
 import { useNavigate } from "react-router-dom";
+
 import bus1 from "../../assets/bus1.png";
 import bus2 from "../../assets/bus2.png";
 import bus3 from "../../assets/bus3.png";
 import bus4 from "../../assets/bus4.png";
 import bus5 from "../../assets/bus5.png";
 import bus6 from "../../assets/bus6.png";
+
 function Fleet() {
   const navigate = useNavigate();
 
@@ -20,10 +23,12 @@ const vehicles = [
   { name: "Volvo", img: bus2 },
 ];
 
+
   return (
     <div className="px-10 py-16 bg-gray-100">
 
       {/* Heading */}
+
  <div className="relative mb-10">
 
   {/* CENTER HEADING */}
@@ -41,8 +46,10 @@ const vehicles = [
 
 </div>
 
+
       {/* Cards */}
       <div className="grid grid-cols-4 gap-6">
+
 
        {vehicles.map((item, index) => (
   <div

@@ -23,7 +23,9 @@ function Services() {
 
       {/* Heading */}
       <div className="text-center mb-10">
-        <h2 className="text-3xl font-bold">News & services</h2>
+
+        <h2 className="text-3xl font-bold">News & Services</h2>
+
         <p className="text-gray-500 text-sm">
           Explore beautiful destinations
         </p>
@@ -88,6 +90,7 @@ function Services() {
             { title: "Other Services", items: ["Timetable","Track My Bus"], grad: gradient },
             { title: "Seat Availability", items: ["Check Seat","Select Seat"], grad: gradient1 },
             { title: "Grievance", items: ["HelpDesk","Check status"], grad: gradient1 },
+
           ].map((card, i) => (
 
             <div
