@@ -59,6 +59,13 @@ import BusList from "./components/Website/BusList";
 import SeatSelection from "./components/Website/SeatSelection";
 import OurHistory from "./components/Website/OurHistory";
 import BusService from "./components/Website/BusService";
+import Helpdesktop from "./components/Website/Helpdesk";
+import Tender from "./components/Website/Tender"
+import CancellationPolicy from "./components/Website/Policies"
+import RTI from "./components/Website/RTI"
+import Timetable from "./components/Website/Timetable";
+import ContactUs from "./components/Website/ContactUs";
+
 
 // ── Customer / Passenger Area ───────────────────────────────────────────────
 import UserLayout from "./components/customer/UserLayout";
@@ -108,9 +115,11 @@ function UserRoute({ children }) {
 }
 
 function GuestRoute({ children }) {
+
   const { user , isInitialized} = useAuth();
    console.log("GuestRoute:", { isInitialized, user });
 if (!isInitialized) return <PageLoader />;
+
   if (!user) return children;
 
   const isAdmin = user?.roles?.some((r) =>
@@ -126,7 +135,9 @@ if (!isInitialized) return <PageLoader />;
 }
 
 // ── Public Website wrapper ──────────────────────────────────────────────────
+
 const MAIN_PAGES = ["/ap", "/ap/our-history", "/ap/routes"];
+
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
@@ -189,8 +200,10 @@ function AppRoutes() {
         <Route path="profile" element={<Profile />} />
         <Route path="helpdesk" element={<Helpdesk />} />
         <Route path="/user/my-refunds" element={<MyRefunds />} />
+
         <Route path="/user/wallet" element={<MyWallet/>} />
         <Route path="/user/all-grievance" element={<AllGrievance/>} />
+
       </Route>
 
       {/* ── Admin Area ────────────────────────────────────── */}
@@ -225,14 +238,18 @@ function AppRoutes() {
         {/* <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/> */}
         <Route path="/admin/user-profile/:id/:type" element={<AdminUserProfile />}/>
         <Route path="/admin/routes/:id"      element={<RouteDetailPage />} />
+
+
         <Route path="/admin/routes/:id/edit" element={<EditRoute />} />
         <Route path="/admin/schedules" element={<ScheduleManagement />} />
         <Route path="/admin/schedules/add" element={<AddSchedule />} />
         <Route path="/admin/schedules/:id" element={<ScheduleDetails />} />
         <Route path="/admin/schedules/:id/seats" element={<ScheduleInventoryManagement />} />
         <Route path="/admin/schedules/:id/duty" element={<DutyAssignmentManagement />} />
+
         <Route path="/admin/faq"  element={<CmsFaqPage />} />
         <Route path="/admin/grievance" element={<AdminGrievancePage/>} />
+
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}
@@ -253,6 +270,40 @@ function AppRoutes() {
           path="our-history"
           element={<OurHistory />}
         />
+
+
+        <Route
+          path="help-desk"
+          element={<Helpdesktop />}
+        />
+
+        <Route
+          path="Tender"
+          element={<Tender />}
+        />
+
+        <Route
+          path="Contact us"
+          element={<ContactUs/>}
+        />
+
+        <Route
+          path="Cancellation-Policy"
+          element={<CancellationPolicy />}
+        />
+
+
+        <Route
+          path="rti"
+          element={<RTI />}
+        />
+
+        <Route
+          path="Time-table"
+          element={<Timetable />}
+        />
+
+
 
         <Route path="routes" element={<BusService />} />
 

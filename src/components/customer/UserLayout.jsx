@@ -1,9 +1,12 @@
+
 import { useState, useEffect, useRef } from "react";
+
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import { NavLink } from "react-router-dom";
 import {
   FiHome, FiCreditCard, FiSearch, FiUser,
+
   FiHeadphones, FiMenu, FiLogOut,
 } from "react-icons/fi";
 import NotificationPanel, { NotificationBell } from "./NotificationPanel";
@@ -11,6 +14,7 @@ import { notificationApi } from "../../api/notificationApi";
 import logo from "../../assets/logo.png";
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
+
 
 function Sidebar({ isOpen }) {
   const linkClass = ({ isActive }) =>
@@ -27,6 +31,7 @@ function Sidebar({ isOpen }) {
         ${isOpen ? "w-60" : "w-16"}`}
     >
       <nav className="flex flex-col gap-2 mt-4">
+
         <NavLink to="/user/dashboard"   className={linkClass}>
           <FiHome className="text-lg flex-shrink-0" />
           {isOpen && <span>Dashboard</span>}
@@ -56,6 +61,7 @@ function Sidebar({ isOpen }) {
           {isOpen && <span>Helpdesk</span>}
         </NavLink>
         <NavLink to="/user/all-grievance" className={linkClass}>
+
           <FiHeadphones className="text-lg flex-shrink-0" />
           {isOpen && <span>All Grievances</span>}
         </NavLink>
@@ -63,6 +69,7 @@ function Sidebar({ isOpen }) {
     </div>
   );
 }
+
 
 // ── TopNavbar ─────────────────────────────────────────────────────────────────
 
@@ -119,6 +126,7 @@ function TopNavbar({ toggleSidebar, user, onLogout }) {
           onClick={toggleSidebar}
           className="text-xl text-gray-300 hover:text-orange-400 transition"
         >
+
           <FiMenu />
         </button>
         <div className="flex items-center gap-3">
@@ -129,6 +137,7 @@ function TopNavbar({ toggleSidebar, user, onLogout }) {
           </div>
         </div>
       </div>
+
 
       {/* Right: bell + user chip + logout */}
       <div className="flex items-center gap-3">
@@ -151,6 +160,7 @@ function TopNavbar({ toggleSidebar, user, onLogout }) {
         </div>
 
         {/* User chip */}
+
         <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
           <FiUser />
           <span className="text-xs hidden sm:block">
@@ -158,12 +168,14 @@ function TopNavbar({ toggleSidebar, user, onLogout }) {
           </span>
         </div>
 
+
         {/* Logout */}
         <button
           onClick={onLogout}
           className="text-lg text-gray-300 hover:text-red-400 transition"
           title="Logout"
         >
+
           <FiLogOut />
         </button>
       </div>
@@ -171,7 +183,9 @@ function TopNavbar({ toggleSidebar, user, onLogout }) {
   );
 }
 
+
 // ── UserLayout ────────────────────────────────────────────────────────────────
+
 
 export default function UserLayout() {
   const { pathname } = useLocation();

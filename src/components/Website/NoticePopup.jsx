@@ -35,7 +35,9 @@ function NoticePopup() {
   {/* TEXT */}
   <div>
     <h1 className="text-2xl font-bold tracking-wide text-blue-900 md:text-3xl">
-      SCHEDULE OF E-BUS SERVICE
+
+      SCHEDULE OF BUS SERVICE
+
     </h1>
 
     <p className="text-xs text-gray-600 md:text-sm">

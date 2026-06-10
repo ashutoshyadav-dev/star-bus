@@ -1,3 +1,4 @@
+
 // =============================================================================
 // SeatSelection.jsx
 // Public route (/ap/seat-selection) — accessible from both home page and
@@ -29,16 +30,20 @@ import { FiUser, FiLogOut } from "react-icons/fi";
 // CONSTANTS
 // =============================================================================
 
+
 const SEAT_LOCK_MINUTES = 10;
 const RAZORPAY_KEY      = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
+
 // Maps our UI payment method keys → Razorpay's internal method identifiers
+
 const RAZORPAY_METHOD_MAP = {
   UPI:         "upi",
   CREDIT_CARD: "card",
   DEBIT_CARD:  "card",
   NET_BANKING: "netbanking",
 };
+
 
 // Seat fill colours for the seat map legend and SVG rendering
 const SEAT_COLORS = {
@@ -54,6 +59,7 @@ const SEAT_COLORS = {
 // PURE HELPERS
 // =============================================================================
 
+
 function formatDate(d) {
   if (!d) return "";
   return new Date(d).toLocaleDateString("en-IN", {
@@ -64,6 +70,7 @@ function formatDate(d) {
 function formatTime(t) {
   if (!t) return "";
   const [h, m] = String(t).split(":");
+
   const hour   = parseInt(h, 10);
   return `${hour % 12 || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
 }
@@ -78,16 +85,19 @@ function Spinner() {
     <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
       <circle className="opacity-25" cx="12" cy="12" r="10"
         stroke="currentColor" strokeWidth="4" />
+
       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
     </svg>
   );
 }
 
 /* ── Seat SVG icon — renders one seat cell on the seat map ── */
+
 function SeatIcon({ label, displayType, onClick }) {
   const fill    = SEAT_COLORS[displayType] ?? "transparent";
   const stroke  = displayType === "available" ? "#94a3b8" : fill;
   const blocked = ["booked", "locked", "hold"].includes(displayType);
+
 
   return (
     <div
@@ -106,11 +116,14 @@ function SeatIcon({ label, displayType, onClick }) {
           fill={fill} stroke={stroke} strokeWidth="1.5" />
         <rect x="4"  y="7"  width="16" height="13" rx="3"
           fill={fill} stroke={stroke} strokeWidth="1.5" />
+
+  
       </svg>
       <span className="text-[10px] mt-1 text-white">{label}</span>
     </div>
   );
 }
+
 
 /* ── Contextual top navbar ──
    Shows passenger info + logout when logged in; Login button when guest.
@@ -192,21 +205,26 @@ function LoginGateModal({ onClose, onLogin }) {
         <p className="text-gray-300 text-sm mb-6">
           You need to be logged in to book a seat.
           Your seat selection will be preserved after login.
+
         </p>
         <div className="flex gap-3 justify-center">
           <button
             type="button"
             onClick={onClose}
+
             className="px-5 py-2 rounded-lg bg-white/10 border border-white/20
               hover:bg-white/20"
+
           >
             Cancel
           </button>
           <button
             type="button"
             onClick={onLogin}
+
             className="px-5 py-2 rounded-lg bg-orange-500 hover:bg-orange-600
               font-semibold"
+
           >
             Login / Register
           </button>
@@ -215,6 +233,7 @@ function LoginGateModal({ onClose, onLogin }) {
     </div>
   );
 }
+
 
 /* ── Abandon booking confirmation — shown when user tries to navigate away
    while a booking exists and seats are locked at step 4 ── */
@@ -228,6 +247,7 @@ function AbandonModal({ onStay, onLeave }) {
         <h2 className="text-xl font-semibold text-orange-400 mb-2">
           Booking in Progress
         </h2>
+
         <p className="text-gray-300 text-sm mb-2">
           You have an active booking with seats locked.
         </p>
@@ -239,8 +259,10 @@ function AbandonModal({ onStay, onLeave }) {
           <button
             type="button"
             onClick={onStay}
+
             className="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700
               font-semibold"
+
           >
             Stay & Pay
           </button>
@@ -249,6 +271,7 @@ function AbandonModal({ onStay, onLeave }) {
             onClick={onLeave}
             className="px-5 py-2 rounded-lg bg-white/10 border border-white/20
               hover:bg-white/20"
+
           >
             Leave Anyway
           </button>
@@ -258,10 +281,12 @@ function AbandonModal({ onStay, onLeave }) {
   );
 }
 
+
 // =============================================================================
 // LOCK TIMER
 // Counts down from expiresAt to zero. Fires onExpired when it reaches 00:00.
 // =============================================================================
+
 
 function LockTimer({ expiresAt, onExpired }) {
   const [remaining, setRemaining] = useState("");
@@ -269,12 +294,16 @@ function LockTimer({ expiresAt, onExpired }) {
   useEffect(() => {
     if (!expiresAt) return;
 
+
+
     const compute = () => {
       const diff = new Date(expiresAt) - Date.now();
       if (diff <= 0) {
         setRemaining("00:00");
         onExpired?.();
+
         return false; // signal: stop the interval
+
       }
       const m = String(Math.floor(diff / 60000)).padStart(2, "0");
       const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, "0");
@@ -282,15 +311,18 @@ function LockTimer({ expiresAt, onExpired }) {
       return true;
     };
 
+
     compute(); // run once immediately to avoid blank flash on mount
     const interval = setInterval(() => {
       if (!compute()) clearInterval(interval);
     }, 1000);
 
+
     return () => clearInterval(interval);
   }, [expiresAt, onExpired]);
 
   if (!remaining) return null;
+
 
   // Compare numerically — string comparison on "05:00" is unreliable
   const [mm, ss]  = remaining.split(":").map(Number);
@@ -305,10 +337,12 @@ function LockTimer({ expiresAt, onExpired }) {
           : "bg-yellow-500/20 text-yellow-300"
       }`}
     >
+
       ⏱ {remaining}
     </div>
   );
 }
+
 
 // =============================================================================
 // MAIN COMPONENT
@@ -323,6 +357,7 @@ export default function SeatSelection() {
   const ticketRef      = useRef();
 
   // ── URL params passed from BusList ──────────────────────────────────────
+
   const scheduleId = searchParams.get("scheduleId");
   const fromLabel  = decodeURIComponent(searchParams.get("from")      ?? "");
   const toLabel    = decodeURIComponent(searchParams.get("to")        ?? "");
@@ -332,6 +367,7 @@ export default function SeatSelection() {
   const busLabel   = decodeURIComponent(searchParams.get("bus")       ?? "");
   const departure  = searchParams.get("departure")                    ?? "";
 
+
   // ── Booking flow step ────────────────────────────────────────────────────
   // 2 = seat selection + passenger details
   // 3 = contact details
@@ -340,9 +376,11 @@ export default function SeatSelection() {
   const [step, setStep] = useState(2);
 
   // ── Seat inventory ───────────────────────────────────────────────────────
+
   const [seatMap,      setSeatMap]      = useState([]);
   const [loadingSeats, setLoadingSeats] = useState(true);
   const [seatError,    setSeatError]    = useState("");
+
 
   // Stop sequences resolved from route stops — needed for segment seat query
   const [fromStopSeq, setFromStopSeq] = useState(null);
@@ -448,6 +486,7 @@ export default function SeatSelection() {
   );
 
   /* ── Compute visual display type for one seat ── */
+
   const getDisplayType = (seat) => {
     if (selectedSeats.find((s) => s.id === seat.id)) return "selected";
     const status = (seat.seatStatus ?? "").toLowerCase();
@@ -456,6 +495,7 @@ export default function SeatSelection() {
     if (seat.isLadiesQuota)                       return "ladies";
     return "available";
   };
+
 
   // ==========================================================================
   // SECTION 3 — SEAT SELECTION & PASSENGER DETAILS
@@ -469,12 +509,14 @@ export default function SeatSelection() {
     if (["booked", "locked", "hold"].includes(status)) return;
 
     // Functional updater prevents stale-closure issues
+
     setSelectedSeats((prev) =>
       prev.find((s) => s.id === seat.id)
         ? prev.filter((s) => s.id !== seat.id)
         : [...prev, seat]
     );
   }, [user]);
+
 
   /* ── Update a single field for one passenger ── */
   const updatePassenger = useCallback((seatId, field, value) =>
@@ -490,6 +532,7 @@ export default function SeatSelection() {
       toast.error("Please select at least one seat");
       return;
     }
+
     for (const seat of selectedSeats) {
       const d = passengerDetails[seat.id] ?? {};
       if (!d.name?.trim()) { toast.error(`Enter name for seat ${seat.seatLabel}`);    return; }
@@ -498,6 +541,7 @@ export default function SeatSelection() {
     }
     setStep(3);
   };
+
 
   // ==========================================================================
   // SECTION 4 — CONTACT & EMAIL VALIDATION
@@ -534,6 +578,7 @@ export default function SeatSelection() {
     if (!emailRegex.test(contact.email.trim())) {
       toast.error("Enter a valid email address");
       return;
+
     }
 
     setBookingLoading(true);
@@ -544,7 +589,9 @@ export default function SeatSelection() {
           passengerName:   d.name,
           passengerAge:    Number(d.age),
           passengerGender: d.gender,
+
           // seatId = actual BusSeat entity id (not the inventory row id)
+
           seatId:          seat.seatId ?? seat.id,
           concessionType:  "NONE",
         };
@@ -559,6 +606,7 @@ export default function SeatSelection() {
       });
       const created = res.data?.data ?? res.data;
       setBooking(created);
+
 
       const lockExpiry = new Date(
         Date.now() + SEAT_LOCK_MINUTES * 60 * 1000
@@ -580,17 +628,21 @@ export default function SeatSelection() {
         )
       );
 
+
       toast.success("Booking created! Complete payment within 10 minutes.");
       setPaymentFailed(false);
       setStep(4);
     } catch (err) {
+
       toast.error(
         err?.response?.data?.message ?? "Failed to create booking. Please try again."
       );
+
     } finally {
       setBookingLoading(false);
     }
   };
+
 
   // ==========================================================================
   // SECTION 6 — PAYMENT (step 4)
@@ -602,6 +654,7 @@ export default function SeatSelection() {
       "Session expired. Seats released. Please start again.",
       { duration: 6000 }
     );
+
     setBooking(null);
     setSelectedSeats([]);
     setPassengerDetails({});
@@ -611,6 +664,7 @@ export default function SeatSelection() {
     fetchSeats();
   }, [fetchSeats]);
 
+
   /* ── Open Razorpay checkout modal ──
      Separated from handleInitiatePayment so state is cleanly set first. ── */
   const openRazorpay = useCallback((
@@ -619,6 +673,7 @@ export default function SeatSelection() {
     currentContact,
     currentPaymentMethod
   ) => {
+
     if (!window.Razorpay) {
       toast.error("Payment gateway not loaded. Please refresh the page.");
       setInitiating(false);
@@ -627,7 +682,9 @@ export default function SeatSelection() {
 
     const options = {
       key:         RAZORPAY_KEY,
+
       // Math.round prevents floating-point paise errors
+
       amount:      Math.round(Number(initiated.amount) * 100),
       currency:    "INR",
       name:        "APSTS Bus Reservation",
@@ -638,17 +695,21 @@ export default function SeatSelection() {
         email:   currentContact.email,
       },
       theme: { color: "#22c55e" },
+
       // Pre-select the payment method the user chose in our UI
+
       ...(RAZORPAY_METHOD_MAP[currentPaymentMethod] && {
         config: {
           display: {
             blocks: {
               preferred: {
+
                 name:        "Recommended",
                 instruments: [{ method: RAZORPAY_METHOD_MAP[currentPaymentMethod] }],
               },
             },
             sequence:    ["block.preferred"],
+
             preferences: { show_default_blocks: true },
           },
         },
@@ -657,10 +718,12 @@ export default function SeatSelection() {
         await handlePaymentSuccess(response, currentBooking);
       },
       modal: {
+
         escape:        true,
         backdropclose: false,
         // Escape / backdrop dismiss = user cancelled, not a gateway error
         ondismiss: () => {
+
           setInitiating(false);
           setPaymentFailed(true);
           toast("Payment cancelled. Select a method and try again.", { icon: "⚠️" });
@@ -673,6 +736,7 @@ export default function SeatSelection() {
       setInitiating(false);
       setPaymentFailed(true);
       toast.error(
+
         response?.error?.description ??
         "Payment failed. Please try again with a different method."
       );
@@ -811,6 +875,7 @@ export default function SeatSelection() {
   /* ── Back navigation ──
      If a booking exists at step 4, intercept and show the abandon modal.
      Otherwise navigate normally. ── */
+
   const handleBack = (targetStep) => {
     if (booking && step === 4) {
       abandonTargetRef.current = targetStep;
@@ -823,6 +888,7 @@ export default function SeatSelection() {
       setStep(targetStep);
     }
   };
+
 
   /* ── Abandon modal: user chose "Leave Anyway" ── */
   const handleAbandonLeave = () => {
@@ -840,6 +906,7 @@ export default function SeatSelection() {
   };
 
   /* ── Logout guard — show abandon modal if payment is in progress ── */
+
   const handleLogout = () => {
     if (booking && step === 4) {
       abandonTargetRef.current = "navigate";
@@ -848,6 +915,7 @@ export default function SeatSelection() {
       logout();
     }
   };
+
 
   // ==========================================================================
   // SECTION 8 — TICKET DOWNLOAD
@@ -858,6 +926,7 @@ export default function SeatSelection() {
       const canvas  = await html2canvas(ticketRef.current, {
         backgroundColor: null,
       });
+
       const imgData = canvas.toDataURL("image/png");
       const pdf     = new jsPDF();
       pdf.addImage(imgData, "PNG", 10, 10, 190, 130);
@@ -885,13 +954,16 @@ export default function SeatSelection() {
       </div>
 
       {/* ── Modals ── */}
+
       {showLoginGate && (
         <LoginGateModal
           onClose={() => setShowLoginGate(false)}
           onLogin={() => {
+
             const redirect = encodeURIComponent(
               window.location.pathname + window.location.search
             );
+
             navigate(`/ap/login?redirect=${redirect}`);
           }}
         />
@@ -944,10 +1016,12 @@ export default function SeatSelection() {
             </div>
 
             {/* Show selected seats + PNR + fare once seats are chosen */}
+
             {selectedSeats.length > 0 && (
               <div className="border-t border-white/10 pt-3 space-y-2">
                 <div>
                   <p className="text-xs text-gray-400">Selected Seats</p>
+
                   <p className="font-semibold text-green-300 text-sm">
                     {selectedSeats.map((s) => s.seatLabel).join(", ")}
                   </p>
@@ -964,12 +1038,15 @@ export default function SeatSelection() {
                       <p className="text-xs text-gray-400">Total Fare</p>
                       <p className="font-semibold text-orange-400">₹ {totalFare}</p>
                     </div>
+
                   </>
                 )}
               </div>
             )}
 
+
             {/* Countdown timer shown only at payment step */}
+
             {lockExpiresAt && step === 4 && (
               <div className="pt-2">
                 <p className="text-xs text-gray-400 mb-1">Time remaining</p>
@@ -984,22 +1061,26 @@ export default function SeatSelection() {
                 onClick={() => navigate(-1)}
                 className="w-full mt-2 px-3 py-2 rounded-lg bg-white/10
                   hover:bg-white/20 text-xs text-gray-300 border border-white/10"
+
               >
                 ← Back
               </button>
             )}
+
             {step > 2 && step < 5 && (
               <button
                 type="button"
                 onClick={() => handleBack(step - 1)}
                 className="w-full mt-2 px-3 py-2 rounded-lg bg-white/10
                   hover:bg-white/20 text-xs text-gray-300 border border-white/10"
+
               >
                 ← Back
               </button>
             )}
           </div>
         </div>
+
 
         {/* ════════════════════════════════════════════════════════════════
             MIDDLE PANEL — Interactive seat map
@@ -1008,10 +1089,12 @@ export default function SeatSelection() {
           <div className="relative p-5 border bg-white/10 backdrop-blur-md
             border-white/20 rounded-xl h-full">
 
+
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-green-300">Select Seats</h3>
               <span className="text-yellow-400 text-xl">🛞</span>
             </div>
+
 
             {/* Loading state */}
             {loadingSeats && (
@@ -1022,21 +1105,26 @@ export default function SeatSelection() {
             )}
 
             {/* Error state */}
+
             {!loadingSeats && seatError && (
               <div className="py-10 text-center">
                 <p className="text-red-300 text-sm mb-3">{seatError}</p>
                 <button
                   type="button"
                   onClick={fetchSeats}
+
                   className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20
                     text-xs text-gray-300"
+
                 >
                   Retry
                 </button>
               </div>
             )}
 
+
             {/* Seat grid */}
+
             {!loadingSeats && !seatError && (
               <>
                 <div className="space-y-2 overflow-auto max-h-[500px] pr-1">
@@ -1044,7 +1132,9 @@ export default function SeatSelection() {
                     <div key={ri} className="flex items-center gap-1">
                       {row.map((seat, ci) => (
                         <div key={ci} className="flex items-center">
+
                           {/* Aisle gap */}
+
                           {ci === aisleAfterCol && <div className="w-5" />}
                           {seat ? (
                             <SeatIcon
@@ -1062,6 +1152,7 @@ export default function SeatSelection() {
                 </div>
 
                 {/* Legend */}
+
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-5 text-xs">
                   {[
                     { color: "bg-gray-500",           label: "Booked"    },
@@ -1077,7 +1168,9 @@ export default function SeatSelection() {
                   ))}
                 </div>
 
+
                 {/* Guest prompt */}
+
                 {!user && (
                   <p className="mt-4 text-xs text-orange-300 text-center">
                     <span
@@ -1085,8 +1178,10 @@ export default function SeatSelection() {
                       onClick={() => setShowLoginGate(true)}
                     >
                       Login
+
                     </span>{" "}
                     to select seats
+
                   </p>
                 )}
               </>
@@ -1106,6 +1201,7 @@ export default function SeatSelection() {
               // Empty state — no seat selected yet
               <div className="flex flex-col items-center justify-center
                 h-full gap-3 text-gray-400 py-20">
+
                 <span className="text-5xl">💺</span>
                 <p className="text-lg">Click a seat on the map to begin</p>
                 {!user && (
@@ -1123,10 +1219,12 @@ export default function SeatSelection() {
             ) : (
               <>
                 <h3 className="font-semibold text-green-300 mb-4">
+
                   Passenger Details (
                   {selectedSeats.length} seat
                   {selectedSeats.length > 1 ? "s" : ""})
                 </h3>
+
 
                 <div className="overflow-auto">
                   <table className="w-full text-sm border border-white/20">
@@ -1141,6 +1239,7 @@ export default function SeatSelection() {
                     <tbody>
                       {selectedSeats.map((seat) => (
                         <tr key={seat.id} className="border-t border-white/10">
+
                           <td className="p-2 font-semibold text-green-300">
                             {seat.seatLabel}
                           </td>
@@ -1172,12 +1271,14 @@ export default function SeatSelection() {
                                 border-white/30 text-white text-sm py-1"
                             >
                               <option value=""                  className="text-black bg-white">Select</option>
+
                               <option value="male"              className="text-black bg-white">Male</option>
                               <option value="female"            className="text-black bg-white">Female</option>
                               <option value="other"             className="text-black bg-white">Other</option>
                               <option value="prefer_not_to_say" className="text-black bg-white">Prefer not to say</option>
                             </select>
                           </td>
+
 
                           {/* Age — numeric 1-120 only */}
                           <td className="p-2">
@@ -1198,6 +1299,7 @@ export default function SeatSelection() {
                               placeholder="Age"
                               className="w-full px-2 py-1 rounded bg-white/10
                                 border border-white/20 outline-none text-sm"
+
                             />
                           </td>
                         </tr>
@@ -1206,20 +1308,26 @@ export default function SeatSelection() {
                   </table>
                 </div>
 
+
+
                 <div className="flex justify-between mt-5">
                   <button
                     type="button"
                     onClick={() => setSelectedSeats([])}
+
                     className="px-4 py-2 rounded-lg bg-red-500/80
                       hover:bg-red-600 text-sm"
+
                   >
                     Clear Selection
                   </button>
                   <button
                     type="button"
                     onClick={handleProceedFromSeats}
+
                     className="px-5 py-2 rounded-lg bg-green-500
                       hover:bg-green-600 font-semibold text-sm"
+
                   >
                     Continue →
                   </button>
@@ -1227,6 +1335,7 @@ export default function SeatSelection() {
               </>
             )
           )}
+
 
           {/* ── STEP 3: Contact Details ── */}
           {step === 3 && (
@@ -1250,11 +1359,13 @@ export default function SeatSelection() {
                       text-gray-300 border-r border-white/20 select-none">
                       +91
                     </span>
+
                     <input
                       type="tel"
                       maxLength={10}
                       placeholder="10-digit number"
                       value={contact.mobile}
+
                       onChange={(e) =>
                         setContact((p) => ({
                           ...p,
@@ -1272,10 +1383,12 @@ export default function SeatSelection() {
                   <label className="text-xs text-gray-400 mb-1 block">
                     Email Address *
                   </label>
+
                   <input
                     type="email"
                     placeholder="your@email.com"
                     value={contact.email}
+
                     onChange={handleEmailChange}
                     className="w-full px-3 py-2.5 border border-white/20
                       rounded-xl bg-white/10 text-sm outline-none"
@@ -1292,13 +1405,16 @@ export default function SeatSelection() {
                 <h4 className="text-gray-300 font-medium mb-2">
                   Booking Summary
                 </h4>
+
                 {selectedSeats.map((seat) => {
                   const d = passengerDetails[seat.id] ?? {};
                   return (
                     <div key={seat.id} className="flex justify-between text-xs">
+
                       <span className="text-gray-400">
                         {d.name} ({d.gender}, {d.age} yrs)
                       </span>
+
                       <span className="text-green-300">Seat {seat.seatLabel}</span>
                     </div>
                   );
@@ -1309,14 +1425,17 @@ export default function SeatSelection() {
                 <button
                   type="button"
                   onClick={() => setStep(2)}
+
                   className="px-4 py-2 rounded-lg bg-white/10
                     hover:bg-white/20 text-sm"
+
                 >
                   ← Back
                 </button>
                 <button
                   type="button"
                   onClick={handleCreateBooking}
+
                   disabled={bookingLoading || !!emailError}
                   className="px-5 py-2 rounded-lg bg-green-500
                     hover:bg-green-600 font-semibold text-sm
@@ -1327,10 +1446,12 @@ export default function SeatSelection() {
                   {bookingLoading
                     ? "Creating Booking…"
                     : "Confirm & Proceed to Payment →"}
+
                 </button>
               </div>
             </>
           )}
+
 
           {/* ── STEP 4: Payment ── */}
           {step === 4 && (
@@ -1352,19 +1473,23 @@ export default function SeatSelection() {
                 <div className="mb-4 p-3 rounded-lg bg-red-500/20
                   border border-red-400/40 text-sm text-red-300
                   flex items-start gap-2">
+
                   <span className="text-lg">⚠️</span>
                   <div>
                     <p className="font-semibold">Payment failed or cancelled</p>
                     <p className="text-xs text-red-400 mt-0.5">
                       Select a payment method and try again. Your booking (PNR:{" "}
+
                       <span className="font-mono font-semibold">
                         {booking?.pnr}
                       </span>
                       ) is still active.
+
                     </p>
                   </div>
                 </div>
               )}
+
 
               {/* Payment method selection cards */}
               <div className="grid grid-cols-2 gap-4 mb-6">
@@ -1384,6 +1509,7 @@ export default function SeatSelection() {
                           ? "bg-green-500/30 border-green-400"
                           : "bg-white/10 border-white/20 hover:bg-white/20"
                       }`}
+
                   >
                     <div className="text-xl mb-1">{icon}</div>
                     <div className="font-semibold text-sm">{label}</div>
@@ -1392,6 +1518,7 @@ export default function SeatSelection() {
                 ))}
               </div>
 
+
               {/* Fare breakdown */}
               {booking && (
                 <div className="p-4 rounded-xl bg-white/5 border
@@ -1399,6 +1526,7 @@ export default function SeatSelection() {
                   <h4 className="text-gray-300 font-medium mb-2">
                     Fare Breakdown
                   </h4>
+
                   <div className="flex justify-between text-gray-400">
                     <span>Base Fare</span>
                     <span>₹ {Number(booking.baseFareTotal ?? 0).toFixed(2)}</span>
@@ -1421,8 +1549,10 @@ export default function SeatSelection() {
                       <span>- ₹ {Number(booking.concessionDiscountTotal).toFixed(2)}</span>
                     </div>
                   )}
+
                   <div className="flex justify-between font-semibold text-white
                     border-t border-white/10 pt-2 mt-2">
+
                     <span>Total Amount</span>
                     <span className="text-green-400">₹ {totalFare}</span>
                   </div>
@@ -1433,11 +1563,14 @@ export default function SeatSelection() {
                 <button
                   type="button"
                   onClick={() => handleBack(3)}
+
                   className="px-4 py-2 rounded-lg bg-white/10
                     hover:bg-white/20 text-sm"
+
                 >
                   ← Back
                 </button>
+
 
                 {/* Pay button — disabled only while API call is in flight */}
                 <button
@@ -1448,6 +1581,7 @@ export default function SeatSelection() {
                     disabled:opacity-60 disabled:cursor-not-allowed
                     flex items-center gap-2 bg-orange-500
                     hover:bg-orange-600 transition-colors"
+
                 >
                   {initiating && <Spinner />}
                   {initiating
@@ -1460,6 +1594,7 @@ export default function SeatSelection() {
             </>
           )}
 
+
           {/* ── STEP 5: Confirmed Ticket ── */}
           {step === 5 && (
             <div className="flex flex-col items-center">
@@ -1468,9 +1603,11 @@ export default function SeatSelection() {
                   viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round"
                     strokeWidth={2} d="M5 13l4 4L19 7" />
+
                 </svg>
                 <span className="text-xl font-semibold">Booking Confirmed!</span>
               </div>
+
 
               {/* Printable / downloadable ticket card */}
               <div
@@ -1496,6 +1633,7 @@ export default function SeatSelection() {
                     <span className="uppercase text-right">
                       {fromLabel} → {toLabel}
                     </span>
+
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Service</span>
@@ -1506,11 +1644,13 @@ export default function SeatSelection() {
                     <span>{formatDate(date)} {formatTime(departure)}</span>
                   </div>
 
+
                   {/* Passengers — prefer booking.passengers (server data),
                       fall back to local selectedSeats state ── */}
                   <div className="border-t border-white/10 pt-3">
                     <p className="text-gray-400 mb-2">Passengers</p>
                     {(booking?.passengers ?? selectedSeats).map((p, i) => {
+
                       const name   = p.passengerName   ?? passengerDetails[p.id]?.name;
                       const gender = p.passengerGender ?? passengerDetails[p.id]?.gender;
                       const age    = p.passengerAge    ?? passengerDetails[p.id]?.age;
@@ -1524,24 +1664,30 @@ export default function SeatSelection() {
                     })}
                   </div>
 
+
                   <div className="flex justify-between border-t border-white/10 pt-3">
                     <span className="text-gray-400">Total Paid</span>
                     <span className="text-green-400 font-semibold">
                       ₹ {totalFare}
                     </span>
+
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Status</span>
                     <span className={`font-semibold ${
+
                       booking?.bookingStatus === "CONFIRMED"
                         ? "text-green-400"
                         : "text-yellow-400"
+
                     }`}>
                       {booking?.bookingStatus}
                     </span>
                   </div>
 
+
                   {/* QR code for conductor verification */}
+
                   <div className="flex justify-center mt-4">
                     <QRCodeCanvas
                       value={JSON.stringify({
@@ -1561,21 +1707,25 @@ export default function SeatSelection() {
                 </div>
               </div>
 
-              {/* Post-booking actions */}
+
               <div className="flex gap-4 mt-6">
                 <button
                   type="button"
                   onClick={downloadTicket}
+
                   className="px-5 py-2 bg-green-500 hover:bg-green-600
                     rounded-lg font-semibold text-sm"
+
                 >
                   ⬇ Download PDF
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate("/user/my-bookings")}
+
                   className="px-5 py-2 bg-white/10 hover:bg-white/20
                     border border-white/20 rounded-lg text-sm"
+
                 >
                   View My Bookings
                 </button>
@@ -1583,8 +1733,10 @@ export default function SeatSelection() {
             </div>
           )}
 
+
         </div>{/* end RIGHT PANEL */}
       </div>{/* end three-column layout */}
     </div>
   );
 }
+

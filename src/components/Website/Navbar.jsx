@@ -3,6 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 
 import banner from "../../assets/banner.png";
 import logo from "../../assets/logo.png";
+import Logo from "../../assets/logo2.jpeg"
+
 
 import { FaChevronDown, FaUserCircle } from "react-icons/fa";
 
@@ -12,6 +14,7 @@ const MENUS = {
     { name: "Bus Routes", path: "/ap/routes" },
     { name: "Our Bus Services", path: "/ap/buses" },
     { name: "RTI", path: "/ap/rti" },
+
     { name: "Policies", path: "/ap/policies" },
     { name: "Tenders", path: "/ap/tenders" },
   ],
@@ -21,7 +24,12 @@ const MENUS = {
     { name: "Help Desk", path: "/ap/helpdesk" },
     { name: "Contact Us", path: "/ap/contact" },
     { name: "FAQs", path: "/ap/faq" },
+    { name: "Policies", path: "/ap/Cancellation-Policy" },
+    { name: "Tender", path: "/ap/tender" },
   ],
+
+  
+
 
   services: [
     { name: "Book Ticket", path: "/user/book-ticket" },
@@ -51,7 +59,7 @@ function Dropdown({
       onMouseEnter={() => setOpenMenu(menuKey)}
       onMouseLeave={() => setOpenMenu(null)}
     >
-      {/* MENU BUTTON */}
+
       <div
         className="
           h-full flex items-center
@@ -66,6 +74,7 @@ function Dropdown({
         <FaChevronDown size={10} className="mt-[1px]" />
       </div>
 
+
       {/* DROPDOWN */}
       {openMenu === menuKey && (
         <div
@@ -78,13 +87,16 @@ function Dropdown({
         >
           <div
             className="
+
               rounded-xl overflow-hidden
               backdrop-blur-xl
               bg-[#0b1f2c]/95
               border border-white/10
               shadow-[0_10px_40px_rgba(0,0,0,0.45)]
+
             "
           >
+
             <div className="py-2">
               {items.map((item) => (
                 <Link
@@ -115,11 +127,11 @@ function Dropdown({
 
 export default function Navbar() {
   const [openMenu, setOpenMenu] = useState(null);
-
   const navigate = useNavigate();
 
   return (
     <div className="absolute top-0 left-0 w-full z-[999]">
+
       {/* BACKGROUND IMAGE */}
       <div
         className="absolute inset-0 bg-cover bg-center pointer-events-none"
@@ -141,6 +153,7 @@ export default function Navbar() {
           border-b border-white/10
         "
       >
+
         {/* LEFT LOGO */}
         <div
           onClick={() => navigate("/ap")}
@@ -149,11 +162,13 @@ export default function Navbar() {
           <img
             src={logo}
             alt="APSTS"
+
             className="
               w-9 h-9 rounded-full object-cover
               border border-white/30
               shadow-md
             "
+
           />
 
           <div className="leading-tight">
@@ -161,14 +176,17 @@ export default function Navbar() {
               Arunachal Pradesh State Transport Services
             </p>
 
+
             <p className="text-[11px] text-white/70">
               Version 4.0
             </p>
+
           </div>
         </div>
 
         {/* CENTER NAV */}
         <div className="flex items-center gap-10 text-white h-full">
+
           {/* HOME */}
           <span
             onClick={() => navigate("/ap")}
@@ -220,6 +238,7 @@ export default function Navbar() {
         >
           {/* LOGIN BUTTON */}
           <div
+
             className="
               flex items-center gap-2
               px-5 py-2
@@ -258,12 +277,14 @@ export default function Navbar() {
                   shadow-[0_10px_40px_rgba(0,0,0,0.45)]
                 "
               >
+
                 <div className="py-2">
                   {MENUS.login.map((item) => (
                     <Link
                       key={item.name}
                       to={item.path}
                       onClick={() => setOpenMenu(null)}
+
                       className="
                         block
                         px-4 py-3
@@ -274,6 +295,7 @@ export default function Navbar() {
                         hover:bg-white/10
                         hover:text-white
                       "
+
                     >
                       {item.name}
                     </Link>
@@ -282,6 +304,7 @@ export default function Navbar() {
               </div>
             </div>
           )}
+
         </div>
       </div>
     </div>

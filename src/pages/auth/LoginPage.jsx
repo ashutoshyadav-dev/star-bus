@@ -19,6 +19,7 @@ const MODES = [
 ];
 
 export default function LoginPage() {
+
   // const [mode, setMode]         = useState("login");
    const [searchParams] = useSearchParams();
   const [mode, setMode] = useState(() => {
@@ -26,6 +27,7 @@ export default function LoginPage() {
   return m === "staff" || m === "register" ? m : "login";
 });
   const [step, setStep]         = useState(1);          
+
   const [phone, setPhone]       = useState("");
   const [password, setPassword] = useState("");
   const [otp, setOtp]           = useState("");
@@ -35,7 +37,9 @@ export default function LoginPage() {
 
   const { saveTokens } = useAuth();
   const navigate = useNavigate();
+
  
+
   const redirectTo = searchParams.get("redirect");
 
   // OTP countdown timer via hook (no raw setInterval in component body)

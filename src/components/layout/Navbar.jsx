@@ -4,11 +4,13 @@ import { useNavigate } from "react-router-dom";
 import { Bell, LogOut, Settings, UserCircle } from "lucide-react";
 import AdminNotificationPanel from "../../pages/notification/AdminNotificationPanel";
 import { notificationApi } from "../../api/notificationApi";
+
 import logo from "../../assets/logo.png";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+
 
   // ── Single source of truth for unread count ───────────────────────────────
   const [unreadCount,       setUnreadCount]       = useState(0);
@@ -51,6 +53,7 @@ export default function Navbar() {
     setUnreadCount((c) => Math.max(0, c + delta));
   };
 
+
   const handleLogout = async () => {
     await logout();
     navigate("/ap/login");
@@ -59,18 +62,23 @@ export default function Navbar() {
   return (
     <header className="fixed top-0 left-[240px] right-0 z-30 h-[64px] bg-[#0c1f2c] border-b border-white/10 flex items-center justify-between px-6">
 
+
       {/* Left: logo + title */}
+
       <div className="flex items-center gap-3">
         <img src={logo} alt="APSTS" className="w-7 h-7 rounded-full object-cover" />
         <div>
           <p className="text-sm font-semibold text-white leading-tight">
+
             Arunachal Pradesh State Transport Services
+
           </p>
           <p className="text-[10px] text-gray-400">Admin Dashboard</p>
         </div>
       </div>
 
       {/* Right: actions */}
+
       <div className="flex items-center gap-2">
 
         {/* ── Notification bell + dropdown ── */}
@@ -99,6 +107,7 @@ export default function Navbar() {
         </div>
 
         {/* Settings */}
+
         <button className="p-2 rounded-lg text-gray-400 hover:text-white hover:bg-white/10 transition-colors">
           <Settings className="w-4 h-4" />
         </button>
@@ -111,7 +120,9 @@ export default function Navbar() {
           </span>
         </div>
 
+
         {/* Logout */}
+
         <button
           onClick={handleLogout}
           className="p-2 rounded-lg text-gray-400 hover:text-red-400 hover:bg-red-900/20 transition-colors"

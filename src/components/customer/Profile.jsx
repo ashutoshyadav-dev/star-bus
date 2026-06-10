@@ -55,11 +55,13 @@ export default function Profile() {
         emergencyContactPhone: profileResponse.emergencyContactPhone || "",
         profilePhotoUrl: profileResponse.profilePhotoUrl || "",
       });
+
       setPreviewImage("");
     }
   }, [profileResponse]);
 
   // =========================
+
   // BLOCK DIGITS IN NAME FIELDS
   // =========================
   const blockDigits = (e) => {
@@ -69,10 +71,12 @@ export default function Profile() {
   };
 
   // =========================
+
   // IMAGE UPLOAD
   // =========================
   const handleImageUpload = async (e) => {
     const file = e.target.files?.[0];
+
     if (!file) return;
 
     // Image size validation (2 MB)
@@ -85,6 +89,7 @@ export default function Profile() {
     const allowedTypes = ["image/jpeg", "image/png", "image/webp"];
     if (!allowedTypes.includes(file.type)) {
       toast.error("Only JPG, PNG, or WEBP images are allowed");
+
       return;
     }
 
@@ -112,6 +117,7 @@ export default function Profile() {
       console.error("Image upload failed:", error);
       setPreviewImage("");
       toast.error("Image upload failed. Photo was not saved.");
+
     } finally {
       setUploadingImage(false);
     }
@@ -123,6 +129,7 @@ export default function Profile() {
   const validate = () => {
     const newErrors = {};
 
+
     // Full Name — no digits allowed
     if (!draft.fullName.trim()) {
       newErrors.fullName = "Full name is required";
@@ -130,10 +137,12 @@ export default function Profile() {
       newErrors.fullName = "Full name should be at least 3 characters";
     } else if (/[0-9]/.test(draft.fullName)) {
       newErrors.fullName = "Full name must not contain numbers";
+
     }
 
     // DOB
     if (!draft.dateOfBirth) {
+
       newErrors.dateOfBirth = "Date of birth is required";
     } else {
       const dob = new Date(draft.dateOfBirth);
@@ -145,6 +154,7 @@ export default function Profile() {
       }
       if (age < 18) {
         newErrors.dateOfBirth = "Passenger must be at least 18 years old";
+
       }
     }
 
@@ -155,11 +165,14 @@ export default function Profile() {
 
     // Preferred Language
     if (!draft.preferredLanguage) {
+
       newErrors.preferredLanguage = "Preferred language is required";
+
     }
 
     // ID Proof Type
     if (!draft.idProofType) {
+
       newErrors.idProofType = "Please select ID proof type";
     }
 
@@ -211,10 +224,12 @@ export default function Profile() {
       const raw = draft.emergencyContactPhone.replace(/^\+91/, "");
       if (!/^[6-9]\d{9}$/.test(raw)) {
         newErrors.emergencyContactPhone = "Enter a valid 10-digit Indian mobile number";
+
       }
     }
 
     setErrors(newErrors);
+
     return Object.keys(newErrors).length === 0;
   };
 
@@ -222,6 +237,7 @@ export default function Profile() {
   // UPDATE PROFILE
   // =========================
   const updateProfileMutation = useMutation({
+
     mutationFn: (updatedData) => profileApi.editDetails(updatedData),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -232,6 +248,7 @@ export default function Profile() {
     onError: (error) => {
       console.error("Update failed:", error);
       toast.error(error?.response?.data?.message || "Profile update failed");
+
     },
   });
 
@@ -240,6 +257,7 @@ export default function Profile() {
   // =========================
   const handleSave = () => {
     if (!validate()) {
+
       toast.error("Please fix the validation errors");
       return;
     }
@@ -249,6 +267,7 @@ export default function Profile() {
         ? draft.emergencyContactPhone
         : `+91${draft.emergencyContactPhone}`
       : "";
+
 
     const photoUrl =
       draft.profilePhotoUrl?.startsWith("blob:")
@@ -261,9 +280,11 @@ export default function Profile() {
       gender: draft.gender,
       idProofType: draft.idProofType,
       idProofNumber: draft.idProofNumber,
+
       preferredLanguage: draft.preferredLanguage,
       emergencyContactName: draft.emergencyContactName.trim(),
       emergencyContactPhone: formattedPhone,
+
       profilePhotoUrl: photoUrl,
     };
 
@@ -277,6 +298,7 @@ export default function Profile() {
     if (profileResponse) {
       setDraft({
         fullName: profileResponse.fullName || "",
+
         dateOfBirth: profileResponse.dateOfBirth || "",
         gender: profileResponse.gender || "",
         idProofType: profileResponse.idProofType || "",
@@ -290,10 +312,12 @@ export default function Profile() {
     setPreviewImage("");
     setErrors({});
     setEditMode(false);
+
     toast.success("Changes discarded");
   };
 
   // =========================
+
   // LOYALTY TIER HELPER
   // =========================
   const getLoyaltyTier = (points) => {
@@ -378,6 +402,7 @@ export default function Profile() {
   const loyaltyTier = getLoyaltyTier(profileResponse?.loyaltyPoints ?? 0);
   const idProps = getIdProofInputProps();
 
+
   // =========================
   // RENDER
   // =========================
@@ -387,8 +412,10 @@ export default function Profile() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
+
           <h2 className="text-2xl font-bold text-gray-800">My Profile</h2>
           <p className="text-gray-500 text-sm mt-0.5">Manage your personal information</p>
+
         </div>
 
         {!editMode ? (
@@ -411,11 +438,13 @@ export default function Profile() {
 
             <button
               onClick={handleSave}
+
               disabled={updateProfileMutation.isPending || uploadingImage}
               className="flex items-center gap-1 px-4 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 transition disabled:opacity-50"
             >
               <FiSave />
               {updateProfileMutation.isPending ? "Saving..." : "Save"}
+
             </button>
           </div>
         )}
@@ -426,6 +455,7 @@ export default function Profile() {
 
         {/* Avatar */}
         <div className="flex flex-col sm:flex-row sm:items-center gap-5">
+
           <div className="relative">
             <img
               src={
@@ -439,13 +469,16 @@ export default function Profile() {
 
             {uploadingImage && (
               <div className="absolute inset-0 bg-black/40 rounded-full flex items-center justify-center">
+
                 <span className="text-white text-xs">Uploading...</span>
+
               </div>
             )}
 
             {editMode && (
               <label
                 className={`absolute bottom-0 right-0 bg-[#0F3D2E] p-2 rounded-full text-white cursor-pointer hover:bg-[#14543f] transition ${
+
                   uploadingImage ? "opacity-50 pointer-events-none" : ""
                 }`}
               >
@@ -453,6 +486,7 @@ export default function Profile() {
                 <input
                   type="file"
                   accept="image/jpeg,image/png,image/webp"
+
                   onChange={handleImageUpload}
                   className="hidden"
                   disabled={uploadingImage}
@@ -467,6 +501,7 @@ export default function Profile() {
             </p>
 
             {editMode && (
+
               <div className="mt-2 space-y-0.5">
                 <p className="text-xs text-green-700 font-medium">
                   {uploadingImage
@@ -478,6 +513,7 @@ export default function Profile() {
                   Accepted formats: JPG, PNG, WEBP · Max size: 2 MB
                 </p>
               </div>
+
             )}
           </div>
         </div>
@@ -488,18 +524,23 @@ export default function Profile() {
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
 
           {/* Full Name */}
+
           <Field label="Full Name" error={errors.fullName}>
+
+
             {editMode ? (
               <>
                 <input
                   type="text"
                   value={draft.fullName}
+
                   onChange={(e) => setDraft((p) => ({ ...p, fullName: e.target.value }))}
                   onKeyDown={blockDigits}
                   className={inputCls}
                   placeholder="Enter full name"
                 />
                 {errors.fullName && <ErrorText>{errors.fullName}</ErrorText>}
+
               </>
             ) : (
               <Display value={draft.fullName} />
@@ -507,28 +548,35 @@ export default function Profile() {
           </Field>
 
           {/* DOB */}
+
           <Field label="Date of Birth" error={errors.dateOfBirth}>
+
             {editMode ? (
               <>
                 <input
                   type="date"
                   value={draft.dateOfBirth}
+
                   onChange={(e) => setDraft((p) => ({ ...p, dateOfBirth: e.target.value }))}
                   className={inputCls}
                 />
                 {errors.dateOfBirth && <ErrorText>{errors.dateOfBirth}</ErrorText>}
+
               </>
             ) : (
               <Display value={draft.dateOfBirth} />
             )}
           </Field>
 
+
           {/* Gender — added prefer_not_to_say */}
           <Field label="Gender" error={errors.gender}>
+
             {editMode ? (
               <>
                 <select
                   value={draft.gender}
+
                   onChange={(e) => setDraft((p) => ({ ...p, gender: e.target.value }))}
                   className={inputCls}
                 >
@@ -539,6 +587,7 @@ export default function Profile() {
                   <option value="prefer_not_to_say">Prefer not to say</option>
                 </select>
                 {errors.gender && <ErrorText>{errors.gender}</ErrorText>}
+
               </>
             ) : (
               <Display value={draft.gender} />
@@ -546,6 +595,7 @@ export default function Profile() {
           </Field>
 
           {/* Language */}
+
           <Field label="Preferred Language" error={errors.preferredLanguage}>
             {editMode ? (
               <>
@@ -567,6 +617,7 @@ export default function Profile() {
 
           {/* ID Proof Type — all 5 enum values */}
           <Field label="ID Proof Type" error={errors.idProofType}>
+
             {editMode ? (
               <>
                 <select
@@ -574,12 +625,15 @@ export default function Profile() {
                   onChange={(e) =>
                     setDraft((p) => ({
                       ...p,
+
                       idProofType: e.target.value,
                       idProofNumber: "",   // reset number on type change
+
                     }))
                   }
                   className={inputCls}
                 >
+
                   <option value="">Select</option>
                   <option value="aadhaar">Aadhaar</option>
                   <option value="pan_card">PAN Card</option>
@@ -603,6 +657,7 @@ export default function Profile() {
               : draft.idProofType === "passport"     ? "Passport Number"
               : draft.idProofType === "driving_license" ? "Driving Licence Number"
               : "ID Number"
+
             }
             error={errors.idProofNumber}
           >
@@ -611,6 +666,7 @@ export default function Profile() {
                 <input
                   type="text"
                   value={draft.idProofNumber}
+
                   onChange={(e) => {
                     // All types except aadhaar are uppercased
                     const val = draft.idProofType === "aadhaar"
@@ -656,10 +712,12 @@ export default function Profile() {
 
           {/* Emergency Contact Name — no digits */}
           <Field label="Emergency Contact Name" error={errors.emergencyContactName}>
+
             {editMode ? (
               <>
                 <input
                   type="text"
+
                   value={draft.emergencyContactName}
                   onChange={(e) =>
                     setDraft((p) => ({ ...p, emergencyContactName: e.target.value }))
@@ -679,10 +737,12 @@ export default function Profile() {
 
           {/* Emergency Contact Phone — digits only, max 10 */}
           <Field label="Emergency Contact Phone" error={errors.emergencyContactPhone}>
+
             {editMode ? (
               <>
                 <input
                   type="tel"
+
                   value={draft.emergencyContactPhone}
                   onChange={(e) => {
                     // strip +91 prefix for display, keep raw 10 digits
@@ -712,10 +772,12 @@ export default function Profile() {
               </>
             ) : (
               <Display value={draft.emergencyContactPhone} />
+
             )}
           </Field>
         </div>
       </div>
+
 
       {/* Wallet & Account Info — improved */}
       <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -762,6 +824,7 @@ export default function Profile() {
               <span className="text-xs text-gray-400">No special categories</span>
             )}
           </div>
+
         </div>
       </div>
     </div>
@@ -778,6 +841,7 @@ function Field({ label, children }) {
       <label className="block text-xs mb-1 font-semibold text-[#0F3D2E]">
         {label}
       </label>
+
       {children}
     </div>
   );
@@ -792,7 +856,9 @@ function Display({ value }) {
 }
 
 function ErrorText({ children }) {
+
   return <p className="text-red-500 text-xs mt-1">{children}</p>;
+
 }
 
 const inputCls = `
@@ -801,4 +867,6 @@ const inputCls = `
   font-medium outline-none bg-white
   focus:ring-4 focus:ring-green-100
   focus:border-green-700
+
 `;
+
