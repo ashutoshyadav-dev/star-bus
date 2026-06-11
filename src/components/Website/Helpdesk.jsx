@@ -12,7 +12,7 @@ function HelpDesk() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 🔥 Change stationId dynamically if needed
+  
   const stationId = 1;
 
   useEffect(() => {

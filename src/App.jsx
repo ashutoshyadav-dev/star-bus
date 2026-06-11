@@ -272,17 +272,17 @@ function AppRoutes() {
 
 
         <Route
-          path="help-desk"
+          path="helpdesk"
           element={<Helpdesktop />}
         />
 
         <Route
-          path="Tender"
+          path="tender"
           element={<Tender />}
         />
 
         <Route
-          path="Contact us"
+          path="Contact"
           element={<ContactUs/>}
         />
 
@@ -298,7 +298,7 @@ function AppRoutes() {
         />
 
         <Route
-          path="Time-table"
+          path="timetable"
           element={<Timetable />}
         />
 
