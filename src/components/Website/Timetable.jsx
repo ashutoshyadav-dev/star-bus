@@ -4,7 +4,7 @@ import Navbar from "../Website/Navbar";
 import Breadcrumb from "../Website/Breadcrumb";
 import { FaSearch, FaBus, FaClock, FaMapMarkerAlt, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { stationApi } from "../../api/station";
-import { cmsApi } from "../../api/cms";            
+import { cmsApi } from "../../api/cms";
 
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
@@ -12,14 +12,14 @@ function formatTime(t) {
   if (!t) return "—";
   if (typeof t === "string") {
     const [h, m] = t.split(":").map(Number);
-    const ampm  = h >= 12 ? "PM" : "AM";
-    const hour  = h % 12 || 12;
+    const ampm = h >= 12 ? "PM" : "AM";
+    const hour = h % 12 || 12;
     return `${String(hour).padStart(2, "0")}:${String(m).padStart(2, "0")} ${ampm}`;
   }
   if (typeof t === "object") {
     const { hour = 0, minute = 0 } = t;
     const ampm = hour >= 12 ? "PM" : "AM";
-    const h12  = hour % 12 || 12;
+    const h12 = hour % 12 || 12;
     return `${String(h12).padStart(2, "0")}:${String(minute).padStart(2, "0")} ${ampm}`;
   }
   return String(t);
@@ -28,9 +28,9 @@ function formatTime(t) {
 // ── RouteModal ────────────────────────────────────────────────────────────────
 
 function RouteModal({ schedule, onClose }) {
-  const [stops,   setStops]   = useState([]);
+  const [stops, setStops] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [error,   setError]   = useState(null);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -40,7 +40,7 @@ function RouteModal({ schedule, onClose }) {
     cmsApi.getRouteOfSchedule({ scheduleId: schedule.scheduleId })  // ← was timetableApi.getRouteOfSchedule(schedule.scheduleId)
       .then((res) => {
         if (cancelled) return;
-        const data  = res.data?.data ?? res.data;
+        const data = res.data?.data ?? res.data;
         const stops = data?.routeStops ?? data?.stops ?? data ?? [];
         setStops(Array.isArray(stops) ? stops : []);
       })
@@ -95,38 +95,60 @@ function RouteModal({ schedule, onClose }) {
             </p>
           )}
           {!loading && !error && stops.length > 0 && (
-            <div className="relative">
-              <div className="absolute left-[14px] top-4 bottom-4 w-[2px] bg-gray-200" />
-              <div className="space-y-0">
-                {stops.map((stop, i) => (
-                  <div key={stop.id ?? i} className="flex items-start gap-4 py-3">
-                    <div className="relative flex-shrink-0">
+            <div className="relative py-2">
+
+              {/* vertical line */}
+              <div className="absolute left-[7px] top-0 bottom-0 w-[2px] bg-gray-200" />
+
+              {stops.map((stop, i) => {
+                const isFirst = i === 0;
+                const isLast = i === stops.length - 1;
+
+                return (
+                  <div key={stop.id ?? i} className="flex gap-3 py-3 relative">
+
+                    {/* solid circle */}
+                    <div className="relative z-10 flex flex-col items-center">
                       <div
-                        className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold text-white z-10 relative
-                          ${i === 0
+                        className={`w-1.5 h-1.5 rounded-full shadow-sm
+              ${isFirst
                             ? "bg-green-500"
-                            : i === stops.length - 1
-                            ? "bg-red-500"
-                            : "bg-orange-400"}`}
-                      >
-                        {i + 1}
-                      </div>
+                            : isLast
+                              ? "bg-red-500"
+                              : "bg-orange-400"
+                          }`}
+                      />
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-gray-800 text-sm leading-tight">
+
+                    {/* station info */}
+                    <div className="flex-1 -mt-1">
+
+                      {/* station name */}
+                      <p className="text-sm font-medium text-gray-800 leading-tight">
                         {stop.stationName ?? stop.name ?? "—"}
                       </p>
+
+                      {/* ultra compact timing */}
                       {(stop.arrivalTime || stop.departureTime) && (
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {stop.arrivalTime
-                            ? `Arr: ${formatTime(stop.arrivalTime)}`
-                            : `Dep: ${formatTime(stop.departureTime)}`}
+                        <p className="text-[11px] text-gray-500 mt-0.5 flex gap-2 flex-wrap">
+                          {stop.arrivalTime && (
+                            <span className="px-1.5 py-[1px] rounded bg-blue-50 text-blue-600">
+                              A {formatTime(stop.arrivalTime)}
+                            </span>
+                          )}
+
+                          {stop.departureTime && (
+                            <span className="px-1.5 py-[1px] rounded bg-green-50 text-green-600">
+                              D {formatTime(stop.departureTime)}
+                            </span>
+                          )}
                         </p>
                       )}
+
                     </div>
                   </div>
-                ))}
-              </div>
+                );
+              })}
             </div>
           )}
         </div>
@@ -204,17 +226,17 @@ function ScheduleCard({ item, onShowRoute }) {
 // ── Timetable ─────────────────────────────────────────────────────────────────
 
 function Timetable() {
-  const [stations,        setStations]        = useState([]);
+  const [stations, setStations] = useState([]);
   const [loadingStations, setLoadingStations] = useState(true);
-  const [formData,        setFormData]        = useState({
+  const [formData, setFormData] = useState({
     fromStationId: "",
-    toStationId:   "",
-    date:          "",
-    serviceType:   "",
+    toStationId: "",
+    date: "",
+    serviceType: "",
   });
-  const [loading,    setLoading]    = useState(false);
-  const [schedules,  setSchedules]  = useState([]);
-  const [searched,   setSearched]   = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [schedules, setSchedules] = useState([]);
+  const [searched, setSearched] = useState(false);
   const [routeModal, setRouteModal] = useState(null);
 
   useEffect(() => {
@@ -235,9 +257,9 @@ function Timetable() {
     try {
       const params = {
         fromStationId: Number(formData.fromStationId),
-        toStationId:   Number(formData.toStationId),
+        toStationId: Number(formData.toStationId),
       };
-      if (formData.date)        params.date        = formData.date;
+      if (formData.date) params.date = formData.date;
       if (formData.serviceType) params.serviceType = formData.serviceType;
 
       const res = await cmsApi.search(params);  // ← was timetableApi.search(params)
@@ -258,8 +280,8 @@ function Timetable() {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    
-    
+
+
     if (!formData.fromStationId || !formData.toStationId) return;
     if (formData.fromStationId === formData.toStationId) {
       alert("Origin and destination cannot be the same.");

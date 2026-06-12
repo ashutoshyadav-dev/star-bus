@@ -47,7 +47,7 @@ const SEAT_COLORS = {
   booked:    "#6b7280",
   locked:    "#f97316",
   hold:      "#f97316",
-  available: "transparent",
+  available: "white",
 };
 
 // =============================================================================
@@ -83,32 +83,51 @@ function Spinner() {
   );
 }
 
-/* ── Seat SVG icon — renders one seat cell on the seat map ── */
+/* ── Seat SVG icon — renders one seat cell on the seat map ── new update*/
 function SeatIcon({ label, displayType, onClick }) {
-  const fill    = SEAT_COLORS[displayType] ?? "transparent";
-  const stroke  = displayType === "available" ? "#94a3b8" : fill;
-  const blocked = ["booked", "locked", "hold"].includes(displayType);
+  const fill = SEAT_COLORS[displayType] || "white";
 
   return (
-    <div
-      // onMouseDown instead of onClick avoids the double-fire issue caused by
-      // React's synthetic event batching when state updates happen mid-click
-      onMouseDown={!blocked ? (e) => { e.preventDefault(); onClick(); } : undefined}
-      title={label}
-      className={`flex flex-col items-center select-none ${
-        blocked
-          ? "cursor-not-allowed opacity-60"
-          : "cursor-pointer hover:opacity-80 transition-opacity"
-      }`}
+    <button
+      onClick={onClick}
+      className="cursor-pointer hover:scale-105 transition-transform"
     >
-      <svg width="34" height="34" viewBox="0 0 24 24">
-        <rect x="6"  y="2"  width="12" height="5"  rx="2"
-          fill={fill} stroke={stroke} strokeWidth="1.5" />
-        <rect x="4"  y="7"  width="16" height="13" rx="3"
-          fill={fill} stroke={stroke} strokeWidth="1.5" />
+      <svg width="42" height="52" viewBox="0 0 42 52">
+        
+        {/* Seat body */}
+        <rect
+          x="8"
+          y="6"
+          width="26"
+          height="30"
+          rx="3"
+          fill={fill}
+          stroke="#444"
+          strokeWidth="1.5"
+        />
+
+        {/* left arm */}
+        <rect x="3" y="8" width="5" height="22" rx="2" fill="#fff" stroke="#666" />
+
+        {/* right arm */}
+        <rect x="34" y="8" width="5" height="22" rx="2" fill="#fff" stroke="#666" />
+
+        {/* bottom cushion */}
+        <rect x="10" y="33" width="22" height="6" rx="2" fill="#fff" stroke="#666" />
+
+        {/* seat number */}
+        <text
+          x="21"
+          y="24"
+          textAnchor="middle"
+          fontSize="11"
+          fontWeight="700"
+          fill="#222"
+        >
+          {label}
+        </text>
       </svg>
-      <span className="text-[10px] mt-1 text-white">{label}</span>
-    </div>
+    </button>
   );
 }
 
@@ -447,15 +466,20 @@ export default function SeatSelection() {
     )
   );
 
-  /* ── Compute visual display type for one seat ── */
-  const getDisplayType = (seat) => {
-    if (selectedSeats.find((s) => s.id === seat.id)) return "selected";
-    const status = (seat.seatStatus ?? "").toLowerCase();
-    if (status === "booked")                      return "booked";
-    if (status === "locked" || status === "hold") return "locked";
-    if (seat.isLadiesQuota)                       return "ladies";
-    return "available";
-  };
+  /* ── Compute visual display type for one seat ──  new update___*/
+ const getDisplayType = (seat) => {
+  if (selectedSeats.find((s) => s.id === seat.id)) return "selected";
+
+  const status = (seat.seatStatus ?? "").toLowerCase();
+
+  if (status === "booked") return "booked";
+  if (status === "locked" || status === "hold") return "locked";
+
+  if (seat.isDriverSeat) return "driver";   // NEW
+  if (seat.isLadiesQuota) return "ladies";
+
+  return "available";
+};
 
   // ==========================================================================
   // SECTION 3 — SEAT SELECTION & PASSENGER DETAILS

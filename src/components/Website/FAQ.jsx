@@ -22,7 +22,7 @@ function FAQ() {
         const all = res.data?.data ?? res.data ?? [];
         // group by category
         const map = {};
-        all.forEach((f) => {
+        all.forEach((f) => { 
           const cat = f.category?.toLowerCase();
           if (!map[cat]) map[cat] = [];
           map[cat].push(f);
