@@ -424,47 +424,80 @@ export default function SeatSelection() {
       .catch(() => {});
   }, [scheduleId, fromId, toId]);
 
-  /* ── Fetch seat map once sequences are resolved ── */
+  
+
   const fetchSeats = useCallback(() => {
-    if (!scheduleId) {
-      setSeatError("No schedule selected.");
-      setLoadingSeats(false);
-      return;
-    }
-    setLoadingSeats(true);
-    setSeatError("");
+  console.log("FETCHING SEATS");
 
-    getScheduleSeats(scheduleId, fromStopSeq, toStopSeq)
-      .then((res) =>
-        setSeatMap(Array.isArray(res.data) ? res.data : (res.data?.data ?? []))
-      )
-      .catch(() => setSeatError("Failed to load seat map. Please try again."))
-      .finally(() => setLoadingSeats(false));
-  }, [scheduleId, fromStopSeq, toStopSeq]);
+  getScheduleSeats(scheduleId, fromStopSeq, toStopSeq)
+    .then((res) => {
 
-  useEffect(() => {
-    if (fromStopSeq !== null && toStopSeq !== null) {
-      fetchSeats();
-    }
-  }, [fetchSeats, fromStopSeq, toStopSeq]);
+      console.log("Seat API Full Response:", res);
+      console.log("Seat API Data:", res.data);
 
+      const seats =
+        Array.isArray(res.data)
+          ? res.data
+          : (res.data?.data ?? []);
+
+      console.log("Parsed Seats:", seats);
+
+      setSeatMap(seats);
+    })
+    .catch((err) => {
+      console.error("Seat API Error:", err);
+      setSeatError("Failed to load seat map.");
+    })
+    .finally(() => setLoadingSeats(false));
+
+}, [scheduleId, fromStopSeq, toStopSeq]);
+
+ 
+useEffect(() => {
+  console.log("fromStopSeq =", fromStopSeq);
+  console.log("toStopSeq =", toStopSeq);
+
+  if (fromStopSeq !== null && toStopSeq !== null) {
+    console.log("Calling fetchSeats()");
+    fetchSeats();
+  }
+}, [fetchSeats, fromStopSeq, toStopSeq]);
   // ==========================================================================
   // SECTION 2 — SEAT MAP GRID COMPUTATION
   // Builds a 2-D array (rows × cols) from the flat seatMap list so we can
   // render the physical bus layout with an aisle gap in the middle.
   // ==========================================================================
 
-  const maxRow        = seatMap.reduce((m, s) => Math.max(m, s.rowNumber ?? 0), 0);
-  const maxCol        = seatMap.reduce((m, s) => Math.max(m, s.colNumber ?? 0), 0);
-  const aisleAfterCol = Math.floor(maxCol / 2);
+ const maxRow = seatMap.reduce((m, s) => Math.max(m, s.rowNumber ?? 0), 0);
+const maxCol = seatMap.reduce((m, s) => Math.max(m, s.colNumber ?? 0), 0);
 
-  const grid = Array.from({ length: maxRow }, (_, ri) =>
-    Array.from({ length: maxCol }, (_, ci) =>
-      seatMap.find(
-        (s) => s.rowNumber === ri + 1 && s.colNumber === ci + 1
-      ) ?? null
-    )
-  );
+console.log("========== SEAT DEBUG ==========");
+console.log("seatMap:", seatMap);
+console.log("seatMap length:", seatMap.length);
+console.log("scheduleId:", scheduleId);
+console.log("fromStopSeq:", fromStopSeq);
+console.log("toStopSeq:", toStopSeq);
+console.log("================================");
+
+// Detect the aisle column by finding the col that has no seat in any
+// non-last row. This works for 2+2 layouts AND last-row-full layouts.
+const colsInNonLastRows = new Set(
+  seatMap.filter(s => s.rowNumber < maxRow).map(s => s.colNumber)
+);
+const aisleAfterCol = (() => {
+  for (let c = 2; c < maxCol; c++) {
+    if (!colsInNonLastRows.has(c)) return c; // first gap = aisle column
+  }
+  return Math.floor(maxCol / 2); // fallback
+})();
+
+const grid = Array.from({ length: maxRow }, (_, ri) =>
+  Array.from({ length: maxCol }, (_, ci) =>
+    seatMap.find(
+      (s) => s.rowNumber === ri + 1 && s.colNumber === ci + 1
+    ) ?? null
+  )
+);
 
   /* ── Compute visual display type for one seat ──  new update___*/
  const getDisplayType = (seat) => {
@@ -1068,8 +1101,10 @@ export default function SeatSelection() {
                     <div key={ri} className="flex items-center gap-1">
                       {row.map((seat, ci) => (
                         <div key={ci} className="flex items-center">
-                          {/* Aisle gap */}
-                          {ci === aisleAfterCol && <div className="w-5" />}
+                          {/* Aisle gap — only shown when this row has no seat in the aisle column */}
+{ci === aisleAfterCol && row[aisleAfterCol - 1] === null && (
+  <div className="w-5" />
+)}
                           {seat ? (
                             <SeatIcon
                               label={seat.seatLabel}
