@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import busImg from "../../assets/bus.png";
 import logo from "../../assets/logo.png";
+import Logo from "../../assets/logo2.jpeg"
 
 function NoticePopup() {
   const [show, setShow] = useState(true);
@@ -48,6 +49,12 @@ function NoticePopup() {
       VIA NAHARLAGUN, ITANAGAR
     </p>
   </div>
+
+  <img
+    src={Logo}
+    alt="logo"
+    className="object-contain w-20 h-20"
+  />
 
 </div>
 
