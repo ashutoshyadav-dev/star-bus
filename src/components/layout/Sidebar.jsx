@@ -121,13 +121,13 @@ const cmsItems = [
     icon: FileText,
   },
   {
-    label: "News",
-    path: "/admin/news",
+    label: "Menu",
+    path: "/admin/cms/menu",
     icon: Newspaper,
   },
   {
-    label: "Images",
-    path: "/admin/image",
+    label: "Gallery",
+    path: "/admin/cms/gallery",
     icon: ImageIcon,
   },
 ];

@@ -40,3 +40,13 @@ export const getMaintenanceById    = (id)               => api.get(`/maintenance
 export const createMaintenance     = (payload)          => api.post("/maintenances/maintenance", payload);
 export const updateMaintenance     = (id, payload)      => api.put(`/maintenances/maintenance/${id}`, payload);
 export const completeMaintenance   = (id, completedAt)  => api.patch(`/maintenances/maintenance/${id}/complete${completedAt ? `?completedAt=${completedAt}` : ""}`);
+
+
+// ── Bus Type Image ────────────────────────────────────────────────────────────
+export const uploadBusTypeImage = (id, file) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  return api.patch(`/bus-types/${id}/image`, fd, {
+    headers: { "Content-Type": "multipart/form-data" },
+  });
+};

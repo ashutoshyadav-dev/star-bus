@@ -43,6 +43,8 @@ import ScheduleInventoryManagement from "./pages/schedule/ScheduleInventoryManag
 import DutyAssignmentManagement from "./pages/schedule/DutyAssignmentManagement";
 import CmsFaqPage from "./pages/cms/faqPage";
 import AdminGrievancePage from "./pages/grievance/AdminGrievancePage"
+import AdminGallery from "./pages/cms/AdminGallery";
+import AdminMenu    from "./pages/cms/AdminMenu";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
@@ -248,6 +250,8 @@ function AppRoutes() {
         <Route path="/admin/schedules/:id/duty" element={<DutyAssignmentManagement />} />
         <Route path="/admin/faq"  element={<CmsFaqPage />} />
         <Route path="/admin/grievance" element={<AdminGrievancePage/>} />
+        <Route path="/admin/cms/gallery" element={<AdminGallery />} />
+        <Route path="/admin/cms/menu"    element={<AdminMenu />} />
 
       </Route>
 
