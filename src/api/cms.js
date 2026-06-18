@@ -100,5 +100,34 @@ export const cmsApi = {
 
   adminDeleteMenu: (id) =>
     api.delete(`/admin/cms/menus/${id}`),
+  
+
+
+  // ─── CMS Pages — Public ───────────────────────────────────────────────────────
+getPage: (slug) => api.get(`/public/cms/pages/${slug}`),
+
+// ─── CMS Pages — Admin ────────────────────────────────────────────────────────
+adminGetAllPages:    ()          => api.get("/admin/cms/pages"),
+adminGetPage:        (slug)      => api.get(`/admin/cms/pages/${slug}`),
+adminCreatePage:     (data)      => api.post("/admin/cms/pages", data),
+adminUpdatePage:     (id, data)  => api.put(`/admin/cms/pages/${id}`, data),
+adminUpdateContent:  (id, content) => api.patch(`/admin/cms/pages/${id}/content`, content),
+adminPublishPage:    (id)        => api.patch(`/admin/cms/pages/${id}/publish`),
+adminUnpublishPage:  (id)        => api.patch(`/admin/cms/pages/${id}/unpublish`),
+adminDeletePage:     (id)        => api.delete(`/admin/cms/pages/${id}`),
+
+// Documents
+adminGetDocuments:   (pageId)    => api.get(`/admin/cms/pages/${pageId}/documents`),
+adminAddDocument:    (pageId, formData) => api.post(
+  `/admin/cms/pages/${pageId}/documents`, formData,
+  { headers: { "Content-Type": "multipart/form-data" } }
+),
+adminUploadDocFile:  (docId, file) => {
+  const fd = new FormData();
+  fd.append("file", file);
+  return api.patch(`/admin/cms/documents/${docId}/upload`, fd,
+    { headers: { "Content-Type": "multipart/form-data" } });
+},
+adminDeleteDocument: (docId) => api.delete(`/admin/cms/documents/${docId}`),
 
 };
