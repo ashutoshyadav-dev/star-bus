@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { depotApi } from "../api/depot"; 
+import { depotApi } from "../../api/depot"; 
 
 const DepotForm = () => {
   const navigate = useNavigate();

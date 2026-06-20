@@ -2,7 +2,7 @@ import React, { useState } from "react";
 import { Search, CheckCircle, Ban, ShieldOff, ShieldCheck, Plus, Eye, Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { useNavigate } from "react-router-dom";
-import { getAllRoutes, suspendRoute, activateRoute } from "../api/route";
+import { getAllRoutes, suspendRoute, activateRoute } from "../../api/route";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
 

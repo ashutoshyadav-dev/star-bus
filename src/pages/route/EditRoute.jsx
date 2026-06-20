@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useQuery, useMutation, useQueryClient } from "react-query";
-import { getRouteById, updateRoute } from "../api/route";
-import { depotApi } from "../api/depot";
+import { getRouteById, updateRoute } from "../../api/route";
+import { depotApi } from "../../api/depot";
 import toast from "react-hot-toast";
 import { ArrowLeft } from "lucide-react";
 

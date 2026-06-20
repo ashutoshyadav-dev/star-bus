@@ -130,6 +130,11 @@ const cmsItems = [
     path: "/admin/cms/gallery",
     icon: ImageIcon,
   },
+  {
+    label: "Page Editor",
+    path: "/admin/cms/pages",
+    icon: ImageIcon,
+  },
 ];
 
 export default function Sidebar() {

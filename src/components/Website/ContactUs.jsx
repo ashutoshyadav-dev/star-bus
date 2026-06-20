@@ -1,5 +1,4 @@
 import banner from "../../assets/banner.png";
-import Navbar from "../Website/Navbar";
 import Breadcrumb from "../Website/Breadcrumb";
 import {
   FaPhoneAlt,
@@ -11,7 +10,7 @@ import {
 function ContactUs() {
   return (
     <div className="w-full bg-[#f5f7fa] min-h-screen">
-      <Navbar />
+
 
       {/* HERO */}
       <div className="relative h-[320px] flex items-center px-10 pt-20 text-white">

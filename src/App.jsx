@@ -8,6 +8,8 @@ import {
 
 import { AuthProvider, useAuth } from "./context/AuthContext";
 import { Suspense, lazy } from "react";
+import CmsPageRenderer from "./components/cms/CmsPageRenderer"
+
 
 // ── Spinner fallback ────────────────────────────────────────────────────────
 import PageLoader from "./components/common/PageLoader";
@@ -22,20 +24,20 @@ import BookingsPage from "./pages/booking/BookingsPage";
 import PaymentsPage from "./pages/payment/PaymentsPage";
 import RefundsPage from "./pages/refund/RefundsPage";
 import AdminWalletPage from "./pages/wallet/AdminWalletPage";
-import UserManagement from "./pages/UserManagement";
-import RouteManagement from "./pages/RouteManagement";
-import DepotForm from "./pages/DepotForm";
-import StationForm from "./pages/StationForm";
+import UserManagement from "./pages/users/UserManagement";
+import RouteManagement from "./pages/route/RouteManagement";
+import DepotForm from "./pages/depot/DepotForm";
+import StationForm from "./pages/station/StationForm";
 import BusListPage from "./pages/bus/BusListPage";
 import BusFormPage from "./pages/bus/BusFormPage";
 import BusDetailPage from "./pages/bus/BusDetailPage";
 import BusTypesPage from "./pages/bus/BusTypesPage";
-import AddUser from "./pages/AddUser";
-import AddRoute from "./pages/AddRoute";
+import AddUser from "./pages/users/AddUser";
+import AddRoute from "./pages/route/AddRoute";
 import AdminPassengerProfile from "./components/admin/AdminPassengerProfile";
 import AdminUserProfile from "./components/admin/AdminUserProfile";
-import EditRoute from "./pages/EditRoute";
-import RouteDetailPage from "./pages/RouteDetailPage";
+import EditRoute from "./pages/route/EditRoute";
+import RouteDetailPage from "./pages/route/RouteDetailPage";
 import ScheduleManagement from "./pages/schedule/ScheduleManagement";
 import AddSchedule from "./pages/schedule/AddSchedule";
 import ScheduleDetails from "./pages/schedule/ScheduleDetails";
@@ -45,6 +47,7 @@ import CmsFaqPage from "./pages/cms/faqPage";
 import AdminGrievancePage from "./pages/grievance/AdminGrievancePage"
 import AdminGallery from "./pages/cms/AdminGallery";
 import AdminMenu    from "./pages/cms/AdminMenu";
+import AdminCmsPages from "./pages/cms/AdminCmsPages";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
@@ -138,7 +141,8 @@ if (!isInitialized) return <PageLoader />;
 
 // ── Public Website wrapper ──────────────────────────────────────────────────
 
-const MAIN_PAGES = ["/ap", "/ap/our-history", "/ap/routes"];
+// const MAIN_PAGES = ["/ap", "/ap/our-history", "/ap/routes"];
+const MAIN_PAGES = ["/ap"];
 
 
 function WebsiteLayout() {
@@ -252,7 +256,7 @@ function AppRoutes() {
         <Route path="/admin/grievance" element={<AdminGrievancePage/>} />
         <Route path="/admin/cms/gallery" element={<AdminGallery />} />
         <Route path="/admin/cms/menu"    element={<AdminMenu />} />
-
+        <Route path="/admin/cms/pages" element={<AdminCmsPages />} />
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}
@@ -286,12 +290,12 @@ function AppRoutes() {
         />
 
         <Route
-          path="Contact"
+          path="contact"
           element={<ContactUs/>}
         />
 
         <Route
-          path="Cancellation-Policy"
+          path="cancellation-policy"
           element={<CancellationPolicy />}
         />
 
@@ -310,7 +314,10 @@ function AppRoutes() {
 
         <Route path="routes" element={<BusService />} />
 
+        <Route path=":slug" element={<CmsPageRenderer />} />
+
         <Route path="*" element={<Home />} />
+        
       </Route>
     </Routes>
   );

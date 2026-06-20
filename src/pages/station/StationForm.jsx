@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { ArrowLeft, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
-import { stationApi } from "../api/station";
-import { depotApi } from "../api/depot";
+import { stationApi } from "../../api/station";
+import { depotApi } from "../../api/depot";
 import toast from "react-hot-toast";
 
 const StationForm = () => {

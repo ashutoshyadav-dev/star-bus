@@ -11,7 +11,7 @@ export const deactivateBusType  = (id)                  => api.delete(`/bus-type
 // ── Buses ─────────────────────────────────────────────────────────────────────
 // export const getAllBuses         = (status)              => api.get(`/buses${status ? `?status=${status}` : ""}`);
 export const getAllBuses = (status) => {
-  console.trace("getAllBuses called");
+  // console.trace("getAllBuses called");
 
   return api.get(
     `/buses${status ? `?status=${status}` : ""}`

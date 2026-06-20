@@ -1,11 +1,10 @@
 import { useState, useEffect } from "react";
 import banner from "../../assets/banner.png";
-import Navbar from "../Website/Navbar";
 import Breadcrumb from "../Website/Breadcrumb";
 import { FaSearch, FaBus, FaClock, FaMapMarkerAlt, FaChevronDown, FaChevronUp } from "react-icons/fa";
 import { stationApi } from "../../api/station";
 import { cmsApi } from "../../api/cms";
-
+import toast from "react-hot-toast";
 // ── Utilities ─────────────────────────────────────────────────────────────────
 
 function formatTime(t) {
@@ -284,7 +283,7 @@ function Timetable() {
 
     if (!formData.fromStationId || !formData.toStationId) return;
     if (formData.fromStationId === formData.toStationId) {
-      alert("Origin and destination cannot be the same.");
+      toast.error("Origin and destination cannot be the same.");
       return;
     }
     fetchTimetable();
@@ -292,7 +291,7 @@ function Timetable() {
 
   return (
     <div className="w-full bg-[#f5f7fa] min-h-screen">
-      <Navbar />
+     
 
       {/* Hero */}
       <div className="relative h-[320px] flex items-center px-10 pt-20 text-white">

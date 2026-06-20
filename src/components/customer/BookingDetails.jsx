@@ -1,5 +1,6 @@
 import { useNavigate, useLocation } from "react-router-dom";
 import { useRef } from "react";
+import toast from "react-hot-toast";
 import {
   FiArrowLeft,
   FiDownload,
@@ -132,7 +133,7 @@ export default function BookingDetails() {
 
   } catch (err) {
     console.error("PDF generation failed:", err);
-    alert("Could not generate PDF. Please try again.");
+   toast.error("Could not generate PDF. Please try again.");
   }
 };
 

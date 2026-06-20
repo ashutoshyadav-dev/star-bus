@@ -1,6 +1,5 @@
 import { useState, useEffect } from "react";
 import banner from "../../assets/banner.png";
-import Navbar from "../Website/Navbar";
 import Breadcrumb from "../Website/Breadcrumb";
 import { FaPhoneAlt, FaSearch, FaHeadset, FaEnvelope } from "react-icons/fa";
 import { cmsApi } from "../../api/cms";
@@ -74,7 +73,7 @@ function HelpDesk() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    
 
       {/* HERO */}
       <div className="relative h-[300px] flex items-center px-10 text-white">

@@ -3,7 +3,7 @@ import busImg from "../../assets/Valley.png";
 import { useLocation } from "react-router-dom";
 import { useState } from "react";
 import Breadcrumb from "../Website/Breadcrumb";
-import Navbar from "../Website/Navbar";
+
 
 function BusService() {
   const location = useLocation();
@@ -57,7 +57,7 @@ const [selectedRoute, setSelectedRoute] = useState(null);
 
   return (
     <div className="w-full bg-[#f5f7fa]">
- <Navbar />
+
       {/* HERO */}
       <div className="relative h-[250px] flex items-center px-10 pt-20 text-white">
         <div

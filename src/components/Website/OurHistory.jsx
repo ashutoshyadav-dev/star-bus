@@ -1,161 +1,113 @@
 import banner from "../../assets/banner.png";
-import Navbar from "../Website/Navbar";
 import Breadcrumb from "../Website/Breadcrumb";
-import {
-  FaBus,
-  FaRoute,
-  FaBuilding,
-  FaNetworkWired,
-  FaCheckCircle
-} from "react-icons/fa";
+import { FaBus, FaRoute, FaBuilding, FaNetworkWired, FaCheckCircle } from "react-icons/fa";
+import { useCmsPage } from "../../hooks/useCmsPage";
+
+const STAT_META = [
+  { key: "statBuses",       label: "Total Buses",  color: "text-green-500",  icon: "bus"     },
+  { key: "statRoutes",      label: "Routes",       color: "text-orange-500", icon: "route"   },
+  { key: "statStations",    label: "Stations",     color: "text-green-500",  icon: "building"},
+  { key: "statSubStations", label: "Sub Stations", color: "text-purple-500", icon: "network" },
+];
+
+const ICONS = {
+  bus:      <FaBus />,
+  route:    <FaRoute />,
+  building: <FaBuilding />,
+  network:  <FaNetworkWired />,
+};
 
 function OurHistory() {
+  const { page, loading } = useCmsPage("our-history");
+  const c = page?.content ?? {};
+
   return (
     <div className="w-full bg-[#f5f7fa]">
+     
 
-      {/* NAVBAR */}
-      <Navbar />
-
-      {/* HERO */}
       <div className="relative h-[320px] flex items-center px-10 pt-20 text-white">
-
-        {/* BG */}
-        <div
-          className="absolute inset-0 bg-center bg-cover"
-          style={{ backgroundImage: `url(${banner})` }}
-        ></div>
-
-        {/* OVERLAY */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30"></div>
-
-        {/* CONTENT */}
+        <div className="absolute inset-0 bg-center bg-cover"
+          style={{ backgroundImage: `url(${banner})` }} />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/70 to-black/30" />
         <div className="relative z-10 max-w-3xl">
           <h1 className="text-5xl font-bold">
-            Our <span className="text-green-400">History</span>
+            {page?.title?.split(" ").slice(0,-1).join(" ")}{" "}
+            <span className="text-green-400">{page?.title?.split(" ").slice(-1)}</span>
           </h1>
-          <p className="mt-2 text-gray-200">
-            Journeying together since 1975 to connect Arunachal Pradesh
-          </p>
+          <p className="mt-2 text-gray-200">{page?.subtitle}</p>
         </div>
       </div>
 
-      {/* BREADCRUMB */}
-      <Breadcrumb title="Our History" />
+      <Breadcrumb title={page?.title ?? "Our History"} />
 
-      {/* MAIN CONTENT */}
-      <div className="grid gap-8 px-10 py-12 lg:grid-cols-3">
-
-        {/* LEFT CONTENT */}
-        <div className="p-8 bg-white shadow-md rounded-2xl lg:col-span-2">
-
-          {/* TITLE */}
-          <h2 className="mb-6 text-2xl font-bold">
-            About Our <span className="text-green-500">Journey</span>
-            <div className="w-20 h-1 mt-2 bg-green-500 rounded"></div>
-          </h2>
-
-          {/* TEXT */}
-          <div className="space-y-4 text-gray-600 text-[15px] leading-relaxed">
-
-            <p>
-              On 5th of December 1975, Arunachal Pradesh State Transport
-              Services (APSTS) started functioning in the State. Initially it
-              started functioning with 02 buses from Khonsa (Dist Tirap) to
-              Naharkatia (Dist Dibrugarh) of Assam.
-            </p>
-
-            <p>
-              APSTS strives to provide safe and affordable public transport
-              service to the people of Arunachal Pradesh by connecting all
-              administrative centres and remote regions.
-            </p>
-
-            <p>
-              At present, the department has a fleet strength of 280 buses
-              covering 119 routes connecting almost all District HQs along with
-              other administrative centres.
-            </p>
-
-          </div>
-
-          {/* FUTURE */}
-          <div className="mt-6">
-            <h3 className="mb-3 text-lg font-semibold">
-              Future Development Plans
-            </h3>
-
-            <ul className="space-y-2 text-sm text-gray-600">
-              {[
-                "Luxury buses with GPS & AC facilities",
-                "Cargo services for remote areas",
-                "Student concession cards",
-                "Free travel for special categories",
-                "Postal mail transport service"
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <FaCheckCircle className="mt-1 text-green-500" />
-                  {item}
-                </li>
-              ))}
-            </ul>
-          </div>
-
+      {loading ? (
+        <div className="flex justify-center py-20">
+          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent
+            rounded-full animate-spin" />
         </div>
+      ) : (
+        <div className="grid gap-8 px-10 py-12 lg:grid-cols-3">
 
-        {/* RIGHT PANEL */}
-        <div className="space-y-6">
+          <div className="p-8 bg-white shadow-md rounded-2xl lg:col-span-2">
+            <h2 className="mb-6 text-2xl font-bold">
+              {c.aboutTitle?.split(" ").slice(0,-1).join(" ")}{" "}
+              <span className="text-green-500">{c.aboutTitle?.split(" ").slice(-1)}</span>
+              <div className="w-20 h-1 mt-2 bg-green-500 rounded" />
+            </h2>
 
-          {/* STATS */}
-          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-4 text-gray-600 text-[15px] leading-relaxed">
+              {(c.paragraphs ?? []).map((p, i) => <p key={i}>{p}</p>)}
+            </div>
 
-            {[
-              { icon: <FaBus />, value: "280", label: "Total Buses", color: "text-green-500" },
-              { icon: <FaRoute />, value: "119", label: "Routes", color: "text-orange-500" },
-              { icon: <FaBuilding />, value: "15", label: "Stations", color: "text-green-500" },
-              { icon: <FaNetworkWired />, value: "7", label: "Sub Stations", color: "text-purple-500" },
-            ].map((item, i) => (
-              <div
-                key={i}
-                className="p-5 text-center transition bg-white shadow-md rounded-xl hover:shadow-lg"
-              >
-                <div className={`text-2xl ${item.color} mx-auto`}>
-                  {item.icon}
-                </div>
-                <p className="mt-2 text-xl font-bold">{item.value}</p>
-                <p className="text-xs text-gray-500">{item.label}</p>
+            {(c.bulletSections ?? []).map((section, si) => (
+              <div key={si} className="mt-6">
+                <h3 className="mb-3 text-lg font-semibold">{section.heading}</h3>
+                <ul className="space-y-2 text-sm text-gray-600">
+                  {(section.items ?? []).map((item, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <FaCheckCircle className="mt-1 text-green-500" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
-
           </div>
 
-          {/* HIGHLIGHTS */}
-          <div className="p-6 text-white shadow-lg rounded-2xl bg-gradient-to-br from-[#0f2027] to-[#14532d]">
-
-            <h3 className="mb-4 text-lg font-semibold">
-              Key Highlights
-            </h3>
-
-            <ul className="space-y-2 text-sm">
-              {[
-                "Safe & Reliable Transport",
-                "Connecting All District HQs",
-                "Inter-State Bus Services",
-                "Cargo & Sumo Services",
-                "Serving Remote Areas"
-              ].map((item, i) => (
-                <li key={i} className="flex items-start gap-2">
-                  <FaCheckCircle className="mt-1 text-yellow-400" />
-                  {item}
-                </li>
+          <div className="space-y-6">
+            <div className="grid grid-cols-2 gap-4">
+              {(c.sidebar?.stats ?? []).map((stat, i) => (
+                <div key={i}
+                  className="p-5 text-center transition bg-white shadow-md
+                    rounded-xl hover:shadow-lg">
+                  <div className={`text-2xl ${STAT_META[i]?.color} mx-auto`}>
+                    {ICONS[STAT_META[i]?.icon]}
+                  </div>
+                  <p className="mt-2 text-xl font-bold">{stat.value}</p>
+                  <p className="text-xs text-gray-500">{stat.label}</p>
+                </div>
               ))}
-            </ul>
+            </div>
 
+            {c.sidebar?.highlights && (
+              <div className="p-6 text-white shadow-lg rounded-2xl
+                bg-gradient-to-br from-[#0f2027] to-[#14532d]">
+                <h3 className="mb-4 text-lg font-semibold">
+                  {c.sidebar.highlights.heading}
+                </h3>
+                <ul className="space-y-2 text-sm">
+                  {(c.sidebar.highlights.items ?? []).map((item, i) => (
+                    <li key={i} className="flex items-start gap-2">
+                      <FaCheckCircle className="mt-1 text-yellow-400" />
+                      {item}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
           </div>
-
         </div>
-
-      </div>
-
+      )}
     </div>
   );
 }
