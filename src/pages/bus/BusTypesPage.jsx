@@ -342,7 +342,7 @@ export default function BusTypesPage() {
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Bus Types</h1>
-          <p className="text-sm text-gray-500 mt-0.5">
+          <p className="text-sm text-gray-700 mt-0.5">
             Define vehicle classes, seat layouts and fleet images
           </p>
         </div>
