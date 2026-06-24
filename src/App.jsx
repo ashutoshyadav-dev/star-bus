@@ -83,8 +83,9 @@ import BookTicket from "./components/customer/BookTicket";
 import MyRefunds from "./components/customer/MyRefund";
 import MyWallet from "./components/customer/CustomerWalletPage"
 import AllGrievance from "./components/customer/Allgrievances"
-
-
+// //  Depertment............
+// import Transport from "./pages/Transport";
+import Transport from "./pages/department/Transport";
 
 // ── Role constants ──────────────────────────────────────────────────────────
 const ADMIN_ROLES = [
@@ -260,11 +261,15 @@ function AppRoutes() {
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}
+<Route path="/" element={<Transport />} />
 
-      <Route path="/" element={<Navigate to="/ap" replace />} />
+<Route path="/ap" element={<WebsiteLayout />}>
+  <Route index element={<Home />} />
+
+      {/* <Route path="/" element={<Navigate to="/ap" replace />} />
 
       <Route path="/ap" element={<WebsiteLayout />}>
-        <Route index element={<Home />} />
+        <Route index element={<Home />} /> */}
 
         <Route path="buses" element={<BusList />} />
 

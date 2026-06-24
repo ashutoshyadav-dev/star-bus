@@ -39,7 +39,7 @@ body {
     @apply bg-[#334155] hover:bg-[#475569] text-[#e2e8f0] font-medium px-4 py-2 rounded-lg transition-colors;
   }
   .btn-danger {
-    @apply bg-red-600 hover:bg-red-700 text-white font-medium px-4 py-2 rounded-lg transition-colors;
+    @apply px-4 py-2 font-medium text-white transition-colors bg-red-600 rounded-lg hover:bg-red-700;
   }
 
   /* Inputs (admin dark) */
@@ -51,10 +51,10 @@ body {
 
   /* Badges */
   .badge        { @apply inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium; }
-  .badge-green  { @apply badge bg-emerald-900/50 text-emerald-400 border border-emerald-800; }
-  .badge-red    { @apply badge bg-red-900/50     text-red-400     border border-red-800; }
-  .badge-yellow { @apply badge bg-amber-900/50   text-amber-400   border border-amber-800; }
-  .badge-blue   { @apply badge bg-blue-900/50    text-blue-400    border border-blue-800; }
+  .badge-green  { @apply border badge bg-emerald-900/50 text-emerald-400 border-emerald-800; }
+  .badge-red    { @apply text-red-400 border border-red-800 badge bg-red-900/50; }
+  .badge-yellow { @apply border badge bg-amber-900/50 text-amber-400 border-amber-800; }
+  .badge-blue   { @apply text-blue-400 border border-blue-800 badge bg-blue-900/50; }
   .badge-gray   { @apply badge bg-[#334155]      text-[#94a3b8]   border border-[#475569]; }
 
   .table-row-hover { @apply hover:bg-[#334155]/50 transition-colors cursor-pointer; }
@@ -63,4 +63,15 @@ body {
   .surface-50  { color: #f8fafc; }
   .surface-400 { color: #94a3b8; }
   .surface-500 { color: #64748b; }
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
