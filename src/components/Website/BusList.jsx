@@ -396,7 +396,7 @@ function BusList() {
       toStopSequence:   sch.toStopSequence,           // new: needed for seat inventory segment query
       fare:             sch.fare ?? 0,                // new: pre-calculated by backend
     });
-    navigate(`/ap/seat-selection?${params.toString()}`);
+    navigate(`/home/seat-selection?${params.toString()}`);
   };
 
   return (

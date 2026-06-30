@@ -48,7 +48,7 @@ function Hero() {
     }
 
     navigate(
-      `/ap/buses?from=${fromStationId}&to=${toStationId}&date=${date}`
+      `/home/buses?from=${fromStationId}&to=${toStationId}&date=${date}`
     );
   };
 

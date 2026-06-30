@@ -75,7 +75,7 @@ export default function Navbar() {
       <div className="relative flex items-center justify-between px-10 lg:px-12 h-[64px] text-white border-b border-white/10">
 
         {/* LEFT LOGO — unchanged */}
-        <div onClick={() => navigate("/ap")} className="flex items-center gap-3 cursor-pointer min-w-fit">
+        <div onClick={() => navigate("/home")} className="flex items-center gap-3 cursor-pointer min-w-fit">
           <img src={logo} alt="APSTS" className="w-9 h-9 rounded-full object-cover border border-white/30 shadow-md" />
           <div className="leading-tight">
             <p className="text-[14px] font-semibold tracking-wide">Arunachal Pradesh State Transport Services</p>
@@ -86,7 +86,7 @@ export default function Navbar() {
         {/* CENTER NAV */}
         <div className="flex items-center gap-10 text-white h-full">
           <span
-            onClick={() => navigate("/ap")}
+            onClick={() => navigate("/home")}
             className="h-full flex items-center cursor-pointer text-[14px] font-medium hover:text-orange-300 transition-all duration-200"
           >
             Home

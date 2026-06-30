@@ -81,7 +81,7 @@ export default function BookTicket() {
     setSearching(true);
 
     navigate(
-      `/ap/buses?from=${fromStationId}&to=${toStationId}&date=${date}`
+      `/home/buses?from=${fromStationId}&to=${toStationId}&date=${date}`
     );
     setTimeout(() => setSearching(false), 500);
   };

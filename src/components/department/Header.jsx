@@ -35,7 +35,7 @@ const Header = () => {
   {/* Center Button */}
   <div className="flex justify-center w-full lg:w-auto lg:absolute lg:left-1/2 lg:-translate-x-1/2">
   <Link
-    to="/ap"
+    to="/home"
     className="
     px-4 md:px-6
     py-2 md:py-3

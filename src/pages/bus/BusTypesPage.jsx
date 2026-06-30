@@ -63,7 +63,12 @@ function SeatLayoutBuilder({ value, onChange, onTotalSeatsChange }) {
     try {
       const parsed = JSON.parse(json);
       onTotalSeatsChange(parsed.seats.length);
-    } catch (_) {}
+    } 
+    catch (error) {
+    toast.error(
+      error?.message || "Failed to generate seat layout"
+    );
+  }
   };
 
   return (

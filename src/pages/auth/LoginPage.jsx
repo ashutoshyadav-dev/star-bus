@@ -32,6 +32,8 @@ export default function LoginPage() {
   const [requestId, setRequestId] = useState("");
   const [loading, setLoading]   = useState(false);
   const [showPass, setShowPass] = useState(false);
+  const [hasConsent, setHasConsent] = useState(false);
+  const [showConsentError, setShowConsentError] = useState(false);
 
   const { saveTokens } = useAuth();
   const navigate = useNavigate();
@@ -99,13 +101,15 @@ export default function LoginPage() {
     setLoading(true);
 
     // The payload now includes `purpose` — the backend will validate it
-    const payload = {
-      phone: fullPhone,
-      otp,
-      requestId,
-      purpose: otpPurpose,  // ← sent to backend for purpose-matching
-    };
-
+   const payload = {
+  phone: fullPhone,
+  otp,
+  requestId,
+  purpose: otpPurpose,
+  hasConsent: mode === "register" ? hasConsent : null,
+};
+ console.log(payload);
+ 
     try {
       let response;
 
@@ -190,6 +194,8 @@ export default function LoginPage() {
     setStep(1);
     setOtp("");
     setRequestId("");
+    setHasConsent(false);
+    setShowConsentError(false);
     resetTimer();
   };
 
@@ -220,7 +226,7 @@ export default function LoginPage() {
 
       {/* Back to Home */}
       <button
-        onClick={() => navigate("/ap")}
+        onClick={() => navigate("/home")}
         className="absolute top-6 right-4 sm:right-6 lg:right-10 z-20 px-4 py-2 rounded-xl
           bg-white/10 backdrop-blur-md border border-white/20 text-white text-sm font-medium
           hover:bg-white/20 transition-all duration-200 shadow-lg"
@@ -312,7 +318,32 @@ export default function LoginPage() {
                   className="w-full border border-gray-300 rounded-xl px-4 py-2.5 text-sm
                     tracking-widest font-mono outline-none focus:ring-2 focus:ring-[#0F3D2E]"
                 />
+                 {mode === "register" && (
+    <div className="rounded-lg border border-gray-200 bg-gray-50 p-3">
+        <label className="flex items-start gap-3 cursor-pointer">
+            <input
+                type="checkbox"
+                checked={hasConsent}
+                onChange={(e) => setHasConsent(e.target.checked)}
+                className="mt-1 h-4 w-4 accent-[#0F3D2E]"
+            />
 
+            <span className="text-xs text-gray-700 leading-5">
+                I hereby provide my consent to receive OTPs and
+                service-related notifications on WhatsApp for
+                authentication, booking confirmation, cancellation,
+                refund and other services.
+                <span className="text-red-500"> *</span>
+            </span>
+        </label>
+
+      {showConsentError && !hasConsent && (
+    <p className="mt-2 text-xs text-red-600">
+        Please provide your consent to continue with registration.
+    </p>
+)}
+    </div>
+)}
                 <div className="flex justify-between items-center text-xs">
                   <button
                     type="button"
@@ -335,7 +366,7 @@ export default function LoginPage() {
 
                 <button
                   type="submit"
-                  disabled={loading}
+                  disabled={loading || (mode === "register" && !hasConsent)}
                   className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5
                     rounded-xl flex justify-center items-center font-semibold transition-colors
                     disabled:opacity-60"

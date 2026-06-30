@@ -63,13 +63,13 @@ function Fleet() {
                 </p>
                 <div className="flex gap-2 mt-4">
                   <button
-                    onClick={() => navigate("/ap/routes", { state: { bus: item.name } })}
+                    onClick={() => navigate("/home/routes", { state: { bus: item.name } })}
                     className="bg-[#0f2c3f] text-white px-3 py-1 rounded text-sm"
                   >
                     Routes
                   </button>
                   <button
-                    onClick={() => navigate("/ap/timetable")}
+                    onClick={() => navigate("/home/timetable")}
                     className="bg-[#0f2c3f] text-white px-3 py-1 rounded text-sm"
                   >
                     Time

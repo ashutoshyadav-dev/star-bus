@@ -100,7 +100,7 @@ function AdminRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/ap/login" replace />;
+  if (!user) return <Navigate to="/home/login" replace />;
 
   const isAdmin = user?.roles?.some((r) =>
     ADMIN_ROLES.includes(r.toUpperCase())
@@ -115,7 +115,7 @@ function UserRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/ap/login" replace />;
+  if (!user) return <Navigate to="/home/login" replace />;
 
   return children;
 }
@@ -143,7 +143,7 @@ if (!isInitialized) return <PageLoader />;
 // ── Public Website wrapper ──────────────────────────────────────────────────
 
 // const MAIN_PAGES = ["/ap", "/ap/our-history", "/ap/routes"];
-const MAIN_PAGES = ["/ap"];
+const MAIN_PAGES = ["/home"];
 
 
 function WebsiteLayout() {
@@ -167,9 +167,12 @@ function WebsiteLayout() {
 function AppRoutes() {
   return (
     <Routes>
+         {/* Default route */}
+      <Route path="/" element={<Navigate to="/ap" replace />} />
+
       {/* ── Auth ──────────────────────────────────────────── */}
       <Route
-        path="/ap/login"
+        path="/home/login"
         element={
           <GuestRoute>
             <LoginPage />
@@ -179,7 +182,7 @@ function AppRoutes() {
 
       <Route
         path="/register"
-        element={<Navigate to="/ap/login" replace />}
+        element={<Navigate to="/home/login" replace />}
       />
 
       {/* ── Utility pages ─────────────────────────────────── */}
@@ -206,15 +209,19 @@ function AppRoutes() {
         <Route path="booking/:id" element={<BookingDetails />} />
         <Route path="profile" element={<Profile />} />
         <Route path="helpdesk" element={<Helpdesk />} />
-        <Route path="/user/my-refunds" element={<MyRefunds />} />
+        <Route path="my-refunds" element={<MyRefunds />} />
 
-        <Route path="/user/wallet" element={<MyWallet/>} />
-        <Route path="/user/all-grievance" element={<AllGrievance/>} />
+        <Route path="wallet" element={<MyWallet/>} />
+        <Route path="all-grievance" element={<AllGrievance/>} />
 
       </Route>
 
+
+
+
       {/* ── Admin Area ────────────────────────────────────── */}
       <Route
+        path="/admin"
         element={
           <AdminRoute>
             <AppLayout />
@@ -222,48 +229,47 @@ function AppRoutes() {
         }
       >
 
-
-        <Route path="/admin/dashboard"      element={<DashboardPage />} />
-        <Route path="/admin/users"          element={<UsersPage />} />
-        <Route path="/admin/roles"          element={<RolesPage />} />
-        <Route path="/admin/audit"          element={<AuditPage />} />
-        <Route path="/admin/bookings"       element={<BookingsPage />} />
-        <Route path="/admin/payments"       element={<PaymentsPage />} />
-        <Route path="/admin/refunds"        element={<RefundsPage />} />
-        <Route path="/admin/wallet"         element={<AdminWalletPage />} />
-        <Route path="/admin/usermanagement" element={<UserManagement />} />
-        <Route path="/admin/routes"         element={<RouteManagement />} />
-        <Route path="/admin/depot"          element={<DepotForm />} />
-        <Route path="/admin/stations"       element={<StationForm />} />
+        <Route path="dashboard"      element={<DashboardPage />} />
+        <Route path="users"          element={<UsersPage />} />
+        <Route path="roles"          element={<RolesPage />} />
+        <Route path="audit"          element={<AuditPage />} />
+        <Route path="bookings"       element={<BookingsPage />} />
+        <Route path="payments"       element={<PaymentsPage />} />
+        <Route path="refunds"        element={<RefundsPage />} />
+        <Route path="wallet"         element={<AdminWalletPage />} />
+        <Route path="usermanagement" element={<UserManagement />} />
+        <Route path="routes"         element={<RouteManagement />} />
+        <Route path="depot"          element={<DepotForm />} />
+        <Route path="stations"       element={<StationForm />} />
         {/* <Route path="/admin/buses"          element={<BusManagement />} /> */}
-        <Route path="/admin/buses"          element={<BusListPage />} />
-        <Route path="/admin/buses/new"      element={<BusFormPage />} />
-        <Route path="/admin/buses/:id"      element={<BusDetailPage />} />
-        <Route path="/admin/buses/:id/edit" element={<BusFormPage />} />
-        <Route path="/admin/bus-types"      element={<BusTypesPage />} />
-        <Route path="/admin/adduser"        element={<AddUser />} />
-        <Route path="/admin/addroute"       element={<AddRoute />} />
+        <Route path="buses"          element={<BusListPage />} />
+        <Route path="buses/new"      element={<BusFormPage />} />
+        <Route path="buses/:id"      element={<BusDetailPage />} />
+        <Route path="buses/:id/edit" element={<BusFormPage />} />
+        <Route path="bus-types"      element={<BusTypesPage />} />
+        <Route path="adduser"        element={<AddUser />} />
+        <Route path="addroute"       element={<AddRoute />} />
         {/* <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/> */}
-        <Route path="/admin/user-profile/:id/:type" element={<AdminUserProfile />}/>
-        <Route path="/admin/routes/:id"      element={<RouteDetailPage />} />
+        <Route path="user-profile/:id/:type" element={<AdminUserProfile />}/>
+        <Route path="routes/:id"      element={<RouteDetailPage />} />
 
-        <Route path="/admin/routes/:id/edit" element={<EditRoute />} />
-        <Route path="/admin/schedules" element={<ScheduleManagement />} />
-        <Route path="/admin/schedules/add" element={<AddSchedule />} />
-        <Route path="/admin/schedules/:id" element={<ScheduleDetails />} />
-        <Route path="/admin/schedules/:id/seats" element={<ScheduleInventoryManagement />} />
-        <Route path="/admin/schedules/:id/duty" element={<DutyAssignmentManagement />} />
-        <Route path="/admin/faq"  element={<CmsFaqPage />} />
-        <Route path="/admin/grievance" element={<AdminGrievancePage/>} />
-        <Route path="/admin/cms/gallery" element={<AdminGallery />} />
-        <Route path="/admin/cms/menu"    element={<AdminMenu />} />
-        <Route path="/admin/cms/pages" element={<AdminCmsPages />} />
+        <Route path="routes/:id/edit" element={<EditRoute />} />
+        <Route path="schedules" element={<ScheduleManagement />} />
+        <Route path="schedules/add" element={<AddSchedule />} />
+        <Route path="schedules/:id" element={<ScheduleDetails />} />
+        <Route path="schedules/:id/seats" element={<ScheduleInventoryManagement />} />
+        <Route path="schedules/:id/duty" element={<DutyAssignmentManagement />} />
+        <Route path="faq"  element={<CmsFaqPage />} />
+        <Route path="grievance" element={<AdminGrievancePage/>} />
+        <Route path="cms/gallery" element={<AdminGallery />} />
+        <Route path="cms/menu"    element={<AdminMenu />} />
+        <Route path="cms/pages" element={<AdminCmsPages />} />
       </Route>
 
       {/* ── Public Website ────────────────────────────────── */}
-<Route path="/" element={<Transport />} />
+<Route path="/ap" element={<Transport />} />
 
-<Route path="/ap" element={<WebsiteLayout />}>
+<Route path="/home" element={<WebsiteLayout />}>
   <Route index element={<Home />} />
 
       {/* <Route path="/" element={<Navigate to="/ap" replace />} />

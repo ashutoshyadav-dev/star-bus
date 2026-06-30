@@ -1,6 +1,6 @@
 // =============================================================================
 // SeatSelection.jsx
-// Public route (/ap/seat-selection) — accessible from both home page and
+// Public route (/home/seat-selection) — accessible from both home page and
 // the logged-in dashboard. Auth state is handled inline:
 //   • Guest  → sees Login button in navbar + LoginGateModal on seat click
 //   • Logged-in passenger → sees name + logout button in navbar
@@ -144,7 +144,7 @@ function SeatNavbar({ user, onLogout }) {
 
       {/* Left — logo + title */}
       <div
-        onClick={() => navigate("/ap")}
+        onClick={() => navigate("/home")}
         className="flex items-center gap-3 cursor-pointer"
       >
         <img src={logo} alt="APSTS"
@@ -181,7 +181,7 @@ function SeatNavbar({ user, onLogout }) {
       ) : (
         // Guest: prompt to login
         <button
-          onClick={() => navigate("/ap/login")}
+          onClick={() => navigate("/home/login")}
           className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm
             font-medium bg-orange-500 hover:bg-orange-600 transition"
         >
@@ -949,7 +949,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
             const redirect = encodeURIComponent(
               window.location.pathname + window.location.search
             );
-            navigate(`/ap/login?redirect=${redirect}`);
+            navigate(`/home/login?redirect=${redirect}`);
           }}
         />
       )}

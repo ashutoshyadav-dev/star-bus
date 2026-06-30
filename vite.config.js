@@ -7,11 +7,8 @@ export default defineConfig({
     host:'0.0.0.0',
     port:1409,
     allowedHosts:true,
-    proxy: {
-      '/api': 'http://localhost:8080',
-      '/auth': 'http://localhost:8080',
-      '/admin': 'http://localhost:8080',
-      '/passenger': 'http://localhost:8080',
-    }
+    // proxy: {
+    //   '/api': 'http://localhost:7000/apbus/api/v1'
+    // }
   }
 })

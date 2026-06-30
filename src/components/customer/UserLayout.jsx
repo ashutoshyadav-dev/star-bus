@@ -184,7 +184,7 @@ export default function UserLayout() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/ap/login");
+    navigate("/home/login");
   };
 
   return (

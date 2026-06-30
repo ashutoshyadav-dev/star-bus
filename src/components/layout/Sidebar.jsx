@@ -148,7 +148,7 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/ap/login");
+    navigate("/home/login");
   };
 
   const visibleItems = navItems.filter(
