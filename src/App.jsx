@@ -70,6 +70,10 @@ import CancellationPolicy from "./components/Website/Policies"
 import RTI from "./components/Website/RTI"
 import Timetable from "./components/Website/Timetable";
 import ContactUs from "./components/Website/ContactUs";
+import WebInformationMan from "./components/Website/WebInformationMan";
+import Disclaimer from "./components/Website/Disclaimer";
+import PrivacyPolicy from "./components/Website/PrivacyPolicy";
+import TermsAndCondition from "./components/Website/Terms&Condition";
 
 
 // ── Customer / Passenger Area ───────────────────────────────────────────────
@@ -321,6 +325,10 @@ function AppRoutes() {
           element={<Timetable />}
         />
 
+        <Route path="privacy" element={<PrivacyPolicy/>} />
+         <Route path="web-information-manager" element={<WebInformationMan/>} />
+          <Route path="disclaimer" element={<Disclaimer/>} />
+           <Route path="terms-condition" element={<TermsAndCondition/>} />
 
 
         <Route path="routes" element={<BusService />} />

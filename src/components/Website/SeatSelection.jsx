@@ -1,9 +1,18 @@
 // =============================================================================
 // SeatSelection.jsx
-// Public route (/home/seat-selection) — accessible from both home page and
+// Public route (/ap/seat-selection) — accessible from both home page and
 // the logged-in dashboard. Auth state is handled inline:
 //   • Guest  → sees Login button in navbar + LoginGateModal on seat click
 //   • Logged-in passenger → sees name + logout button in navbar
+//
+// PAYMENT FLOW (SBI ePay 2.0):
+//   Unlike Razorpay, SBI ePay has no in-page checkout modal. Paying means the
+//   whole browser navigates AWAY to a bank-hosted page, then gets redirected
+//   BACK by our own backend (GET /payments/callback) to this same route with
+//   `?bookingId=...&paymentStatus=success|failed` appended.
+//   Because the page fully reloads, all React state is lost in between — so
+//   right before redirecting we snapshot booking/seats/contact into
+//   sessionStorage, and restore it on mount if we detect a returning payment.
 // =============================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -21,7 +30,6 @@ import { getScheduleSeats, lockSeatForJourney, getScheduleById } from "../../api
 import api                                           from "../../api/client";
 import { bookingApi, paymentApi }                    from "../../api/booking";
 import { ProgressBar }                               from "./BusList";
-import { loadRazorpay }                              from "../../utils/loadRazorpay";
 
 import { FiUser, FiLogOut } from "react-icons/fi";
 
@@ -30,15 +38,12 @@ import { FiUser, FiLogOut } from "react-icons/fi";
 // =============================================================================
 
 const SEAT_LOCK_MINUTES = 10;
-const RAZORPAY_KEY      = import.meta.env.VITE_RAZORPAY_KEY_ID;
 
-// Maps our UI payment method keys → Razorpay's internal method identifiers
-const RAZORPAY_METHOD_MAP = {
-  UPI:         "upi",
-  CREDIT_CARD: "card",
-  DEBIT_CARD:  "card",
-  NET_BANKING: "netbanking",
-};
+// sessionStorage key prefix used to snapshot page state before redirecting
+// the browser away to SBI ePay's hosted payment page, and to restore it when
+// the bank redirects back. NOTE: no gateway key/method-map constants are
+// needed anymore — SBI ePay needs no client-side SDK or public key at all.
+const PAYMENT_SESSION_PREFIX = "apsts_pending_payment_";
 
 // Seat fill colours for the seat map legend and SVG rendering
 const SEAT_COLORS = {
@@ -68,6 +73,33 @@ function formatTime(t) {
   return `${hour % 12 || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
 }
 
+/* ── Session snapshot helpers ──
+   Used to survive the full-page redirect to/from SBI ePay's hosted page. ── */
+function savePaymentSession(bookingId, snapshot) {
+  try {
+    sessionStorage.setItem(
+      PAYMENT_SESSION_PREFIX + bookingId,
+      JSON.stringify(snapshot)
+    );
+  } catch (e) {
+    console.error("Failed to save payment session snapshot", e);
+  }
+}
+
+function loadPaymentSession(bookingId) {
+  try {
+    const raw = sessionStorage.getItem(PAYMENT_SESSION_PREFIX + bookingId);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    console.error("Failed to read payment session snapshot", e);
+    return null;
+  }
+}
+
+function clearPaymentSession(bookingId) {
+  sessionStorage.removeItem(PAYMENT_SESSION_PREFIX + bookingId);
+}
+
 // =============================================================================
 // SMALL SHARED UI COMPONENTS
 // =============================================================================
@@ -93,7 +125,7 @@ function SeatIcon({ label, displayType, onClick }) {
       className="cursor-pointer hover:scale-105 transition-transform"
     >
       <svg width="42" height="52" viewBox="0 0 42 52">
-        
+
         {/* Seat body */}
         <rect
           x="8"
@@ -144,7 +176,7 @@ function SeatNavbar({ user, onLogout }) {
 
       {/* Left — logo + title */}
       <div
-        onClick={() => navigate("/home")}
+        onClick={() => navigate("/ap")}
         className="flex items-center gap-3 cursor-pointer"
       >
         <img src={logo} alt="APSTS"
@@ -181,7 +213,7 @@ function SeatNavbar({ user, onLogout }) {
       ) : (
         // Guest: prompt to login
         <button
-          onClick={() => navigate("/home/login")}
+          onClick={() => navigate("/ap/login")}
           className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm
             font-medium bg-orange-500 hover:bg-orange-600 transition"
         >
@@ -337,19 +369,37 @@ export default function SeatSelection() {
 
   const navigate       = useNavigate();
   const [
-  searchParams] = useSearchParams();
+  searchParams, setSearchParams] = useSearchParams();
   const { user, logout } = useAuth();
   const ticketRef      = useRef();
 
-  // ── URL params passed from BusList ──────────────────────────────────────
-  const scheduleId = searchParams.get("scheduleId");
-  const fromLabel  = decodeURIComponent(searchParams.get("from")      ?? "");
-  const toLabel    = decodeURIComponent(searchParams.get("to")        ?? "");
-  const fromId     = Number(searchParams.get("fromId")                ?? 0);
-  const toId       = Number(searchParams.get("toId")                  ?? 0);
-  const date       = searchParams.get("date")                         ?? "";
-  const busLabel   = decodeURIComponent(searchParams.get("bus")       ?? "");
-  const departure  = searchParams.get("departure")                    ?? "";
+  // ── Detect a "returning from SBI ePay" load ─────────────────────────────
+  // The backend's /payments/callback redirects the browser back here as:
+  //   /ap/seat-selection?bookingId=<uuid>&paymentStatus=success|failed
+  // (none of the original journey query params survive that hop, which is
+  // exactly why we snapshot everything into sessionStorage before leaving).
+  const returningBookingId = searchParams.get("bookingId");
+  const returningStatus    = searchParams.get("paymentStatus");
+  const isReturningPayment = Boolean(returningBookingId && returningStatus);
+
+  // Restored snapshot (only populated when isReturningPayment is true) —
+  // read once, synchronously, so the very first render already has the
+  // right journey details instead of flashing empty state.
+  const restoredSnapshotRef = useRef(
+    isReturningPayment ? loadPaymentSession(returningBookingId) : null
+  );
+  const restored = restoredSnapshotRef.current;
+
+  // ── URL params passed from BusList (or restored from sessionStorage
+  //    when returning from the SBI ePay redirect) ─────────────────────────
+  const scheduleId = restored?.scheduleId ?? searchParams.get("scheduleId");
+  const fromLabel  = restored?.fromLabel  ?? decodeURIComponent(searchParams.get("from")      ?? "");
+  const toLabel    = restored?.toLabel    ?? decodeURIComponent(searchParams.get("to")        ?? "");
+  const fromId     = restored?.fromId     ?? Number(searchParams.get("fromId")                ?? 0);
+  const toId       = restored?.toId       ?? Number(searchParams.get("toId")                  ?? 0);
+  const date       = restored?.date       ?? (searchParams.get("date")                        ?? "");
+  const busLabel   = restored?.busLabel   ?? decodeURIComponent(searchParams.get("bus")       ?? "");
+  const departure  = restored?.departure  ?? (searchParams.get("departure")                    ?? "");
 
   // ── Booking flow step ────────────────────────────────────────────────────
   // 2 = seat selection + passenger details
@@ -368,8 +418,8 @@ export default function SeatSelection() {
   const [toStopSeq,   setToStopSeq]   = useState(null);
 
   // ── Passenger selection & details ───────────────────────────────────────
-  const [selectedSeats,    setSelectedSeats]    = useState([]);
-  const [passengerDetails, setPassengerDetails] = useState({});
+  const [selectedSeats,    setSelectedSeats]    = useState(restored?.selectedSeats ?? []);
+  const [passengerDetails, setPassengerDetails] = useState(restored?.passengerDetails ?? {});
 
   // ── Modal visibility ─────────────────────────────────────────────────────
   const [showLoginGate, setShowLoginGate] = useState(false);
@@ -380,17 +430,23 @@ export default function SeatSelection() {
   const abandonTargetRef = useRef(null);
 
   // ── Contact details (step 3) ─────────────────────────────────────────────
-  const [contact,    setContact]    = useState({ mobile: "", email: "" });
+  const [contact,    setContact]    = useState(restored?.contact ?? { mobile: "", email: "" });
   const [emailError, setEmailError] = useState("");
 
   // ── Booking & payment state ──────────────────────────────────────────────
-  const [booking,        setBooking]        = useState(null);
+  const [booking,        setBooking]        = useState(restored?.booking ?? null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [paymentMethod,  setPaymentMethod]  = useState("");
-  // `initiating` = API call in flight; separate from Razorpay modal being open
+  // `initiating` = API call in flight (includes the moment right before the
+  // full-page redirect fires — there is no "modal open" state anymore)
   const [initiating,    setInitiating]    = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
+
+  // Set once we've finished resolving a returning-payment redirect, so the
+  // rest of the component's effects (seat fetching etc.) don't fire on top
+  // of a booking that's already confirmed/failed.
+  const [resolvingReturn, setResolvingReturn] = useState(isReturningPayment);
 
   // ── Derived ──────────────────────────────────────────────────────────────
   const totalFare = booking?.totalAmountPaid
@@ -398,13 +454,70 @@ export default function SeatSelection() {
     : "0.00";
 
   // ==========================================================================
+  // SECTION 0 — RESOLVE RETURN FROM SBI EPAY
+  // Runs once on mount when the URL carries ?bookingId=&paymentStatus= (i.e.
+  // the backend just redirected us back after /payments/callback finished
+  // verifying with SBI ePay). We re-fetch the booking from our own API as the
+  // source of truth (never trust the query param alone), then land on the
+  // right step and clean the URL so a refresh doesn't re-trigger this.
+  // ==========================================================================
+
+  useEffect(() => {
+    if (!isReturningPayment) return;
+
+    (async () => {
+      try {
+        const res           = await bookingApi.getById(returningBookingId);
+        const freshBooking  = res.data?.data ?? res.data;
+        setBooking(freshBooking);
+
+        const confirmed = freshBooking?.bookingStatus === "CONFIRMED"
+          || returningStatus === "success";
+
+        if (confirmed) {
+          toast.success("Payment successful! Ticket confirmed. 🎉");
+          setPaymentFailed(false);
+          setLockExpiresAt(null);
+          setStep(5);
+        } else {
+          toast.error(
+            `Payment failed or was not completed. PNR: ${freshBooking?.pnr ?? "-"}. ` +
+            "You can retry below."
+          );
+          setPaymentFailed(true);
+          setStep(4);
+        }
+      } catch (err) {
+        toast.error("Could not verify your payment. Please check My Bookings or contact support.");
+        setPaymentFailed(true);
+        setStep(4);
+      } finally {
+        clearPaymentSession(returningBookingId);
+        // Strip bookingId/paymentStatus from the URL without navigating away,
+        // so a page refresh doesn't replay this effect.
+        const cleaned = new URLSearchParams(searchParams);
+        cleaned.delete("bookingId");
+        cleaned.delete("paymentStatus");
+        setSearchParams(cleaned, { replace: true });
+        setResolvingReturn(false);
+      }
+    })();
+    // Intentionally run only once on mount — this is a one-time redirect
+    // resolution, not something that should re-run on every param change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // ==========================================================================
   // SECTION 1 — SEAT INVENTORY
   // Fetch stop sequences from route stops, then load the seat map for the
   // specific from→to segment so availability is correct for partial journeys.
+  // Skipped entirely while we're still resolving a returning payment redirect
+  // (step will already be 4 or 5, no need to show the seat map underneath).
   // ==========================================================================
 
   /* ── Resolve stop sequences from route stops ── */
   useEffect(() => {
+    if (resolvingReturn) return;
     if (!scheduleId || !fromId || !toId) return;
 
     getScheduleById(scheduleId)
@@ -422,9 +535,9 @@ export default function SeatSelection() {
         });
       })
       .catch(() => {});
-  }, [scheduleId, fromId, toId]);
+  }, [resolvingReturn, scheduleId, fromId, toId]);
 
-  
+
 
   const fetchSeats = useCallback(() => {
   console.log("FETCHING SEATS");
@@ -452,8 +565,9 @@ export default function SeatSelection() {
 
 }, [scheduleId, fromStopSeq, toStopSeq]);
 
- 
+
 useEffect(() => {
+  if (resolvingReturn) return;
   console.log("fromStopSeq =", fromStopSeq);
   console.log("toStopSeq =", toStopSeq);
 
@@ -461,7 +575,7 @@ useEffect(() => {
     console.log("Calling fetchSeats()");
     fetchSeats();
   }
-}, [fetchSeats, fromStopSeq, toStopSeq]);
+}, [resolvingReturn, fetchSeats, fromStopSeq, toStopSeq]);
   // ==========================================================================
   // SECTION 2 — SEAT MAP GRID COMPUTATION
   // Builds a 2-D array (rows × cols) from the flat seatMap list so we can
@@ -668,127 +782,29 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
     fetchSeats();
   }, [fetchSeats]);
 
-  /* ── Open Razorpay checkout modal ──
-     Separated from handleInitiatePayment so state is cleanly set first. ── */
-  const openRazorpay = useCallback((
-    initiated,
-    currentBooking,
-    currentContact,
-    currentPaymentMethod
-  ) => {
-    if (!window.Razorpay) {
-      toast.error("Payment gateway not loaded. Please refresh the page.");
-      setInitiating(false);
-      return;
-    }
-
-    const options = {
-      key:         RAZORPAY_KEY,
-      // Math.round prevents floating-point paise errors
-      amount:      Math.round(Number(initiated.amount) * 100),
-      currency:    "INR",
-      name:        "APSTS Bus Reservation",
-      description: `Booking #${currentBooking.pnr}`,
-      order_id:    initiated.gatewayOrderId,
-      prefill: {
-        contact: currentContact.mobile,
-        email:   currentContact.email,
-      },
-      theme: { color: "#22c55e" },
-      // Pre-select the payment method the user chose in our UI
-      ...(RAZORPAY_METHOD_MAP[currentPaymentMethod] && {
-        config: {
-          display: {
-            blocks: {
-              preferred: {
-                name:        "Recommended",
-                instruments: [{ method: RAZORPAY_METHOD_MAP[currentPaymentMethod] }],
-              },
-            },
-            sequence:    ["block.preferred"],
-            preferences: { show_default_blocks: true },
-          },
-        },
-      }),
-      handler: async (response) => {
-        await handlePaymentSuccess(response, currentBooking);
-      },
-      modal: {
-        escape:        true,
-        backdropclose: false,
-        // Escape / backdrop dismiss = user cancelled, not a gateway error
-        ondismiss: () => {
-          setInitiating(false);
-          setPaymentFailed(true);
-          toast("Payment cancelled. Select a method and try again.", { icon: "⚠️" });
-        },
-      },
-    };
-
-    const rzp = new window.Razorpay(options);
-    rzp.on("payment.failed", (response) => {
-      setInitiating(false);
-      setPaymentFailed(true);
-      toast.error(
-        response?.error?.description ??
-        "Payment failed. Please try again with a different method."
-      );
-    });
-
-    rzp.open();
-    // Reset initiating AFTER open() so the button isn't stuck if open() throws
-    setInitiating(false);
-  }, []);
-
   /* ── Initiate payment ──
-     Handles three cases:
-       1. Retrying a previously failed payment → reuse existing gatewayOrderId
-       2. Wallet payment → no Razorpay, direct API call
-       3. Fresh payment → call initiate, then open Razorpay
-     On 402 response → a pending payment already exists; fetch and reuse it. ── */
+     Handles two cases:
+       1. Wallet payment → no gateway involved, direct API call, instant result
+       2. Card/UPI/NetBanking → call initiate, snapshot page state into
+          sessionStorage, then redirect the WHOLE browser to the transactionUrl
+          SBI ePay gave us. There is no modal to open and nothing more to do
+          here — the next thing this component sees is a fresh mount when the
+          bank redirects back (handled by the SECTION 0 effect above).
+     On 402 response → a pending payment already exists; fetch and reuse its
+     transactionUrl instead of creating a duplicate order. ── */
   const handleInitiatePayment = async () => {
     if (!paymentMethod) { toast.error("Please select a payment method"); return; }
     if (!booking)       { toast.error("Booking not found.");              return; }
     if (initiating)     return;
 
     setInitiating(true);
+    const bookingId = booking.bookingId ?? booking.id;
 
     try {
-      const bookingId = booking.bookingId ?? booking.id;
-
-      // ── Case 1: retry failed / cancelled payment ──
-      if (paymentFailed) {
-        try {
-          const existing = await paymentApi.getByBookingId(bookingId);
-          const payment  = existing.data?.data ?? existing.data;
-          if (payment?.gatewayOrderId) {
-            setPaymentFailed(false);
-            openRazorpay(payment, booking, contact, paymentMethod);
-            return;
-          }
-        } catch (e) {
-          console.error("Failed to resume payment", e);
-        }
-      }
-
-      setPaymentFailed(false);
-
-      // Load Razorpay SDK lazily (only when user actually pays)
-      if (paymentMethod !== "WALLET") {
-        const loaded = await loadRazorpay();
-        if (!loaded) {
-          toast.error(
-            "Payment gateway failed to load. Check your internet connection."
-          );
-          setInitiating(false);
-          return;
-        }
-      }
-
       const res       = await paymentApi.initiate({ bookingId, paymentMethod });
       const initiated = res.data?.data ?? res.data;
 
-      // ── Case 2: wallet payment (no Razorpay) ──
+      // ── Case 1: wallet payment (instant, no redirect) ──
       if (paymentMethod === "WALLET") {
         toast.success("Payment successful via wallet! 🎉");
         setLockExpiresAt(null);
@@ -798,20 +814,36 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
         return;
       }
 
-      // ── Case 3: open Razorpay ──
-      openRazorpay(initiated, booking, contact, paymentMethod);
+      // ── Case 2: redirect to SBI ePay's hosted payment page ──
+      if (!initiated?.transactionUrl) {
+        throw new Error("Payment gateway did not return a redirect URL.");
+      }
+
+      savePaymentSession(bookingId, {
+        booking, selectedSeats, passengerDetails, contact,
+        scheduleId, fromLabel, toLabel, fromId, toId, date, busLabel, departure,
+      });
+      console.log("transactionUrl",initiated?.transactionUrl);
+      
+      toast.loading("Redirecting to secure payment page…", { duration: 9000 });
+      window.location.href = initiated.transactionUrl;
+      // Do not reset `initiating` here — we want the button to stay in its
+      // loading state for the brief moment before the browser navigates away.
 
     } catch (err) {
       // 402 = a PENDING payment already exists for this booking;
-      // fetch its gatewayOrderId and reopen Razorpay with it
+      // fetch its transactionUrl and redirect using that instead
       if (err?.response?.status === 402) {
         try {
-          const bookingId = booking.bookingId ?? booking.id;
-          const existing  = await paymentApi.getByBookingId(bookingId);
-          const payment   = existing.data?.data ?? existing.data;
-          if (payment?.gatewayOrderId) {
+          const existing = await paymentApi.getByBookingId(bookingId);
+          const payment  = existing.data?.data ?? existing.data;
+          if (payment?.transactionUrl) {
             toast("Resuming your previous payment session.", { icon: "ℹ️" });
-            openRazorpay(payment, booking, contact, paymentMethod);
+            savePaymentSession(bookingId, {
+              booking, selectedSeats, passengerDetails, contact,
+              scheduleId, fromLabel, toLabel, fromId, toId, date, busLabel, departure,
+            });
+            window.location.href = payment.transactionUrl;
             return;
           }
         } catch (e) {
@@ -823,40 +855,8 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
       setPaymentFailed(true);
       toast.error(
         err?.response?.data?.message ??
+        err?.message ??
         "Failed to initiate payment. Please try again."
-      );
-    }
-  };
-
-  /* ── Verify payment after Razorpay success callback ──
-     Re-fetches the booking so the ticket shows CONFIRMED, not PENDING_PAYMENT ── */
-  const handlePaymentSuccess = async (razorpayResponse, currentBooking) => {
-    const toastId = toast.loading("Verifying payment…");
-    try {
-      await paymentApi.webhook({
-        gatewayOrderId:   razorpayResponse.razorpay_order_id,
-        gatewayPaymentId: razorpayResponse.razorpay_payment_id,
-        gatewaySignature: razorpayResponse.razorpay_signature,
-        rawPayload:       razorpayResponse, // pass as object, not JSON string
-      });
-
-      const updated      = await bookingApi.getById(
-        currentBooking.bookingId ?? currentBooking.id
-      );
-      const freshBooking = updated.data?.data ?? updated.data;
-      setBooking(freshBooking);
-
-      toast.dismiss(toastId);
-      toast.success("Payment successful! Ticket confirmed. 🎉");
-      setPaymentFailed(false);
-      setLockExpiresAt(null);
-      setStep(5);
-    } catch {
-      toast.dismiss(toastId);
-      setPaymentFailed(true);
-      toast.error(
-        `Verification failed. PNR: ${currentBooking?.pnr}. ` +
-        "Please contact support or retry."
       );
     }
   };
@@ -928,6 +928,19 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
   // RENDER
   // ==========================================================================
 
+  // While we're verifying a return from SBI ePay, show a lightweight loading
+  // screen instead of the full seat-selection UI (which has nothing useful
+  // to show yet — scheduleId/seatMap etc. haven't loaded).
+  if (resolvingReturn) {
+    return (
+      <div className="w-full min-h-screen flex flex-col items-center justify-center
+        text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364]">
+        <Spinner />
+        <p className="mt-4 text-gray-300">Confirming your payment…</p>
+      </div>
+    );
+  }
+
   return (
     // pt-14 offsets the fixed SeatNavbar height
     <div className="w-full min-h-screen text-white bg-gradient-to-br
@@ -949,7 +962,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
             const redirect = encodeURIComponent(
               window.location.pathname + window.location.search
             );
-            navigate(`/home/login?redirect=${redirect}`);
+            navigate(`/ap/login?redirect=${redirect}`);
           }}
         />
       )}
@@ -1451,6 +1464,11 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                 ))}
               </div>
 
+              {/* Note: unlike Razorpay, choosing UPI/Card/NetBanking here only
+                  sets our own preferred payMode hint sent to SBI ePay's Order
+                  Creation API — the bank's own hosted page still lets the
+                  customer pick/change the exact method once redirected. */}
+
               {/* Fare breakdown */}
               {booking && (
                 <div className="p-4 rounded-xl bg-white/5 border
@@ -1498,7 +1516,9 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   ← Back
                 </button>
 
-                {/* Pay button — disabled only while API call is in flight */}
+                {/* Pay button — disabled only while API call / redirect is
+                    in flight. For gateway methods, a successful click means
+                    the browser is about to navigate away entirely. */}
                 <button
                   type="button"
                   onClick={handleInitiatePayment}
@@ -1510,7 +1530,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                 >
                   {initiating && <Spinner />}
                   {initiating
-                    ? "Opening Payment…"
+                    ? "Redirecting to secure payment page…"
                     : paymentFailed
                       ? `↻ Retry Payment ₹ ${totalFare}`
                       : `Pay ₹ ${totalFare}`}
