@@ -122,7 +122,7 @@ function PagesManager() {
                     <td className="px-4 py-3 font-medium">{p.title}</td>
                     <td className="px-4 py-3">
                       <span className="font-mono text-xs bg-gray-100 px-2 py-0.5 rounded">
-                        /ap/{p.slug}
+                        /home/{p.slug}
                       </span>
                     </td>
                     <td className="px-4 py-3 text-center">
@@ -190,7 +190,7 @@ async function togglePublish(page, reload) {
       toast.success("Page unpublished.");
     } else {
       await cmsApi.adminPublishPage(page.id);
-      toast.success("Page published — live at /ap/" + page.slug);
+      toast.success("Page published — live at /home/" + page.slug);
     }
     reload();
   } catch {
@@ -301,7 +301,7 @@ function PageForm({ onSaved, onCancel }) {
           <div className="flex items-center border rounded-xl overflow-hidden
             focus-within:ring-2 focus-within:ring-orange-400">
             <span className="px-3 py-2 bg-gray-50 text-gray-400 text-sm border-r">
-              /ap/
+              /home/
             </span>
             <input
               value={form.slug}
@@ -311,7 +311,7 @@ function PageForm({ onSaved, onCancel }) {
             />
           </div>
           <p className="text-xs text-gray-400 mt-1">
-            This will be the URL: <strong>/ap/{form.slug || "your-slug"}</strong>
+            This will be the URL: <strong>/home/{form.slug || "your-slug"}</strong>
           </p>
         </div>
 
@@ -453,7 +453,7 @@ function PageEditor({ page, onUpdated, onBack }) {
   const publish = async () => {
     try {
       await cmsApi.adminPublishPage(page.id);
-      toast.success(`Live at /ap/${page.slug}`);
+      toast.success(`Live at /home/${page.slug}`);
       onUpdated({ ...page, isPublished: true });
     } catch { toast.error("Publish failed."); }
   };
@@ -511,9 +511,9 @@ function PageEditor({ page, onUpdated, onBack }) {
       <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3
         mb-6 text-sm text-blue-700 flex items-center gap-4">
         <span>Template: <strong>{page.template?.replace("_", " ")}</strong></span>
-        <span>URL: <strong>/ap/{page.slug}</strong></span>
+        <span>URL: <strong>/home/{page.slug}</strong></span>
         {page.isPublished && (
-          <a href={`/ap/${page.slug}`} target="_blank" rel="noreferrer"
+          <a href={`/home/${page.slug}`} target="_blank" rel="noreferrer"
             className="ml-auto text-xs underline hover:text-blue-900">
             View live page ↗
           </a>

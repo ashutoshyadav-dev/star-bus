@@ -22,7 +22,7 @@ export default function CmsPageRenderer() {
 
   // If this slug has a dedicated component, don't render via CMS
   if (DEDICATED_SLUGS.includes(slug)) {
-    return <Navigate to="/ap" replace />;
+    return <Navigate to="/home" replace />;
   }
 
   return <CmsPageContent slug={slug} />;

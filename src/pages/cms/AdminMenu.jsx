@@ -112,7 +112,7 @@ function AdminMenu() {
             className="border rounded-lg px-3 py-2 text-sm"
           />
           <input
-            type="text" placeholder="Path * (e.g. /ap/about)"
+            type="text" placeholder="Path * (e.g. /home/about)"
             value={form.path}
             onChange={(e) => setForm({ ...form, path: e.target.value })}
             className="border rounded-lg px-3 py-2 text-sm"
