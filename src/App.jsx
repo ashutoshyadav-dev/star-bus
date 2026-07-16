@@ -321,7 +321,10 @@ function AppRoutes() {
           element={<Timetable />}
         />
 
-
+        {/* <Route path="privacy" element={<PrivacyPolicy/>} />
+         <Route path="web-information-manager" element={<WebInformationMan/>} />
+          <Route path="disclaimer" element={<Disclaimer/>} />
+           <Route path="terms-condition" element={<TermsAndCondition/>} /> */}
 
         <Route path="routes" element={<BusService />} />
 

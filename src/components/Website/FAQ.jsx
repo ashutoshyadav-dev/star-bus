@@ -77,7 +77,12 @@ function FAQ() {
        <div className="flex justify-center">
   <div className="w-64 h-64 bg-gradient-to-br from-green-100 to-green-200 
     rounded-2xl flex items-center justify-center">
-    <span className="text-6xl">❓</span>
+    {/* <span className="text-6xl">❓</span> */}
+    <img
+          src={faqImg}
+          alt="faq Image"
+          className="object-contain w-25 h-25 md:w-80 md:h-80"
+        />
   </div>
 </div>
       </div>
