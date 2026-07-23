@@ -128,7 +128,16 @@ export default function Navbar() {
             </div>
           )}
 
-          <img src={Logo} alt="Right Logo" className="w-15 h-9 object-cover border border-white/30 shadow-md ml-2" />
+          {/* <img src={Logo} alt="Right Logo" className="w-15 h-9 object-cover border border-white/30 shadow-md ml-2" /> */}
+          <div className="flex justify-center md:justify-end ml-2">
+            <div className="flex items-center justify-center bg-white border-2 border-white rounded-full shadow-lg w-14 h-14 md:w-12 md:h-12">
+              <img
+                src={Logo}
+                alt="AP Logo"
+                className="object-contain w-10 h-10 md:w-11 md:h-11"
+              />
+            </div>
+          </div>
         </div>
 
       </div>

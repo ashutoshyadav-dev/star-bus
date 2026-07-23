@@ -551,7 +551,7 @@ export default function Helpdesk() {
             {grievances.length > 0 && (
               <button
                 type="button"
-                onClick={() => navigate("/user/grievances")}
+                onClick={() => navigate("/user/all-grievances")}
                 className="w-full py-2.5 rounded-xl border border-slate-200 bg-white text-sm font-semibold text-slate-600 hover:bg-slate-50 transition-colors shadow-sm"
               >
                 View all grievances →
