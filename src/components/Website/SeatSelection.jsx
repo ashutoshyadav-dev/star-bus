@@ -1,6 +1,6 @@
 // =============================================================================
 // SeatSelection.jsx
-// Public route (/ap/seat-selection) — accessible from both home page and
+// Public route (/home/seat-selection) — accessible from both home page and
 // the logged-in dashboard. Auth state is handled inline:
 //   • Guest  → sees Login button in navbar + LoginGateModal on seat click
 //   • Logged-in passenger → sees name + logout button in navbar
@@ -176,7 +176,7 @@ function SeatNavbar({ user, onLogout }) {
 
       {/* Left — logo + title */}
       <div
-        onClick={() => navigate("/ap")}
+        onClick={() => navigate("/home")}
         className="flex items-center gap-3 cursor-pointer"
       >
         <img src={logo} alt="APSTS"
@@ -213,7 +213,7 @@ function SeatNavbar({ user, onLogout }) {
       ) : (
         // Guest: prompt to login
         <button
-          onClick={() => navigate("/ap/login")}
+          onClick={() => navigate("/home/login")}
           className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm
             font-medium bg-orange-500 hover:bg-orange-600 transition"
         >
@@ -375,7 +375,7 @@ export default function SeatSelection() {
 
   // ── Detect a "returning from SBI ePay" load ─────────────────────────────
   // The backend's /payments/callback redirects the browser back here as:
-  //   /ap/seat-selection?bookingId=<uuid>&paymentStatus=success|failed
+  //   /home/seat-selection?bookingId=<uuid>&paymentStatus=success|failed
   // (none of the original journey query params survive that hop, which is
   // exactly why we snapshot everything into sessionStorage before leaving).
   const returningBookingId = searchParams.get("bookingId");
@@ -962,7 +962,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
             const redirect = encodeURIComponent(
               window.location.pathname + window.location.search
             );
-            navigate(`/ap/login?redirect=${redirect}`);
+            navigate(`/home/login?redirect=${redirect}`);
           }}
         />
       )}

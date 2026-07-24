@@ -70,10 +70,7 @@ import CancellationPolicy from "./components/Website/Policies"
 import RTI from "./components/Website/RTI"
 import Timetable from "./components/Website/Timetable";
 import ContactUs from "./components/Website/ContactUs";
-import WebInformationMan from "./components/Website/WebInformationMan";
-import Disclaimer from "./components/Website/Disclaimer";
-import PrivacyPolicy from "./components/Website/PrivacyPolicy";
-import TermsAndCondition from "./components/Website/Terms&Condition";
+
 
 
 // ── Customer / Passenger Area ───────────────────────────────────────────────
@@ -87,7 +84,7 @@ import BookTicket from "./components/customer/BookTicket";
 import MyRefunds from "./components/customer/MyRefund";
 import MyWallet from "./components/customer/CustomerWalletPage"
 import AllGrievance from "./components/customer/Allgrievances"
-// //  Depertment............
+
 // import Transport from "./pages/Transport";
 import Transport from "./pages/department/Transport";
 
