@@ -9,8 +9,9 @@ import logo from "../../assets/logo.png";
 import Spinner from "../../components/common/Spinner";
 import { useAuth } from "../../context/AuthContext";
 import { useOtpTimer } from "../../hooks/useOtpTimer";
+import { classifyRole } from "../../constants/roles";
 
-const ADMIN_ROLES = ["SUPER_ADMIN", "STATE_ADMIN", "DEPOT_MANAGER", "STAFF"];
+// const ADMIN_ROLES = ["SUPER_ADMIN", "STATE_ADMIN", "DEPOT_MANAGER", "STAFF"];
 
 const MODES = [
   { key: "login",    label: "Passenger Login" },
@@ -52,16 +53,30 @@ export default function LoginPage() {
   const otpPurpose = mode === "register" ? "registration" : "login";
 
   // ── Post-login redirect ───────────────────────────────────────────────────
-  const handleRedirect = (userData) => {
-    const isAdminUser = userData?.roles?.some((r) =>
-      ADMIN_ROLES.includes(r.toUpperCase())
-    );
+  // const handleRedirect = (userData) => {
+  //   const isAdminUser = userData?.roles?.some((r) =>
+  //     ADMIN_ROLES.includes(r.toUpperCase())
+  //   );
+  //   // Only allow internal paths to prevent open-redirect attacks
+  //   if (redirectTo && redirectTo.startsWith("/")) {
+  //     navigate(redirectTo, { replace: true });
+  //     return;
+  //   }
+  //   navigate(isAdminUser ? "/admin/dashboard" : "/user/dashboard", { replace: true });
+  // };
+
+   const handleRedirect = (userData) => {
+    const roleClass = classifyRole(userData?.roles ?? []);
     // Only allow internal paths to prevent open-redirect attacks
     if (redirectTo && redirectTo.startsWith("/")) {
       navigate(redirectTo, { replace: true });
       return;
     }
-    navigate(isAdminUser ? "/admin/dashboard" : "/user/dashboard", { replace: true });
+    const target =
+      roleClass === "admin"      ? "/admin/dashboard" :
+      roleClass === "duty_staff" ? "/conductor/duty"   :   // ADDED
+                                    "/user/dashboard";
+    navigate(target, { replace: true });
   };
 
   const buildUserData = (res) => ({

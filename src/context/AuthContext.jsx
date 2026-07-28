@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from "react";
 import { authApi } from "../api/auth";
+import { classifyRole } from "../constants/roles";
 
 const AuthContext = createContext(null);
 
@@ -11,7 +12,7 @@ function parseJwt(token) {
   }
 }
 
-const ADMIN_ROLES = ["SUPER_ADMIN", "STATE_ADMIN", "DEPOT_MANAGER", "STAFF"];
+// const ADMIN_ROLES = ["SUPER_ADMIN", "STATE_ADMIN", "DEPOT_MANAGER", "STAFF"];
 
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
@@ -134,12 +135,16 @@ useEffect(() => {
     [user]
   );
 
-  const isAdmin = user?.roles?.some((r) =>
-    ADMIN_ROLES.includes(r.toUpperCase())
-  ) ?? false;
+  // const isAdmin = user?.roles?.some((r) =>
+  //   ADMIN_ROLES.includes(r.toUpperCase())
+  // ) ?? false;
+
+  // const accountType = user?.accountType ?? null;
+const roleClass = classifyRole(user?.roles ?? []);
+  const isAdmin     = roleClass === "admin";
+  const isDutyStaff = roleClass === "duty_staff";   
 
   const accountType = user?.accountType ?? null;
-
   return (
     <AuthContext.Provider
       value={{
@@ -150,6 +155,7 @@ useEffect(() => {
         logoutAll,
         hasPermission,
         isAdmin,
+        isDutyStaff,
         accountType,
       }}
     >

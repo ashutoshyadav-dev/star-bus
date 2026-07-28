@@ -85,16 +85,28 @@ import MyRefunds from "./components/customer/MyRefund";
 import MyWallet from "./components/customer/CustomerWalletPage"
 import AllGrievance from "./components/customer/Allgrievances"
 
-// import Transport from "./pages/Transport";
+//-----------import Transport from "./pages/Transport";----------------------
 import Transport from "./pages/department/Transport";
 
+
+//--------------------imports for conductor profile -------------------
+import MyDuty from "./pages/conductor/MyDuty";
+import ConductorScan from "./pages/conductor/ConductorScan";
+
+
+
+
+//import for Role from constants/roles
+import { ADMIN_ROLES, classifyRole } from "./constants/roles";
+
+
 // ── Role constants ──────────────────────────────────────────────────────────
-const ADMIN_ROLES = [
-  "SUPER_ADMIN",
-  "STATE_ADMIN",
-  "DEPOT_MANAGER",
-  "STAFF",
-];
+// const ADMIN_ROLES = [
+//   "SUPER_ADMIN",
+//   "STATE_ADMIN",
+//   "DEPOT_MANAGER",
+//   "STAFF",
+// ];
 
 // ── Route Guards ────────────────────────────────────────────────────────────
 function AdminRoute({ children }) {
@@ -121,24 +133,50 @@ function UserRoute({ children }) {
   return children;
 }
 
+function DutyStaffRoute({ children }) {
+  const { user, isInitialized } = useAuth();
+
+  if (!isInitialized) return <PageLoader />;
+  if (!user) return <Navigate to="/home/login" replace />;
+
+  const roleClass = classifyRole(user?.roles ?? []);
+  if (roleClass !== "duty_staff") return <Navigate to="/unauthorized" replace />;
+
+  return children;
+}
+
+// function GuestRoute({ children }) {
+
+//   const { user , isInitialized} = useAuth();
+//    console.log("GuestRoute:", { isInitialized, user });
+// if (!isInitialized) return <PageLoader />;
+
+//   if (!user) return children;
+
+//   const isAdmin = user?.roles?.some((r) =>
+//     ADMIN_ROLES.includes(r.toUpperCase())
+//   );
+
+//   return (
+//     <Navigate
+//       to={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
+//       replace
+//     />
+//   );
+// }
+
 function GuestRoute({ children }) {
-
-  const { user , isInitialized} = useAuth();
-   console.log("GuestRoute:", { isInitialized, user });
-if (!isInitialized) return <PageLoader />;
-
+  const { user, isInitialized } = useAuth();
+  if (!isInitialized) return <PageLoader />;
   if (!user) return children;
 
-  const isAdmin = user?.roles?.some((r) =>
-    ADMIN_ROLES.includes(r.toUpperCase())
-  );
+  const roleClass = classifyRole(user?.roles ?? []);
+  const target =
+    roleClass === "admin"      ? "/admin/dashboard" :
+    roleClass === "duty_staff" ? "/conductor/duty"   :   // ADDED
+                                  "/user/dashboard";
 
-  return (
-    <Navigate
-      to={isAdmin ? "/admin/dashboard" : "/user/dashboard"}
-      replace
-    />
-  );
+  return <Navigate to={target} replace />;
 }
 
 // ── Public Website wrapper ──────────────────────────────────────────────────
@@ -266,6 +304,23 @@ function AppRoutes() {
         <Route path="cms/menu"    element={<AdminMenu />} />
         <Route path="cms/pages" element={<AdminCmsPages />} />
       </Route>
+
+
+{/* ── Duty Staff Area (conductor, driver, guard) ───────── */}
+      <Route
+        path="/conductor"
+        element={
+          <DutyStaffRoute>
+            <Outlet />
+          </DutyStaffRoute>
+        }
+      >
+        <Route index element={<Navigate to="duty" replace />} />
+        <Route path="duty" element={<MyDuty />} />
+        <Route path="scan/:scheduleId" element={<ConductorScan />} />
+      </Route>
+
+
 
       {/* ── Public Website ────────────────────────────────── */}
 <Route path="/ap" element={<Transport />} />
