@@ -1587,7 +1587,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
                   {/* Passengers — prefer booking.passengers (server data),
                       fall back to local selectedSeats state ── */}
-                  <div className="border-t border-white/10 pt-3">
+                  {/* <div className="border-t border-white/10 pt-3">
                     <p className="text-gray-400 mb-2">Passengers</p>
                     {(booking?.passengers ?? selectedSeats).map((p, i) => {
                       const name   = p.passengerName   ?? passengerDetails[p.id]?.name;
@@ -1601,6 +1601,16 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                         </div>
                       );
                     })}
+                  </div> */}
+
+                  <div className="border-t border-white/10 pt-3">
+                    <p className="text-gray-400 mb-2">Passengers</p>
+                    {(booking?.passengers ?? []).map((p) => (
+                      <div key={p.reservationId} className="flex justify-between text-xs mt-1">
+                        <span>{p.passengerName} ({p.passengerGender}, {p.passengerAge} yrs)</span>
+                        <span className="text-green-300">Seat {p.seatLabel}</span>
+                      </div>
+                    ))}
                   </div>
 
                   <div className="flex justify-between border-t border-white/10 pt-3">
@@ -1620,7 +1630,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                     </span>
                   </div>
 
-                  {/* QR code for conductor verification */}
+                  {/* QR code for conductor verification
                   <div className="flex justify-center mt-4">
                     <QRCodeCanvas
                       value={JSON.stringify({
@@ -1636,9 +1646,34 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   </div>
                   <p className="text-center text-xs text-gray-400 mt-2">
                     Show this QR to the conductor for verification
+                  </p>*/}
+                   {/* QR codes for conductor verification — one per passenger,
+                      since each seat is validated/boarded independently */}
+                  <div className="border-t border-white/10 pt-3 mt-3">
+                    {(booking?.passengers ?? []).map((p) => (
+                      <div key={p.reservationId} className="flex flex-col items-center mt-4">
+                        <QRCodeCanvas
+                          value={p.qrCodeHash}
+                          size={100}
+                          bgColor="transparent"
+                          fgColor="#ffffff"
+                        />
+                        <p className="text-xs mt-1">
+                          {p.passengerName} — Seat {p.seatLabel}
+                        </p>
+                        {p.reservationStatus === "BOARDED" && (
+                          <span className="text-green-400 text-xs mt-0.5">✓ Boarded</span>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-center text-xs text-gray-400 mt-2">
+                    Show your QR to the conductor for verification
                   </p>
                 </div>
-              </div>
+              </div> 
+
+
 
               {/* Post-booking actions */}
               <div className="flex gap-4 mt-6">
