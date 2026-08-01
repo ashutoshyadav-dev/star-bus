@@ -1,26 +1,26 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { Bus, MapPin, Clock } from "lucide-react";
 import toast from "react-hot-toast";
-import { getDutyAssignmentsByStaff, checkInDuty, checkOutDuty } from "../../api/schedule";
-import { useAuth } from "../../context/AuthContext";
+import { getMyDutyAssignments, checkInMyDuty, checkOutMyDuty } from "../../api/schedule";
 import Spinner from "../../components/common/Spinner";
 
 export default function MyDuty() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [duties, setDuties] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = () => {
     setLoading(true);
-    getDutyAssignmentsByStaff(user.sub ?? user.id)
+    getMyDutyAssignments()
       .then((res) => {
         const all = res.data?.data ?? res.data ?? [];
-        // Client-side filter to today — no dedicated backend query for this yet
         const today = new Date().toDateString();
-        setDuties(all.filter((d) => new Date(d.schedule?.journeyDate ?? d.journeyDate).toDateString() === today));
+        setDuties(all.filter((d) => new Date(d.journeyDate).toDateString() === today));
       })
-      .catch(() => toast.error("Failed to load duties"))
+      .catch((err) => {
+        toast.error(err?.response?.data?.message ?? "Failed to load duties");
+      })
       .finally(() => setLoading(false));
   };
 
@@ -28,7 +28,7 @@ export default function MyDuty() {
 
   const handleCheckIn = async (duty) => {
     try {
-      await checkInDuty(duty.id);
+      await checkInMyDuty(duty.id);
       toast.success("Checked in — loading manifest…");
       navigate(`/conductor/scan/${duty.scheduleId}`);
     } catch (err) {
@@ -38,7 +38,7 @@ export default function MyDuty() {
 
   const handleCheckOut = async (duty) => {
     try {
-      await checkOutDuty(duty.id);
+      await checkOutMyDuty(duty.id);
       toast.success("Checked out");
       load();
     } catch (err) {
@@ -57,11 +57,20 @@ export default function MyDuty() {
       ) : (
         <div className="space-y-4 max-w-lg">
           {duties.map((duty) => (
-            <div key={duty.id} className="bg-white rounded-xl border border-gray-200 p-5">
-              <div className="font-semibold text-gray-800">{duty.dutyRole}</div>
-              <div className="text-sm text-gray-500 mb-3">
-                Schedule: {duty.scheduleId}
+            <div key={duty.id} className="bg-white rounded-xl border border-gray-200 p-5 shadow-sm">
+              <div className="flex items-center gap-2 mb-2">
+                <Bus size={18} className="text-[#163F2D]" />
+                <span className="font-semibold text-gray-800 capitalize">{duty.dutyRole}</span>
               </div>
+              <div className="flex items-center gap-2 text-sm text-gray-600 mb-1">
+                <MapPin size={14} />
+                <span>{duty.origin} → {duty.destination}</span>
+              </div>
+              <div className="flex items-center gap-2 text-sm text-gray-500 mb-4">
+                <Clock size={14} />
+                <span>{duty.routeName} · {duty.departureTime}</span>
+              </div>
+
               {!duty.checkInAt ? (
                 <button onClick={() => handleCheckIn(duty)}
                         className="w-full bg-green-600 text-white rounded-lg py-2.5 font-semibold hover:bg-green-700">

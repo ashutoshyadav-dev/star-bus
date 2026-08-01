@@ -88,7 +88,7 @@ const DepotForm = () => {
         </div>
 
         <button
-          onClick={() => navigate("/app")}
+          onClick={() => navigate(-1)}
           className="flex items-center gap-2 px-4 py-2 rounded-xl bg-blue-500 hover:bg-blue-800"
         >
           <ArrowLeft size={18} />

@@ -233,17 +233,38 @@ export default function BusTypesPage() {
   const [activeOnly,  setActiveOnly]  = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
 
+  // const load = async () => {
+  //   setLoading(true);
+  //   try {
+  //     const { data } = await getAllBusTypes(activeOnly);
+  //     setBusTypes(data?.data ?? data ?? []);
+  //   } catch {
+  //     toast.error("Failed to load bus types.");
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // };
+
   const load = async () => {
-    setLoading(true);
-    try {
-      const { data } = await getAllBusTypes(activeOnly);
-      setBusTypes(data?.data ?? data ?? []);
-    } catch {
-      toast.error("Failed to load bus types.");
-    } finally {
-      setLoading(false);
-    }
-  };
+  setLoading(true);
+  try {
+    const { data } = await getAllBusTypes(activeOnly);
+
+    const result = data?.data ?? data ?? [];
+
+    console.log("BUS TYPES FROM API:", result);
+    console.log(
+      "TATA SUMO:",
+      result.find((bt) => bt.id === 7)
+    );
+
+    setBusTypes(result);
+  } catch {
+    toast.error("Failed to load bus types.");
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => { load(); }, [activeOnly]);
 

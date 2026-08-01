@@ -118,3 +118,13 @@ export const checkInDuty = (id, payload = {}) =>
 
 export const checkOutDuty = (id, payload = {}) =>
   api.patch(`/duty-assignments/${id}/check-out`, payload);
+
+// ── Self-service — used by the conductor's own /conductor/duty screen ───────
+export const getMyDutyAssignments = () =>
+  api.get("/duty-assignments/me");
+
+export const checkInMyDuty = (id, payload = {}) =>
+  api.patch(`/duty-assignments/me/${id}/check-in`, payload);
+
+export const checkOutMyDuty = (id, payload = {}) =>
+  api.patch(`/duty-assignments/me/${id}/check-out`, payload);

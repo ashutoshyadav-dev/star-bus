@@ -90,6 +90,7 @@ import Transport from "./pages/department/Transport";
 
 
 //--------------------imports for conductor profile -------------------
+import ConductorLayout from "./components/conductor/ConductorLayout";
 import MyDuty from "./pages/conductor/MyDuty";
 import ConductorScan from "./pages/conductor/ConductorScan";
 
@@ -311,7 +312,7 @@ function AppRoutes() {
         path="/conductor"
         element={
           <DutyStaffRoute>
-            <Outlet />
+            <ConductorLayout />
           </DutyStaffRoute>
         }
       >
