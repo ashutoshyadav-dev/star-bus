@@ -2,6 +2,9 @@ import { useState, useEffect } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import toast from "react-hot-toast";
 import { getBusById, createBus, updateBus, getAllBusTypes } from "../../api/bus";
+// import { getActiveDepots } from "../../api/depot";
+// import {depotApi} from "../../api/depot";
+import { depotApi } from "../../api/depot"; 
 
 const FUEL_TYPES = ["diesel", "cng", "electric", "hybrid"];
 const BUS_STATUSES = ["active", "in_maintenance", "breakdown", "retired", "condemned"];
@@ -38,12 +41,14 @@ export default function BusFormPage() {
 
   const [form, setForm] = useState(empty);
   const [busTypes, setBusTypes] = useState([]);
+  const [depots, setDepots] = useState([]);
   const [loading, setLoading] = useState(isEdit);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     getAllBusTypes(false).then(({ data }) => setBusTypes(data)).catch(() => {});
+    depotApi.getActiveDepots().then(({ data }) => setDepots(data.data)).catch(() => toast.error("Failed to load depots."));
     if (isEdit) {
       getBusById(id)
         .then(({ data }) => setForm({
@@ -73,7 +78,8 @@ export default function BusFormPage() {
         .finally(() => setLoading(false));
     }
   }, [id]);
-
+ 
+ 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     setForm((f) => ({ ...f, [name]: type === "checkbox" ? checked : value }));
@@ -144,8 +150,11 @@ export default function BusFormPage() {
                 {busTypes.map((bt) => <option key={bt.id} value={bt.id}>{bt.name} ({bt.code})</option>)}
               </select>
             </Field>
-            <Field label="Home Depot ID" required>
-              <input name="homeDepotId" type="number" value={form.homeDepotId} onChange={handleChange} className={inputCls} />
+            <Field label="Home Depot" required>
+              <select name="homeDepotId" value={form.homeDepotId} onChange={handleChange} className={inputCls}>
+                <option value="">Select home depot</option>
+                {depots.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
+              </select>
             </Field>
             <Field label="Make">
               <input name="make" value={form.make} onChange={handleChange} className={inputCls} />
