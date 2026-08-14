@@ -18,6 +18,7 @@ import {
   AreaChart,
   Area,
 } from "recharts";
+import { useEffect } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*                                   DATA                                     */
@@ -150,6 +151,10 @@ export default function UserDashboard() {
   const name = "Passenger";
 
   const hour = new Date().getHours();
+
+ useEffect(() => {
+    document.title = "Dashboad | APSTS Passenger Portal";
+  }, []);
 
   const greeting =
     hour < 12

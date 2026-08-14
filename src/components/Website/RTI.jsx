@@ -3,10 +3,15 @@ import Breadcrumb from "../Website/Breadcrumb";
 import { FaFilePdf, FaClock } from "react-icons/fa";
 import { useCmsPage } from "../../hooks/useCmsPage";
 import { buildImageUrl } from "../../api/cms";
+import { useEffect } from "react";
 
 function RTI() {
   const { page, loading } = useCmsPage("rti");
   const docs = page?.documents ?? [];
+
+  useEffect(() => {
+      document.title = "RTI | APSTS Portal";
+    }, []);
 
   return (
     <div className="w-full min-h-screen bg-[#f5f7fa]">

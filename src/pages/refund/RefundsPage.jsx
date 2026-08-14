@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import { refundApi } from "../../api/booking";
 import toast from "react-hot-toast";
 import {
@@ -568,6 +568,10 @@ export default function RefundsPage() {
   const [selected, setSelected] = useState(null);
   const [filter,   setFilter]   = useState("all");
   const [search,   setSearch]   = useState("");
+
+  useEffect(() => {
+    document.title = "Refund | APSTS Admin Portal";
+  }, []);
 
   const loadRefunds = useCallback(() => {
     setLoading(true);

@@ -229,6 +229,8 @@ function AdminGrievanceDetailPanel({ g, onBack, onRefresh }) {
 
   const setLoad = (key, val) => setLoading((l) => ({ ...l, [key]: val }));
 
+ 
+
   const doAction = async (key, apiFn, successMsg) => {
     setLoad(key, true);
     try {
@@ -380,6 +382,10 @@ export default function AdminGrievancePage() {
   const [statusTab,  setStatusTab]  = useState("all");
   const [priorTab,   setPriorTab]   = useState("all");
   const [search,     setSearch]     = useState("");
+
+   useEffect(() => {
+    document.title = "Grievance | APSTS Admin Portal";
+  }, []);
 
   const loadGrievances = useCallback(() => {
     setLoading(true);

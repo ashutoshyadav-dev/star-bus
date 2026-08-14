@@ -12,6 +12,10 @@ export default function Profile() {
   const [previewImage, setPreviewImage] = useState("");
   const [uploadingImage, setUploadingImage] = useState(false);
 
+  useEffect(() => {
+    document.title = "Profile | APSTS Passenger Portal";
+  }, []);
+
   const [draft, setDraft] = useState({
     fullName: "",
     dateOfBirth: "",

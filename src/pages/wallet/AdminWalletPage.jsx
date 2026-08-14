@@ -468,6 +468,10 @@ export default function AdminWalletPage() {
   const [search,      setSearch]      = useState('')
   const [selectedId,  setSelectedId]  = useState(null)
 
+  useEffect(() => {
+    document.title = "Wallet | APSTS Admin Portal";
+  }, []);
+
   const loadWallets = useCallback(async (p = 0) => {
     setLoading(true)
     try {

@@ -417,6 +417,10 @@ export default function Helpdesk() {
   const [activeTab,        setActiveTab]        = useState("all");
   const [selected,         setSelected]         = useState(null);
 
+  useEffect(() => {
+    document.title = "Helpdesk | APSTS Passenger Portal";
+  }, []);
+
   const loadGrievances = useCallback(() => {
     setGrievancesLoad(true);
     grievanceApi.getMine()

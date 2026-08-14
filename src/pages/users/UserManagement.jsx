@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Pencil, Trash2, Ban, CheckCircle, Search } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 /* Dummy Data */
@@ -21,6 +21,8 @@ const UserManagement = () => {
   const [statusFilter, setStatusFilter] = useState("");
 
   const entriesPerPage = 10;
+  
+  
 
   /* 🔍 FILTER LOGIC */
   const filteredUsers = users.filter((u) => {

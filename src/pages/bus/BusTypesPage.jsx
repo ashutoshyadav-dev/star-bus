@@ -233,6 +233,10 @@ export default function BusTypesPage() {
   const [activeOnly,  setActiveOnly]  = useState(false);
   const [showBuilder, setShowBuilder] = useState(false);
 
+   useEffect(() => {
+    document.title = "Bus Type | APSTS Admin Portal";
+  }, []);
+
   const load = async () => {
     setLoading(true);
     try {

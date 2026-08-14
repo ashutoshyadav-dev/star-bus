@@ -30,6 +30,12 @@ export default function BookTicket() {
   const [error, setError] = useState("");
   const [searching, setSearching] = useState(false);
 
+
+
+  useEffect(() => {
+    document.title = "Book Ticket | APSTS Passenger Portal";
+  }, []);
+
   /* ─────────────────────────────────────────────
      FETCH STATIONS
   ───────────────────────────────────────────── */

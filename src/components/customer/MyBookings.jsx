@@ -292,6 +292,10 @@ export default function MyBookings() {
   const [error, setError]           = useState(null);
   const [cancelTarget, setCancelTarget] = useState(null); // booking to cancel
 
+  useEffect(() => {
+    document.title = "Booking | APSTS Passenger Portal";
+  }, []);
+
   const fetchBookings = useCallback(async () => {
     try {
       setLoading(true);

@@ -9,6 +9,10 @@ function AdminGallery() {
   const [form,      setForm]      = useState({ title: "", altText: "", sortOrder: 0 });
   const fileRef = useRef();
 
+   useEffect(() => {
+    document.title = "Gallery | APSTS Admin Portal";
+  }, []);
+
   const load = () => {
     setLoading(true);
     cmsApi.adminGetAllGallery()

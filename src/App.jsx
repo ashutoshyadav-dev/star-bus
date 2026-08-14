@@ -207,7 +207,7 @@ function AppRoutes() {
   return (
     <Routes>
          {/* Default route */}
-      <Route path="/" element={<Navigate to="/ap" replace />} />
+      <Route path="/" element={<Navigate to="/home" replace />} />
 
       {/* ── Auth ──────────────────────────────────────────── */}
       <Route
@@ -323,7 +323,8 @@ function AppRoutes() {
 
 
       {/* ── Public Website ────────────────────────────────── */}
-<Route path="/ap" element={<Transport />} />
+{/* <Route path="/ap" element={<Transport />} /> */}
+<Route path="department" element={<Transport />} />
 
 <Route path="/home" element={<WebsiteLayout />}>
   <Route index element={<Home />} />
@@ -344,7 +345,8 @@ function AppRoutes() {
           path="our-history"
           element={<OurHistory />}
         />
-
+        
+        <Route path="department" element={<Transport />} />
 
         <Route
           path="helpdesk"

@@ -10,7 +10,7 @@ import {
   Search,
   XCircle,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { format } from "date-fns";
 import toast from "react-hot-toast";
@@ -46,6 +46,10 @@ export default function ScheduleManagement() {
   const [currentPage, setCurrentPage] = useState(1);
 
   const ENTRIES = 8;
+
+  useEffect(() => {
+    document.title = "Schedule | APSTS Admin Portal";
+  }, []);
 
   const { data, isLoading } = useQuery(
     ["schedules"],

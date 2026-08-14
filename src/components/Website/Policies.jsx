@@ -2,6 +2,7 @@ import banner from "../../assets/banner.png";
 import Breadcrumb from "../Website/Breadcrumb";
 import { FaInfoCircle, FaMoneyBillWave, FaCheckCircle } from "react-icons/fa";
 import { useCmsPage } from "../../hooks/useCmsPage";
+import { useEffect } from "react";
 
 const DEDUCTION_COLOR = {
   green:  "text-green-600",
@@ -12,6 +13,10 @@ const DEDUCTION_COLOR = {
 function CancellationPolicy() {
   const { page, loading } = useCmsPage("cancellation-policy");
   const c = page?.content ?? {};
+
+  useEffect(() => {
+    document.title = "Policy | APSTS Portal";
+  }, []);
 
   // fallback rows if CMS content not yet loaded
   const rows = c.chargesTable?.rows ?? [

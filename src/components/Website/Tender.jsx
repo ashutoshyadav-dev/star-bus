@@ -3,10 +3,14 @@ import Breadcrumb from "../Website/Breadcrumb";
 import { FaBullhorn, FaFilePdf, FaCalendarAlt } from "react-icons/fa";
 import { useCmsPage } from "../../hooks/useCmsPage";
 import { buildImageUrl } from "../../api/cms";
+import { useEffect } from "react";
 
 function Tender() {
   const { page, loading } = useCmsPage("tender");
   const docs = page?.documents ?? [];
+  useEffect(() => {
+    document.title = "Tender | APSTS Portal";
+  }, []);
 
   return (
     <div className="w-full bg-[#f5f7fa] min-h-screen">

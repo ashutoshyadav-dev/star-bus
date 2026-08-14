@@ -31,6 +31,7 @@ function RouteModal({ schedule, onClose }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
+
   useEffect(() => {
     let cancelled = false;
     setLoading(true);
@@ -237,6 +238,10 @@ function Timetable() {
   const [schedules, setSchedules] = useState([]);
   const [searched, setSearched] = useState(false);
   const [routeModal, setRouteModal] = useState(null);
+
+   useEffect(() => {
+    document.title = "Timetable | APSTS Portal";
+  }, []);
 
   useEffect(() => {
     stationApi

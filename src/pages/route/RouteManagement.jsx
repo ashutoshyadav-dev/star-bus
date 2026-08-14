@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { Search, CheckCircle, Ban, ShieldOff, ShieldCheck, Plus, Eye, Pencil } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "react-query";
 import { useNavigate } from "react-router-dom";
@@ -50,6 +50,11 @@ export default function RouteManagement() {
   const [suspendReason, setSuspendReason] = useState("");
 
   const ENTRIES = 8;
+
+useEffect(() => {
+    document.title = "Route | APSTS Admin Portal";
+  }, []);
+
 
   /* ── data ── */
   const { data, isLoading } = useQuery(["routes"], getAllRoutes, { staleTime: 30_000 });

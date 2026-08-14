@@ -195,6 +195,10 @@ export default function WalletPage() {
   const [txLoading, setTxLoading] = useState(false)
   const [showTopUp, setShowTopUp] = useState(false)
 
+  useEffect(() => {
+    document.title = "Wallet | APSTS Passenger Portal";
+  }, []);
+
   const loadWallet = useCallback(async () => {
     setLoading(true)
     try {

@@ -14,6 +14,10 @@ const TEMPLATES = [
 export default function AdminCmsPages() {
   const [tab, setTab] = useState("Pages");
 
+   useEffect(() => {
+    document.title = "Page Editor | APSTS Admin Portal";
+  }, []);
+
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold text-gray-800 mb-6">CMS Pages</h1>

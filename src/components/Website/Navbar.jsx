@@ -54,6 +54,7 @@ export default function Navbar() {
       .then((res) => setMenus(res.data?.data ?? res.data ?? []))
       .catch(console.error);
   }, []);
+console.log("menus",menus);
 
   // Filter by position — matches cms_menu_position_enum values
   const menuFor = (position) =>

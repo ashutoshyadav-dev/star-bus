@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import banner from "../../assets/banner.png";
 import Breadcrumb from "../Website/Breadcrumb";
 import {
@@ -8,6 +9,9 @@ import {
 } from "react-icons/fa";
 
 function ContactUs() {
+  useEffect(() => {
+    document.title = "Contact Us | APSTS Portal";
+  }, []);
   return (
     <div className="w-full bg-[#f5f7fa] min-h-screen">
 

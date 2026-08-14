@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQuery } from 'react-query'
 import { paymentApi } from '../../api/booking'
 import { format } from 'date-fns'
@@ -39,6 +39,10 @@ function Tile({ label, value }) {
 export default function PaymentsPage() {
   const navigate = useNavigate()
   const [bookingId, setBookingId] = useState(null)
+
+  useEffect(() => {
+    document.title = "Payment | APSTS Admin Portal";
+  }, []);
 
  const {
   data: paymentData,

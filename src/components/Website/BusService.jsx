@@ -1,11 +1,14 @@
 import banner from "../../assets/banner.png";
 import busImg from "../../assets/Valley.png";
 import { useLocation } from "react-router-dom";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Breadcrumb from "../Website/Breadcrumb";
 
 
 function BusService() {
+  useEffect(() => {
+    document.title = "Bus Routes | APSTS Portal";
+  }, []);
   const location = useLocation();
   const busName = location.state?.bus || "Electric Bus";
 

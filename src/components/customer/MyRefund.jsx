@@ -335,6 +335,10 @@ export default function MyRefunds() {
   const [selected, setSelected]       = useState(null);
   const [error, setError]             = useState(null);
 
+  useEffect(() => {
+    document.title = "Refund | APSTS Passenger Portal";
+  }, []);
+
   const loadRefunds = useCallback(async () => {
     setLoading(true);
     setError(null);

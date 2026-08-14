@@ -16,6 +16,10 @@ function AdminMenu() {
   const [form,    setForm]    = useState(EMPTY_FORM);
   const [editing, setEditing] = useState(null);
 
+   useEffect(() => {
+    document.title = "Menu | APSTS Admin Portal";
+  }, []);
+
   const load = () => {
     setLoading(true);
     cmsApi.adminGetAllMenus()

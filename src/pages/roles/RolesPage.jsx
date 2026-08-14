@@ -468,6 +468,10 @@ export default function RolesPage() {
   const allPermissions = permsData?.data?.data ?? permsData?.data ?? []
   const loading        = rolesLoading || permsLoading
 
+  useEffect(() => {
+    document.title = "Roles | APSTS Admin Portal";
+  }, []);
+
   return (
     <div className="min-h-screen bg-slate-50">
       <div className="max-w-4xl mx-auto px-6 py-8">

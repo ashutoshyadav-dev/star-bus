@@ -15,6 +15,10 @@ function HelpDesk() {
   const stationId = 1;
 
   useEffect(() => {
+    document.title = "HelpDesk | APSTS Portal";
+  }, []);
+
+  useEffect(() => {
     fetchContact();
   }, []);
 

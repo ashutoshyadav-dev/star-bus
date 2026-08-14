@@ -2,6 +2,7 @@ import banner from "../../assets/banner.png";
 import Breadcrumb from "../Website/Breadcrumb";
 import { FaBus, FaRoute, FaBuilding, FaNetworkWired, FaCheckCircle } from "react-icons/fa";
 import { useCmsPage } from "../../hooks/useCmsPage";
+import { useEffect } from "react";
 
 const STAT_META = [
   { key: "statBuses",       label: "Total Buses",  color: "text-green-500",  icon: "bus"     },
@@ -17,13 +18,20 @@ const ICONS = {
   network:  <FaNetworkWired />,
 };
 
+
+
 function OurHistory() {
   const { page, loading } = useCmsPage("our-history");
   const c = page?.content ?? {};
 
+  useEffect(() => {
+    document.title = "History | APSTS Portal";
+  }, []);
+
   return (
     <div className="w-full bg-[#f5f7fa]">
      
+  
 
       <div className="relative h-[320px] flex items-center px-10 pt-20 text-white">
         <div className="absolute inset-0 bg-center bg-cover"

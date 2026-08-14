@@ -11,6 +11,7 @@ import {
   BarChart, Bar, XAxis, Tooltip, ResponsiveContainer,
   PieChart, Pie, Cell,
 } from "recharts";
+import { useEffect } from "react";
 
 const barData = [
   { name: "Jan", value: 120 },{ name: "Feb", value: 180 },{ name: "Mar", value: 150 },
@@ -46,6 +47,10 @@ export default function DashboardPage() {
 
   const totalUsers     = usersData?.data?.data?.totalElements  ?? "—";
   const pendingRefunds = refundsData?.data?.data?.length        ?? "—";
+
+  useEffect(() => {
+    document.title = "Dashboad | APSTS Admin Portal";
+  }, []);
 
   return (
     <div className="text-gray-800 space-y-6">

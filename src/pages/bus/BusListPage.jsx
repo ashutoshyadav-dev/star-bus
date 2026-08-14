@@ -28,7 +28,9 @@ export default function BusListPage() {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("");
   const [search, setSearch] = useState("");
-
+  useEffect(() => {
+    document.title = "Bus Management | APSTS Admin Portal";
+  }, []);
   const load = async () => {
     setLoading(true);
     try {

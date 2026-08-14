@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useQuery } from 'react-query'
 import { auditApi } from '../../api/audit'
 import { format } from 'date-fns'
@@ -142,6 +142,10 @@ export default function AuditPage() {
   const [eventType, setEventType] = useState('')
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState(null)
+
+   useEffect(() => {
+    document.title = "Audit Page | APSTS Admin Portal";
+  }, []);
 
   const { data, isLoading } = useQuery(
     ['audit', page, eventType],

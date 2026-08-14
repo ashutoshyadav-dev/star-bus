@@ -429,6 +429,10 @@ export default function UsersPage() {
   const [search,     setSearch]     = useState('')
   const [showCreate, setShowCreate] = useState(false)
 
+   useEffect(() => {
+    document.title = "Users | APSTS Admin Portal";
+  }, []);
+
   /* ── fetch users ── */
   const fmtSearch = search ? `+91${search.replace(/^91/, '')}` : ''
   const { data, isLoading } = useQuery(

@@ -6,12 +6,16 @@ import ServicesOffered from "../../components/department/ServicesOffered";
 import ActsRegulations from "../../components/department/ActsRegulations";
 import DTOOffice from "../../components/department/DTOOffice";
 import Footer from "../../components/Website/Footer";
+import { useEffect } from "react";
 
 
 const Transport = () => {
+   useEffect(() => {
+      document.title = "DTO | Department";
+    }, []);
   return (
     <>
-      <Header />
+      {/* <Header /> */}
       <HeroSection />
       <AboutSection />
       <RolesResponsibilities />
@@ -22,7 +26,7 @@ const Transport = () => {
         <DTOOffice />
       </div>
 
-      <Footer />
+      {/* <Footer /> */}
     </>
   );
 };

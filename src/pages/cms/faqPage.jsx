@@ -461,6 +461,10 @@ export default function CmsFaqPage() {
   const [search,     setSearch]     = useState("");
   const [showCreate, setShowCreate] = useState(false);
 
+   useEffect(() => {
+    document.title = "Faq | APSTS Admin Portal";
+  }, []);
+
   const loadFaqs = useCallback(() => {
     setLoading(true);
     cmsApi.getAllFaqs()

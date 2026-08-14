@@ -25,6 +25,10 @@ const StationForm = () => {
      isActive: true,
   });
 
+  useEffect(() => {
+    document.title = "Station | APSTS Admin Portal";
+  }, []);
+
   // 🔹 Fetch depots
   useEffect(() => {
     const fetchDepots = async () => {

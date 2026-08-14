@@ -209,6 +209,10 @@ export default function AllGrievances() {
   const [activeTab,  setActiveTab]  = useState("all");
   const [search,     setSearch]     = useState("");
 
+  useEffect(() => {
+    document.title = "Grievance | APSTS Passenger Portal";
+  }, []);
+
   const loadGrievances = useCallback(() => {
     setLoading(true);
     grievanceApi.getMine()
