@@ -191,7 +191,7 @@ function NoticePopup() {
           <button
             onClick={() => {
               setShow(false);
-              navigate("/notice");
+              navigate("/home/notice");
             }}
             className="px-5 py-2 text-sm text-white bg-orange-500 rounded-full hover:bg-orange-600"
           >
