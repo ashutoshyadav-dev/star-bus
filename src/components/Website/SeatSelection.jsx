@@ -39,6 +39,10 @@ import { FiUser, FiLogOut } from "react-icons/fi";
 
 const SEAT_LOCK_MINUTES = 10;
 
+// This build always runs in a browser — the backend needs this to know
+// which client to redirect back to after SBI ePay's hosted payment page.
+const PAYMENT_SOURCE = "WEB";
+
 // sessionStorage key prefix used to snapshot page state before redirecting
 // the browser away to SBI ePay's hosted payment page, and to restore it when
 // the bank redirects back. NOTE: no gateway key/method-map constants are
@@ -801,7 +805,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
     const bookingId = booking.bookingId ?? booking.id;
 
     try {
-      const res       = await paymentApi.initiate({ bookingId, paymentMethod });
+      const res       = await paymentApi.initiate({ bookingId, paymentMethod, source: PAYMENT_SOURCE});
       const initiated = res.data?.data ?? res.data;
 
       // ── Case 1: wallet payment (instant, no redirect) ──
