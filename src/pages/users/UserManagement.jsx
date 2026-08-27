@@ -55,7 +55,7 @@ const UserManagement = () => {
 
   return (
     <div className="p-6 min-h-screen bg-gray-50 text-gray-800">
-      {/* 🔥 Header */}
+      {/*Header */}
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex justify-between items-center">
           <h2 className="text-2xl font-semibold">User Management</h2>

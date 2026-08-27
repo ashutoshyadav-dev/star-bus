@@ -1,4 +1,6 @@
 import { useNavigate } from "react-router-dom";
+import { useQuery } from "react-query";
+import { dashboardApi } from "../../api/dashboad";
 import {
   FiBook,
   FiMap,
@@ -7,161 +9,83 @@ import {
   FiCreditCard,
   FiGift,
   FiArrowRight,
-  FiDownload,
   FiHelpCircle,
-  FiNavigation,
   FiBell,
 } from "react-icons/fi";
-
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-} from "recharts";
-import { useEffect } from "react";
-
-/* -------------------------------------------------------------------------- */
-/*                                   DATA                                     */
-/* -------------------------------------------------------------------------- */
-
-const statsData = [
-  {
-    title: "Total Bookings",
-    value: 15,
-    icon: <FiBook size={18} />,
-    color: "bg-purple-50 text-purple-600",
-    chartColor: "#7C3AED",
-    data: [
-      { value: 2 },
-      { value: 5 },
-      { value: 4 },
-      { value: 7 },
-      { value: 6 },
-      { value: 15 },
-    ],
-  },
-  {
-    title: "Upcoming Trips",
-    value: 2,
-    icon: <FiMap size={18} />,
-    color: "bg-blue-50 text-blue-600",
-    chartColor: "#2563EB",
-    data: [
-      { value: 0 },
-      { value: 1 },
-      { value: 2 },
-      { value: 1 },
-      { value: 2 },
-      { value: 2 },
-    ],
-  },
-  {
-    title: "Completed Trips",
-    value: 10,
-    icon: <FiCheckCircle size={18} />,
-    color: "bg-green-50 text-green-600",
-    chartColor: "#16A34A",
-    data: [
-      { value: 1 },
-      { value: 3 },
-      { value: 5 },
-      { value: 7 },
-      { value: 8 },
-      { value: 10 },
-    ],
-  },
-  {
-    title: "Cancelled",
-    value: 3,
-    icon: <FiXCircle size={18} />,
-    color: "bg-red-50 text-red-600",
-    chartColor: "#DC2626",
-    data: [
-      { value: 0 },
-      { value: 1 },
-      { value: 0 },
-      { value: 2 },
-      { value: 1 },
-      { value: 3 },
-    ],
-  },
-  {
-    title: "Wallet Balance",
-    value: "₹2,450",
-    icon: <FiCreditCard size={18} />,
-    color: "bg-yellow-50 text-yellow-600",
-    chartColor: "#CA8A04",
-    data: [
-      { value: 300 },
-      { value: 600 },
-      { value: 900 },
-      { value: 1200 },
-      { value: 1800 },
-      { value: 2450 },
-    ],
-  },
-  {
-    title: "Reward Points",
-    value: 380,
-    icon: <FiGift size={18} />,
-    color: "bg-pink-50 text-pink-600",
-    chartColor: "#DB2777",
-    data: [
-      { value: 50 },
-      { value: 90 },
-      { value: 120 },
-      { value: 220 },
-      { value: 300 },
-      { value: 380 },
-    ],
-  },
-];
-
-const recentBookings = [
-  {
-    id: "BK101",
-    route: "Delhi → Jaipur",
-    date: "25 May 2026",
-    amount: "₹850",
-    status: "Confirmed",
-  },
-  {
-    id: "BK102",
-    route: "Delhi → Chandigarh",
-    date: "28 May 2026",
-    amount: "₹1200",
-    status: "Completed",
-  },
-  {
-    id: "BK103",
-    route: "Delhi → Agra",
-    date: "30 May 2026",
-    amount: "₹650",
-    status: "Cancelled",
-  },
-];
 
 /* -------------------------------------------------------------------------- */
 /*                              MAIN COMPONENT                                */
 /* -------------------------------------------------------------------------- */
 
+function statusStyle(status) {
+  switch (status) {
+    case "CONFIRMED":
+      return "bg-blue-100 text-blue-700";
+    case "COMPLETED":
+      return "bg-green-100 text-green-700";
+    case "FULLY_CANCELLED":
+    case "PARTIALLY_CANCELLED":
+      return "bg-red-100 text-red-600";
+    default:
+      return "bg-gray-100 text-gray-600";
+  }
+}
+
 export default function UserDashboard() {
   const navigate = useNavigate();
 
-  const name = "Passenger";
+  const { data, isLoading } = useQuery(
+    "user-dashboard-summary",
+    () => dashboardApi.getUserSummary(),
+    { refetchInterval: 60000 }
+  );
+  const summary = data?.data?.data;
 
   const hour = new Date().getHours();
-
- useEffect(() => {
-    document.title = "Dashboad | APSTS Passenger Portal";
-  }, []);
-
   const greeting =
-    hour < 12
-      ? "Good Morning"
-      : hour < 18
-      ? "Good Afternoon"
-      : "Good Evening";
+    hour < 12 ? "Good Morning" : hour < 18 ? "Good Afternoon" : "Good Evening";
+
+  const statsData = [
+    {
+      title: "Total Bookings",
+      value: summary?.totalBookings ?? "—",
+      icon: <FiBook size={18} />,
+      color: "bg-purple-50 text-purple-600",
+    },
+    {
+      title: "Upcoming Trips",
+      value: summary?.upcomingTrips ?? "—",
+      icon: <FiMap size={18} />,
+      color: "bg-blue-50 text-blue-600",
+    },
+    {
+      title: "Completed Trips",
+      value: summary?.completedTrips ?? "—",
+      icon: <FiCheckCircle size={18} />,
+      color: "bg-green-50 text-green-600",
+    },
+    {
+      title: "Cancelled",
+      value: summary?.cancelledTrips ?? "—",
+      icon: <FiXCircle size={18} />,
+      color: "bg-red-50 text-red-600",
+    },
+    {
+      title: "Wallet Balance",
+      value: summary?.walletBalance != null ? `₹${Number(summary.walletBalance).toLocaleString("en-IN")}` : "—",
+      icon: <FiCreditCard size={18} />,
+      color: "bg-yellow-50 text-yellow-600",
+    },
+    {
+      title: "Reward Points",
+      value: summary?.loyaltyPoints ?? "—",
+      icon: <FiGift size={18} />,
+      color: "bg-pink-50 text-pink-600",
+    },
+  ];
+
+  const upcoming = summary?.upcomingJourney;
+  const recentBookings = summary?.recentBookings ?? [];
 
   return (
     <div className="space-y-6">
@@ -174,7 +98,7 @@ export default function UserDashboard() {
 
         <div>
           <h1 className="text-3xl font-bold text-gray-800">
-            {greeting}, {name} 👋
+            {greeting} 👋
           </h1>
 
           <p className="text-gray-500 mt-1">
@@ -212,36 +136,13 @@ export default function UserDashboard() {
                 </p>
 
                 <h2 className="text-2xl font-bold text-gray-800 mt-1">
-                  {item.value}
+                  {isLoading ? "…" : item.value}
                 </h2>
               </div>
 
               <div className={`p-2.5 rounded-xl ${item.color}`}>
                 {item.icon}
               </div>
-
-            </div>
-
-            {/* Chart */}
-
-            <div className="h-16 mt-2">
-
-              <ResponsiveContainer width="100%" height="100%">
-
-                <AreaChart data={item.data}>
-
-                  <Area
-                    type="monotone"
-                    dataKey="value"
-                    stroke={item.chartColor}
-                    fill={item.chartColor}
-                    fillOpacity={0.2}
-                    strokeWidth={2}
-                  />
-
-                </AreaChart>
-
-              </ResponsiveContainer>
 
             </div>
 
@@ -266,78 +167,92 @@ export default function UserDashboard() {
               Upcoming Journey
             </h2>
 
-            <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
-              Confirmed
-            </span>
+            {upcoming && (
+              <span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-xs font-semibold">
+                Confirmed
+              </span>
+            )}
 
           </div>
 
-          <div className="flex flex-col lg:flex-row justify-between gap-6">
-
-            <div className="space-y-3">
-
-              <div>
-
-                <p className="text-gray-400 text-sm">
-                  Route
-                </p>
-
-                <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
-                  Delhi
-                  <FiArrowRight />
-                  Jaipur
-                </h3>
-
-              </div>
-
-              <div className="grid grid-cols-2 gap-5 text-sm">
-
-                <div>
-                  <p className="text-gray-400">Journey Date</p>
-                  <p className="font-semibold text-gray-700">
-                    25 May 2026
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">Departure</p>
-                  <p className="font-semibold text-gray-700">
-                    06:30 PM
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">Seats</p>
-                  <p className="font-semibold text-gray-700">
-                    A1, A2
-                  </p>
-                </div>
-
-                <div>
-                  <p className="text-gray-400">PNR</p>
-                  <p className="font-semibold text-gray-700">
-                    APS123456
-                  </p>
-                </div>
-
-              </div>
-
-            </div>
-
-            <div className="flex flex-col gap-3">
-
+          {isLoading ? (
+            <p className="text-gray-400 text-sm">Loading…</p>
+          ) : !upcoming ? (
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <p className="text-gray-500">You have no upcoming trips.</p>
               <button
-                onClick={() => navigate("/user/my-bookings")}
-                className="bg-orange-500 hover:bg-orange-600 transition text-white px-5 py-3 rounded-xl font-medium"
+                onClick={() => navigate("/user/book-ticket")}
+                className="mt-4 text-orange-500 hover:text-orange-600 font-medium text-sm"
               >
-                View Bookings
+                Book your next journey →
               </button>
+            </div>
+          ) : (
+            <div className="flex flex-col lg:flex-row justify-between gap-6">
 
-              
+              <div className="space-y-3">
+
+                <div>
+
+                  <p className="text-gray-400 text-sm">
+                    Route
+                  </p>
+
+                  <h3 className="text-2xl font-bold text-gray-800 flex items-center gap-2">
+                    {upcoming.fromStation}
+                    <FiArrowRight />
+                    {upcoming.toStation}
+                  </h3>
+
+                </div>
+
+                <div className="grid grid-cols-2 gap-5 text-sm">
+
+                  <div>
+                    <p className="text-gray-400">Journey Date</p>
+                    <p className="font-semibold text-gray-700">
+                      {upcoming.journeyDate}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400">Departure</p>
+                    <p className="font-semibold text-gray-700">
+                      {upcoming.departureTime}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400">Passengers</p>
+                    <p className="font-semibold text-gray-700">
+                      {upcoming.passengerCount}
+                    </p>
+                  </div>
+
+                  <div>
+                    <p className="text-gray-400">PNR</p>
+                    <p className="font-semibold text-gray-700">
+                      {upcoming.pnr}
+                    </p>
+                  </div>
+
+                </div>
+
+              </div>
+
+              <div className="flex flex-col gap-3">
+
+                <button
+                  onClick={() => navigate("/user/my-bookings")}
+                  className="bg-orange-500 hover:bg-orange-600 transition text-white px-5 py-3 rounded-xl font-medium"
+                >
+                  View Bookings
+                </button>
+
+              </div>
 
             </div>
-
-          </div>
+          )}
 
         </div>
 
@@ -363,9 +278,9 @@ export default function UserDashboard() {
                 path: "/user/my-bookings",
               },
               {
-                label: "Track Bus",
-                icon: <FiNavigation />,
-                path: null,
+                label: "My Wallet",
+                icon: <FiCreditCard />,
+                path: "/user/wallet",
               },
               {
                 label: "Helpdesk",
@@ -377,12 +292,7 @@ export default function UserDashboard() {
               <div
                 key={item.label}
                 onClick={() => item.path && navigate(item.path)}
-                className={`flex items-center justify-between p-4 rounded-xl border border-gray-100 transition
-                ${
-                  item.path
-                    ? "hover:border-orange-200 hover:bg-orange-50 cursor-pointer"
-                    : "opacity-50"
-                }`}
+                className="flex items-center justify-between p-4 rounded-xl border border-gray-100 transition hover:border-orange-200 hover:bg-orange-50 cursor-pointer"
               >
 
                 <div className="flex items-center gap-3 text-gray-700">
@@ -460,7 +370,7 @@ export default function UserDashboard() {
             <tr className="border-b border-gray-100 text-left text-sm text-gray-500">
 
               <th className="pb-3 font-medium">
-                Booking ID
+                PNR
               </th>
 
               <th className="pb-3 font-medium">
@@ -497,34 +407,27 @@ export default function UserDashboard() {
               >
 
                 <td className="py-4 font-semibold text-gray-700">
-                  {booking.id}
+                  {booking.pnr}
                 </td>
 
                 <td className="py-4 text-gray-600">
-                  {booking.route}
+                  {booking.routeName}
                 </td>
 
                 <td className="py-4 text-gray-600">
-                  {booking.date}
+                  {booking.journeyDate ?? "—"}
                 </td>
 
                 <td className="py-4 text-gray-600">
-                  {booking.amount}
+                  ₹{booking.amount}
                 </td>
 
                 <td className="py-4">
 
                   <span
-                    className={`px-3 py-1 rounded-full text-xs font-semibold
-                    ${
-                      booking.status === "Confirmed"
-                        ? "bg-blue-100 text-blue-700"
-                        : booking.status === "Completed"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-red-100 text-red-600"
-                    }`}
+                    className={`px-3 py-1 rounded-full text-xs font-semibold ${statusStyle(booking.status)}`}
                   >
-                    {booking.status}
+                    {booking.status?.replace(/_/g, " ")}
                   </span>
 
                 </td>
@@ -544,6 +447,14 @@ export default function UserDashboard() {
 
               </tr>
             ))}
+
+            {!isLoading && recentBookings.length === 0 && (
+              <tr>
+                <td colSpan={6} className="py-8 text-center text-gray-400 text-sm">
+                  You haven't made any bookings yet.
+                </td>
+              </tr>
+            )}
 
           </tbody>
 
