@@ -12,6 +12,7 @@ import {
   FiHelpCircle,
   FiBell,
 } from "react-icons/fi";
+import { useEffect } from "react";
 
 /* -------------------------------------------------------------------------- */
 /*                              MAIN COMPONENT                                */
@@ -33,6 +34,10 @@ function statusStyle(status) {
 
 export default function UserDashboard() {
   const navigate = useNavigate();
+
+   useEffect(() => {
+    document.title = "Dashboard | APSTS Passenger Portal";
+  }, []);
 
   const { data, isLoading } = useQuery(
     "user-dashboard-summary",

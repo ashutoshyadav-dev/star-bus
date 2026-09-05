@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useQuery } from "react-query";
 import { dashboardApi } from "../../api/dashboad";
@@ -47,6 +47,11 @@ function statusColor(status) {
 }
 
 export default function DashboardPage() {
+
+  useEffect(() => {
+    document.title = "Dashboard | APSTS Admin Portal";
+  }, []);
+
   const { user } = useAuth();
   const [downloading, setDownloading] = useState(false);
 
