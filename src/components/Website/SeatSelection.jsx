@@ -16,20 +16,24 @@
 // =============================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useNavigate, useSearchParams }              from "react-router-dom";
-import { useAuth }                                   from "../../context/AuthContext";
-import toast                                         from "react-hot-toast";
-import { QRCodeCanvas }                              from "qrcode.react";
-import jsPDF                                         from "jspdf";
-import html2canvas                                   from "html2canvas";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { useAuth } from "../../context/AuthContext";
+import toast from "react-hot-toast";
+import { QRCodeCanvas } from "qrcode.react";
+import jsPDF from "jspdf";
+import html2canvas from "html2canvas";
 
-import sideBg                                        from "../../assets/side-bg.jpeg";
-import logo                                          from "../../assets/logo.png";
+import sideBg from "../../assets/side-bg.jpeg";
+import logo from "../../assets/logo.png";
 
-import { getScheduleSeats, lockSeatForJourney, getScheduleById } from "../../api/schedule";
-import api                                           from "../../api/client";
-import { bookingApi, paymentApi }                    from "../../api/booking";
-import { ProgressBar }                               from "./BusList";
+import {
+  getScheduleSeats,
+  lockSeatForJourney,
+  getScheduleById,
+} from "../../api/schedule";
+import api from "../../api/client";
+import { bookingApi, paymentApi } from "../../api/booking";
+import { ProgressBar } from "./BusList";
 
 import { FiUser, FiLogOut } from "react-icons/fi";
 
@@ -51,11 +55,11 @@ const PAYMENT_SESSION_PREFIX = "apsts_pending_payment_";
 
 // Seat fill colours for the seat map legend and SVG rendering
 const SEAT_COLORS = {
-  selected:  "#3b82f6",
-  ladies:    "#a855f7",
-  booked:    "#6b7280",
-  locked:    "#f97316",
-  hold:      "#f97316",
+  selected: "#3b82f6",
+  ladies: "#a855f7",
+  booked: "#6b7280",
+  locked: "#f97316",
+  hold: "#f97316",
   available: "white",
 };
 
@@ -66,14 +70,16 @@ const SEAT_COLORS = {
 function formatDate(d) {
   if (!d) return "";
   return new Date(d).toLocaleDateString("en-IN", {
-    day: "2-digit", month: "2-digit", year: "numeric",
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
   });
 }
 
 function formatTime(t) {
   if (!t) return "";
   const [h, m] = String(t).split(":");
-  const hour   = parseInt(h, 10);
+  const hour = parseInt(h, 10);
   return `${hour % 12 || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
 }
 
@@ -83,7 +89,7 @@ function savePaymentSession(bookingId, snapshot) {
   try {
     sessionStorage.setItem(
       PAYMENT_SESSION_PREFIX + bookingId,
-      JSON.stringify(snapshot)
+      JSON.stringify(snapshot),
     );
   } catch (e) {
     console.error("Failed to save payment session snapshot", e);
@@ -111,10 +117,24 @@ function clearPaymentSession(bookingId) {
 /* ── Spinner ── */
 function Spinner() {
   return (
-    <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
-      <circle className="opacity-25" cx="12" cy="12" r="10"
-        stroke="currentColor" strokeWidth="4" />
-      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
+    <svg
+      className="w-4 h-4 animate-spin shrink-0"
+      fill="none"
+      viewBox="0 0 24 24"
+    >
+      <circle
+        className="opacity-25"
+        cx="12"
+        cy="12"
+        r="10"
+        stroke="currentColor"
+        strokeWidth="4"
+      />
+      <path
+        className="opacity-75"
+        fill="currentColor"
+        d="M4 12a8 8 0 018-8v8H4z"
+      />
     </svg>
   );
 }
@@ -129,7 +149,6 @@ function SeatIcon({ label, displayType, onClick }) {
       className="cursor-pointer hover:scale-105 transition-transform"
     >
       <svg width="42" height="52" viewBox="0 0 42 52">
-
         {/* Seat body */}
         <rect
           x="8"
@@ -143,13 +162,37 @@ function SeatIcon({ label, displayType, onClick }) {
         />
 
         {/* left arm */}
-        <rect x="3" y="8" width="5" height="22" rx="2" fill="#fff" stroke="#666" />
+        <rect
+          x="3"
+          y="8"
+          width="5"
+          height="22"
+          rx="2"
+          fill="#fff"
+          stroke="#666"
+        />
 
         {/* right arm */}
-        <rect x="34" y="8" width="5" height="22" rx="2" fill="#fff" stroke="#666" />
+        <rect
+          x="34"
+          y="8"
+          width="5"
+          height="22"
+          rx="2"
+          fill="#fff"
+          stroke="#666"
+        />
 
         {/* bottom cushion */}
-        <rect x="10" y="33" width="22" height="6" rx="2" fill="#fff" stroke="#666" />
+        <rect
+          x="10"
+          y="33"
+          width="22"
+          height="6"
+          rx="2"
+          fill="#fff"
+          stroke="#666"
+        />
 
         {/* seat number */}
         <text
@@ -174,17 +217,21 @@ function SeatNavbar({ user, onLogout }) {
   const navigate = useNavigate();
 
   return (
-    <div className="fixed top-0 left-0 w-full z-50 flex items-center justify-between
+    <div
+      className="fixed top-0 left-0 w-full z-50 flex items-center justify-between
       px-6 py-2 bg-gradient-to-r from-[#163F2D] via-[#081935] to-[#163F2D]
-      text-white shadow-lg h-14">
-
+      text-white shadow-lg h-14"
+    >
       {/* Left — logo + title */}
       <div
         onClick={() => navigate("/home")}
         className="flex items-center gap-3 cursor-pointer"
       >
-        <img src={logo} alt="APSTS"
-          className="w-8 h-8 rounded-full object-cover border border-white/30" />
+        <img
+          src={logo}
+          alt="APSTS"
+          className="w-8 h-8 rounded-full object-cover border border-white/30"
+        />
         <div className="leading-tight hidden sm:block">
           <p className="text-sm font-semibold">
             Arunachal Pradesh State Transport
@@ -197,8 +244,10 @@ function SeatNavbar({ user, onLogout }) {
       {user ? (
         // Logged-in: show passenger name and logout
         <div className="flex items-center gap-3">
-          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5
-            rounded-full text-sm">
+          <div
+            className="flex items-center gap-2 bg-white/10 px-3 py-1.5
+            rounded-full text-sm"
+          >
             <FiUser />
             <span className="hidden sm:block">
               {user.name ?? user.phone ?? "Passenger"}
@@ -237,16 +286,18 @@ function SeatNavbar({ user, onLogout }) {
 function LoginGateModal({ onClose, onLogin }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43]
+      <div
+        className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43]
         to-[#2c5364] p-8 rounded-2xl border border-white/20 text-white
-        text-center shadow-2xl">
+        text-center shadow-2xl"
+      >
         <div className="text-4xl mb-4">🔐</div>
         <h2 className="text-xl font-semibold text-green-400 mb-2">
           Login Required
         </h2>
         <p className="text-gray-300 text-sm mb-6">
-          You need to be logged in to book a seat.
-          Your seat selection will be preserved after login.
+          You need to be logged in to book a seat. Your seat selection will be
+          preserved after login.
         </p>
         <div className="flex gap-3 justify-center">
           <button
@@ -276,9 +327,11 @@ function LoginGateModal({ onClose, onLogin }) {
 function AbandonModal({ onStay, onLeave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43]
+      <div
+        className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43]
         to-[#2c5364] p-8 rounded-2xl border border-white/20 text-white
-        text-center shadow-2xl">
+        text-center shadow-2xl"
+      >
         <div className="text-4xl mb-4">⚠️</div>
         <h2 className="text-xl font-semibold text-orange-400 mb-2">
           Booking in Progress
@@ -348,12 +401,13 @@ function LockTimer({ expiresAt, onExpired }) {
   if (!remaining) return null;
 
   // Compare numerically — string comparison on "05:00" is unreliable
-  const [mm, ss]  = remaining.split(":").map(Number);
+  const [mm, ss] = remaining.split(":").map(Number);
   const totalSecs = mm * 60 + ss;
-  const isUrgent  = totalSecs < 300; // red warning under 5 minutes
+  const isUrgent = totalSecs < 300; // red warning under 5 minutes
 
   return (
-    <div className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm
+    <div
+      className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm
       font-semibold ${
         isUrgent
           ? "bg-red-500/30 text-red-300"
@@ -370,12 +424,10 @@ function LockTimer({ expiresAt, onExpired }) {
 // =============================================================================
 
 export default function SeatSelection() {
-
-  const navigate       = useNavigate();
-  const [
-  searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user, logout } = useAuth();
-  const ticketRef      = useRef();
+  const ticketRef = useRef();
 
   // ── Detect a "returning from SBI ePay" load ─────────────────────────────
   // The backend's /payments/callback redirects the browser back here as:
@@ -383,27 +435,30 @@ export default function SeatSelection() {
   // (none of the original journey query params survive that hop, which is
   // exactly why we snapshot everything into sessionStorage before leaving).
   const returningBookingId = searchParams.get("bookingId");
-  const returningStatus    = searchParams.get("paymentStatus");
+  const returningStatus = searchParams.get("paymentStatus");
   const isReturningPayment = Boolean(returningBookingId && returningStatus);
 
   // Restored snapshot (only populated when isReturningPayment is true) —
   // read once, synchronously, so the very first render already has the
   // right journey details instead of flashing empty state.
   const restoredSnapshotRef = useRef(
-    isReturningPayment ? loadPaymentSession(returningBookingId) : null
+    isReturningPayment ? loadPaymentSession(returningBookingId) : null,
   );
   const restored = restoredSnapshotRef.current;
 
   // ── URL params passed from BusList (or restored from sessionStorage
   //    when returning from the SBI ePay redirect) ─────────────────────────
   const scheduleId = restored?.scheduleId ?? searchParams.get("scheduleId");
-  const fromLabel  = restored?.fromLabel  ?? decodeURIComponent(searchParams.get("from")      ?? "");
-  const toLabel    = restored?.toLabel    ?? decodeURIComponent(searchParams.get("to")        ?? "");
-  const fromId     = restored?.fromId     ?? Number(searchParams.get("fromId")                ?? 0);
-  const toId       = restored?.toId       ?? Number(searchParams.get("toId")                  ?? 0);
-  const date       = restored?.date       ?? (searchParams.get("date")                        ?? "");
-  const busLabel   = restored?.busLabel   ?? decodeURIComponent(searchParams.get("bus")       ?? "");
-  const departure  = restored?.departure  ?? (searchParams.get("departure")                    ?? "");
+  const fromLabel =
+    restored?.fromLabel ?? decodeURIComponent(searchParams.get("from") ?? "");
+  const toLabel =
+    restored?.toLabel ?? decodeURIComponent(searchParams.get("to") ?? "");
+  const fromId = restored?.fromId ?? Number(searchParams.get("fromId") ?? 0);
+  const toId = restored?.toId ?? Number(searchParams.get("toId") ?? 0);
+  const date = restored?.date ?? searchParams.get("date") ?? "";
+  const busLabel =
+    restored?.busLabel ?? decodeURIComponent(searchParams.get("bus") ?? "");
+  const departure = restored?.departure ?? searchParams.get("departure") ?? "";
 
   // ── Booking flow step ────────────────────────────────────────────────────
   // 2 = seat selection + passenger details
@@ -413,37 +468,43 @@ export default function SeatSelection() {
   const [step, setStep] = useState(2);
 
   // ── Seat inventory ───────────────────────────────────────────────────────
-  const [seatMap,      setSeatMap]      = useState([]);
+  const [seatMap, setSeatMap] = useState([]);
   const [loadingSeats, setLoadingSeats] = useState(true);
-  const [seatError,    setSeatError]    = useState("");
+  const [seatError, setSeatError] = useState("");
 
   // Stop sequences resolved from route stops — needed for segment seat query
   const [fromStopSeq, setFromStopSeq] = useState(null);
-  const [toStopSeq,   setToStopSeq]   = useState(null);
+  const [toStopSeq, setToStopSeq] = useState(null);
 
   // ── Passenger selection & details ───────────────────────────────────────
-  const [selectedSeats,    setSelectedSeats]    = useState(restored?.selectedSeats ?? []);
-  const [passengerDetails, setPassengerDetails] = useState(restored?.passengerDetails ?? {});
+  const [selectedSeats, setSelectedSeats] = useState(
+    restored?.selectedSeats ?? [],
+  );
+  const [passengerDetails, setPassengerDetails] = useState(
+    restored?.passengerDetails ?? {},
+  );
 
   // ── Modal visibility ─────────────────────────────────────────────────────
   const [showLoginGate, setShowLoginGate] = useState(false);
-  const [showAbandon,   setShowAbandon]   = useState(false);
+  const [showAbandon, setShowAbandon] = useState(false);
 
   // Stores where the user was trying to go when the abandon modal fired,
   // so we can navigate there if they confirm "Leave Anyway"
   const abandonTargetRef = useRef(null);
 
   // ── Contact details (step 3) ─────────────────────────────────────────────
-  const [contact,    setContact]    = useState(restored?.contact ?? { mobile: "", email: "" });
+  const [contact, setContact] = useState(
+    restored?.contact ?? { mobile: "", email: "" },
+  );
   const [emailError, setEmailError] = useState("");
 
   // ── Booking & payment state ──────────────────────────────────────────────
-  const [booking,        setBooking]        = useState(restored?.booking ?? null);
+  const [booking, setBooking] = useState(restored?.booking ?? null);
   const [bookingLoading, setBookingLoading] = useState(false);
-  const [paymentMethod,  setPaymentMethod]  = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("");
   // `initiating` = API call in flight (includes the moment right before the
   // full-page redirect fires — there is no "modal open" state anymore)
-  const [initiating,    setInitiating]    = useState(false);
+  const [initiating, setInitiating] = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
 
@@ -471,28 +532,39 @@ export default function SeatSelection() {
 
     (async () => {
       try {
-        const res           = await bookingApi.getById(returningBookingId);
-        const freshBooking  = res.data?.data ?? res.data;
+        const res = await bookingApi.getById(returningBookingId);
+        const freshBooking = res.data?.data ?? res.data;
         setBooking(freshBooking);
 
-        const confirmed = freshBooking?.bookingStatus === "CONFIRMED"
-          || returningStatus === "success";
+        const confirmed =
+          freshBooking?.bookingStatus === "CONFIRMED" ||
+          returningStatus === "success";
+        const stillPending = !confirmed && returningStatus === "pending";
 
         if (confirmed) {
           toast.success("Payment successful! Ticket confirmed. 🎉");
           setPaymentFailed(false);
           setLockExpiresAt(null);
           setStep(5);
+        } else if (stillPending) {
+          toast("Confirming your payment, this can take a minute…", {
+            icon: "⏳",
+          });
+          setPaymentFailed(false);
+          setStep(4);
+          // Optional: poll bookingApi.getById every few seconds for up to ~1 min,
+          // re-run the same confirmed-check, and setStep(5) once it flips.
         } else {
           toast.error(
-            `Payment failed or was not completed. PNR: ${freshBooking?.pnr ?? "-"}. ` +
-            "You can retry below."
+            `Payment failed or was not completed. PNR: ${freshBooking?.pnr ?? "-"}. You can retry below.`,
           );
           setPaymentFailed(true);
           setStep(4);
         }
       } catch (err) {
-        toast.error("Could not verify your payment. Please check My Bookings or contact support.");
+        toast.error(
+          "Could not verify your payment. Please check My Bookings or contact support.",
+        );
         setPaymentFailed(true);
         setStep(4);
       } finally {
@@ -527,137 +599,140 @@ export default function SeatSelection() {
     getScheduleById(scheduleId)
       .then((res) => {
         const schedule = res.data?.data ?? res.data;
-        const routeId  = schedule?.routeId ?? schedule?.route?.id;
+        const routeId = schedule?.routeId ?? schedule?.route?.id;
         if (!routeId) return;
 
         api.get(`/admin/routes/${routeId}/stops`).then((r) => {
           const stops = r.data?.data ?? r.data ?? [];
-          const from  = stops.find((s) => s.stationId === fromId);
-          const to    = stops.find((s) => s.stationId === toId);
+          const from = stops.find((s) => s.stationId === fromId);
+          const to = stops.find((s) => s.stationId === toId);
           if (from) setFromStopSeq(from.stopSequence);
-          if (to)   setToStopSeq(to.stopSequence);
+          if (to) setToStopSeq(to.stopSequence);
         });
       })
       .catch(() => {});
   }, [resolvingReturn, scheduleId, fromId, toId]);
 
-
-
   const fetchSeats = useCallback(() => {
-  console.log("FETCHING SEATS");
+    console.log("FETCHING SEATS");
 
-  getScheduleSeats(scheduleId, fromStopSeq, toStopSeq)
-    .then((res) => {
+    getScheduleSeats(scheduleId, fromStopSeq, toStopSeq)
+      .then((res) => {
+        console.log("Seat API Full Response:", res);
+        console.log("Seat API Data:", res.data);
 
-      console.log("Seat API Full Response:", res);
-      console.log("Seat API Data:", res.data);
-
-      const seats =
-        Array.isArray(res.data)
+        const seats = Array.isArray(res.data)
           ? res.data
           : (res.data?.data ?? []);
 
-      console.log("Parsed Seats:", seats);
+        console.log("Parsed Seats:", seats);
 
-      setSeatMap(seats);
-    })
-    .catch((err) => {
-      console.error("Seat API Error:", err);
-      setSeatError("Failed to load seat map.");
-    })
-    .finally(() => setLoadingSeats(false));
+        setSeatMap(seats);
+      })
+      .catch((err) => {
+        console.error("Seat API Error:", err);
+        setSeatError("Failed to load seat map.");
+      })
+      .finally(() => setLoadingSeats(false));
+  }, [scheduleId, fromStopSeq, toStopSeq]);
 
-}, [scheduleId, fromStopSeq, toStopSeq]);
+  useEffect(() => {
+    if (resolvingReturn) return;
+    console.log("fromStopSeq =", fromStopSeq);
+    console.log("toStopSeq =", toStopSeq);
 
-
-useEffect(() => {
-  if (resolvingReturn) return;
-  console.log("fromStopSeq =", fromStopSeq);
-  console.log("toStopSeq =", toStopSeq);
-
-  if (fromStopSeq !== null && toStopSeq !== null) {
-    console.log("Calling fetchSeats()");
-    fetchSeats();
-  }
-}, [resolvingReturn, fetchSeats, fromStopSeq, toStopSeq]);
+    if (fromStopSeq !== null && toStopSeq !== null) {
+      console.log("Calling fetchSeats()");
+      fetchSeats();
+    }
+  }, [resolvingReturn, fetchSeats, fromStopSeq, toStopSeq]);
   // ==========================================================================
   // SECTION 2 — SEAT MAP GRID COMPUTATION
   // Builds a 2-D array (rows × cols) from the flat seatMap list so we can
   // render the physical bus layout with an aisle gap in the middle.
   // ==========================================================================
 
- const maxRow = seatMap.reduce((m, s) => Math.max(m, s.rowNumber ?? 0), 0);
-const maxCol = seatMap.reduce((m, s) => Math.max(m, s.colNumber ?? 0), 0);
+  const maxRow = seatMap.reduce((m, s) => Math.max(m, s.rowNumber ?? 0), 0);
+  const maxCol = seatMap.reduce((m, s) => Math.max(m, s.colNumber ?? 0), 0);
 
-console.log("========== SEAT DEBUG ==========");
-console.log("seatMap:", seatMap);
-console.log("seatMap length:", seatMap.length);
-console.log("scheduleId:", scheduleId);
-console.log("fromStopSeq:", fromStopSeq);
-console.log("toStopSeq:", toStopSeq);
-console.log("================================");
+  console.log("========== SEAT DEBUG ==========");
+  console.log("seatMap:", seatMap);
+  console.log("seatMap length:", seatMap.length);
+  console.log("scheduleId:", scheduleId);
+  console.log("fromStopSeq:", fromStopSeq);
+  console.log("toStopSeq:", toStopSeq);
+  console.log("================================");
 
-// Detect the aisle column by finding the col that has no seat in any
-// non-last row. This works for 2+2 layouts AND last-row-full layouts.
-const colsInNonLastRows = new Set(
-  seatMap.filter(s => s.rowNumber < maxRow).map(s => s.colNumber)
-);
-const aisleAfterCol = (() => {
-  for (let c = 2; c < maxCol; c++) {
-    if (!colsInNonLastRows.has(c)) return c; // first gap = aisle column
-  }
-  return Math.floor(maxCol / 2); // fallback
-})();
+  // Detect the aisle column by finding the col that has no seat in any
+  // non-last row. This works for 2+2 layouts AND last-row-full layouts.
+  const colsInNonLastRows = new Set(
+    seatMap.filter((s) => s.rowNumber < maxRow).map((s) => s.colNumber),
+  );
+  const aisleAfterCol = (() => {
+    for (let c = 2; c < maxCol; c++) {
+      if (!colsInNonLastRows.has(c)) return c; // first gap = aisle column
+    }
+    return Math.floor(maxCol / 2); // fallback
+  })();
 
-const grid = Array.from({ length: maxRow }, (_, ri) =>
-  Array.from({ length: maxCol }, (_, ci) =>
-    seatMap.find(
-      (s) => s.rowNumber === ri + 1 && s.colNumber === ci + 1
-    ) ?? null
-  )
-);
+  const grid = Array.from({ length: maxRow }, (_, ri) =>
+    Array.from(
+      { length: maxCol },
+      (_, ci) =>
+        seatMap.find((s) => s.rowNumber === ri + 1 && s.colNumber === ci + 1) ??
+        null,
+    ),
+  );
 
   /* ── Compute visual display type for one seat ──  new update___*/
- const getDisplayType = (seat) => {
-  if (selectedSeats.find((s) => s.id === seat.id)) return "selected";
+  const getDisplayType = (seat) => {
+    if (selectedSeats.find((s) => s.id === seat.id)) return "selected";
 
-  const status = (seat.seatStatus ?? "").toLowerCase();
+    const status = (seat.seatStatus ?? "").toLowerCase();
 
-  if (status === "booked") return "booked";
-  if (status === "locked" || status === "hold") return "locked";
+    if (status === "booked") return "booked";
+    if (status === "locked" || status === "hold") return "locked";
 
-  if (seat.isDriverSeat) return "driver";   // NEW
-  if (seat.isLadiesQuota) return "ladies";
+    if (seat.isDriverSeat) return "driver"; // NEW
+    if (seat.isLadiesQuota) return "ladies";
 
-  return "available";
-};
+    return "available";
+  };
 
   // ==========================================================================
   // SECTION 3 — SEAT SELECTION & PASSENGER DETAILS
   // ==========================================================================
 
   /* ── Toggle seat in/out of selectedSeats ── */
-  const handleSeatClick = useCallback((seat) => {
-    if (!user) { setShowLoginGate(true); return; }
+  const handleSeatClick = useCallback(
+    (seat) => {
+      if (!user) {
+        setShowLoginGate(true);
+        return;
+      }
 
-    const status = (seat.seatStatus ?? "").toLowerCase();
-    if (["booked", "locked", "hold"].includes(status)) return;
+      const status = (seat.seatStatus ?? "").toLowerCase();
+      if (["booked", "locked", "hold"].includes(status)) return;
 
-    // Functional updater prevents stale-closure issues
-    setSelectedSeats((prev) =>
-      prev.find((s) => s.id === seat.id)
-        ? prev.filter((s) => s.id !== seat.id)
-        : [...prev, seat]
-    );
-  }, [user]);
+      // Functional updater prevents stale-closure issues
+      setSelectedSeats((prev) =>
+        prev.find((s) => s.id === seat.id)
+          ? prev.filter((s) => s.id !== seat.id)
+          : [...prev, seat],
+      );
+    },
+    [user],
+  );
 
   /* ── Update a single field for one passenger ── */
-  const updatePassenger = useCallback((seatId, field, value) =>
-    setPassengerDetails((prev) => ({
-      ...prev,
-      [seatId]: { ...(prev[seatId] ?? {}), [field]: value },
-    })),
-  []);
+  const updatePassenger = useCallback(
+    (seatId, field, value) =>
+      setPassengerDetails((prev) => ({
+        ...prev,
+        [seatId]: { ...(prev[seatId] ?? {}), [field]: value },
+      })),
+    [],
+  );
 
   /* ── Validate step 2 and advance to step 3 ── */
   const handleProceedFromSeats = () => {
@@ -667,9 +742,18 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
     }
     for (const seat of selectedSeats) {
       const d = passengerDetails[seat.id] ?? {};
-      if (!d.name?.trim()) { toast.error(`Enter name for seat ${seat.seatLabel}`);    return; }
-      if (!d.gender)       { toast.error(`Select gender for seat ${seat.seatLabel}`); return; }
-      if (!d.age)          { toast.error(`Enter age for seat ${seat.seatLabel}`);     return; }
+      if (!d.name?.trim()) {
+        toast.error(`Enter name for seat ${seat.seatLabel}`);
+        return;
+      }
+      if (!d.gender) {
+        toast.error(`Select gender for seat ${seat.seatLabel}`);
+        return;
+      }
+      if (!d.age) {
+        toast.error(`Enter age for seat ${seat.seatLabel}`);
+        return;
+      }
     }
     setStep(3);
   };
@@ -687,7 +771,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
     setEmailError(
       value && !emailRegex.test(value.trim())
         ? "Please enter a valid email address"
-        : ""
+        : "",
     );
   };
 
@@ -700,7 +784,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
   const handleCreateBooking = async () => {
     // If booking already created (user navigated back), skip to payment
-    if (booking) { setStep(4); return; }
+    if (booking) {
+      setStep(4);
+      return;
+    }
 
     if (!contact.mobile || contact.mobile.length < 10) {
       toast.error("Enter a valid 10-digit mobile number");
@@ -716,19 +803,19 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
       const passengers = selectedSeats.map((seat) => {
         const d = passengerDetails[seat.id];
         return {
-          passengerName:   d.name,
-          passengerAge:    Number(d.age),
+          passengerName: d.name,
+          passengerAge: Number(d.age),
           passengerGender: d.gender,
           // seatId = actual BusSeat entity id (not the inventory row id)
-          seatId:          seat.seatId ?? seat.id,
-          concessionType:  "NONE",
+          seatId: seat.seatId ?? seat.id,
+          concessionType: "NONE",
         };
       });
 
-      const res     = await bookingApi.create({
+      const res = await bookingApi.create({
         scheduleId,
         fromStationId: fromId,
-        toStationId:   toId,
+        toStationId: toId,
         passengers,
         bookingSource: "WEB",
       });
@@ -736,7 +823,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
       setBooking(created);
 
       const lockExpiry = new Date(
-        Date.now() + SEAT_LOCK_MINUTES * 60 * 1000
+        Date.now() + SEAT_LOCK_MINUTES * 60 * 1000,
       ).toISOString();
       setLockExpiresAt(lockExpiry);
 
@@ -750,9 +837,9 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
             created.bookingId ?? created.id,
             fromStopSeq,
             toStopSeq,
-            lockExpiry
-          )
-        )
+            lockExpiry,
+          ),
+        ),
       );
 
       toast.success("Booking created! Complete payment within 10 minutes.");
@@ -760,7 +847,8 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
       setStep(4);
     } catch (err) {
       toast.error(
-        err?.response?.data?.message ?? "Failed to create booking. Please try again."
+        err?.response?.data?.message ??
+          "Failed to create booking. Please try again.",
       );
     } finally {
       setBookingLoading(false);
@@ -773,10 +861,9 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
   /* ── Handle lock expiry — reset everything and go back to seat map ── */
   const handleLockExpired = useCallback(() => {
-    toast.error(
-      "Session expired. Seats released. Please start again.",
-      { duration: 6000 }
-    );
+    toast.error("Session expired. Seats released. Please start again.", {
+      duration: 6000,
+    });
     setBooking(null);
     setSelectedSeats([]);
     setPassengerDetails({});
@@ -797,15 +884,25 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
      On 402 response → a pending payment already exists; fetch and reuse its
      transactionUrl instead of creating a duplicate order. ── */
   const handleInitiatePayment = async () => {
-    if (!paymentMethod) { toast.error("Please select a payment method"); return; }
-    if (!booking)       { toast.error("Booking not found.");              return; }
-    if (initiating)     return;
+    if (!paymentMethod) {
+      toast.error("Please select a payment method");
+      return;
+    }
+    if (!booking) {
+      toast.error("Booking not found.");
+      return;
+    }
+    if (initiating) return;
 
     setInitiating(true);
     const bookingId = booking.bookingId ?? booking.id;
 
     try {
-      const res       = await paymentApi.initiate({ bookingId, paymentMethod, source: PAYMENT_SOURCE});
+      const res = await paymentApi.initiate({
+        bookingId,
+        paymentMethod
+      
+      });
       const initiated = res.data?.data ?? res.data;
 
       // ── Case 1: wallet payment (instant, no redirect) ──
@@ -824,28 +921,47 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
       }
 
       savePaymentSession(bookingId, {
-        booking, selectedSeats, passengerDetails, contact,
-        scheduleId, fromLabel, toLabel, fromId, toId, date, busLabel, departure,
+        booking,
+        selectedSeats,
+        passengerDetails,
+        contact,
+        scheduleId,
+        fromLabel,
+        toLabel,
+        fromId,
+        toId,
+        date,
+        busLabel,
+        departure,
       });
-      console.log("transactionUrl",initiated?.transactionUrl);
-      
+      console.log("transactionUrl", initiated?.transactionUrl);
+
       toast.loading("Redirecting to secure payment page…", { duration: 9000 });
       window.location.href = initiated.transactionUrl;
       // Do not reset `initiating` here — we want the button to stay in its
       // loading state for the brief moment before the browser navigates away.
-
     } catch (err) {
       // 402 = a PENDING payment already exists for this booking;
       // fetch its transactionUrl and redirect using that instead
       if (err?.response?.status === 402) {
         try {
           const existing = await paymentApi.getByBookingId(bookingId);
-          const payment  = existing.data?.data ?? existing.data;
+          const payment = existing.data?.data ?? existing.data;
           if (payment?.transactionUrl) {
             toast("Resuming your previous payment session.", { icon: "ℹ️" });
             savePaymentSession(bookingId, {
-              booking, selectedSeats, passengerDetails, contact,
-              scheduleId, fromLabel, toLabel, fromId, toId, date, busLabel, departure,
+              booking,
+              selectedSeats,
+              passengerDetails,
+              contact,
+              scheduleId,
+              fromLabel,
+              toLabel,
+              fromId,
+              toId,
+              date,
+              busLabel,
+              departure,
             });
             window.location.href = payment.transactionUrl;
             return;
@@ -859,8 +975,8 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
       setPaymentFailed(true);
       toast.error(
         err?.response?.data?.message ??
-        err?.message ??
-        "Failed to initiate payment. Please try again."
+          err?.message ??
+          "Failed to initiate payment. Please try again.",
       );
     }
   };
@@ -916,11 +1032,11 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
   const downloadTicket = async () => {
     try {
-      const canvas  = await html2canvas(ticketRef.current, {
+      const canvas = await html2canvas(ticketRef.current, {
         backgroundColor: null,
       });
       const imgData = canvas.toDataURL("image/png");
-      const pdf     = new jsPDF();
+      const pdf = new jsPDF();
       pdf.addImage(imgData, "PNG", 10, 10, 190, 130);
       pdf.save(`ticket-${booking?.pnr ?? "bus"}.pdf`);
     } catch {
@@ -937,8 +1053,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
   // to show yet — scheduleId/seatMap etc. haven't loaded).
   if (resolvingReturn) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center
-        text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364]">
+      <div
+        className="w-full min-h-screen flex flex-col items-center justify-center
+        text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364]"
+      >
         <Spinner />
         <p className="mt-4 text-gray-300">Confirming your payment…</p>
       </div>
@@ -947,9 +1065,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
   return (
     // pt-14 offsets the fixed SeatNavbar height
-    <div className="w-full min-h-screen text-white bg-gradient-to-br
-      from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10">
-
+    <div
+      className="w-full min-h-screen text-white bg-gradient-to-br
+      from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10"
+    >
       {/* ── Fixed contextual navbar ── */}
       <SeatNavbar user={user} onLogout={handleLogout} />
 
@@ -964,7 +1083,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
           onClose={() => setShowLoginGate(false)}
           onLogin={() => {
             const redirect = encodeURIComponent(
-              window.location.pathname + window.location.search
+              window.location.pathname + window.location.search,
             );
             navigate(`/home/login?redirect=${redirect}`);
           }}
@@ -983,12 +1102,13 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
       {/* ── Three-column layout ── */}
       <div className="flex gap-6">
-
         {/* ════════════════════════════════════════════════════════════════
             LEFT PANEL — Journey summary + selected seats + back button
         ════════════════════════════════════════════════════════════════ */}
-        <div className="relative w-[240px] shrink-0 rounded-xl overflow-hidden
-          border border-white/20">
+        <div
+          className="relative w-[240px] shrink-0 rounded-xl overflow-hidden
+          border border-white/20"
+        >
           <div
             className="absolute inset-0 bg-center bg-cover"
             style={{ backgroundImage: `url(${sideBg})` }}
@@ -1036,7 +1156,9 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">Total Fare</p>
-                      <p className="font-semibold text-orange-400">₹ {totalFare}</p>
+                      <p className="font-semibold text-orange-400">
+                        ₹ {totalFare}
+                      </p>
                     </div>
                   </>
                 )}
@@ -1047,7 +1169,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
             {lockExpiresAt && step === 4 && (
               <div className="pt-2">
                 <p className="text-xs text-gray-400 mb-1">Time remaining</p>
-                <LockTimer expiresAt={lockExpiresAt} onExpired={handleLockExpired} />
+                <LockTimer
+                  expiresAt={lockExpiresAt}
+                  onExpired={handleLockExpired}
+                />
               </div>
             )}
 
@@ -1079,9 +1204,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
             MIDDLE PANEL — Interactive seat map
         ════════════════════════════════════════════════════════════════ */}
         <div className="w-[400px] shrink-0">
-          <div className="relative p-5 border bg-white/10 backdrop-blur-md
-            border-white/20 rounded-xl h-full">
-
+          <div
+            className="relative p-5 border bg-white/10 backdrop-blur-md
+            border-white/20 rounded-xl h-full"
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-green-300">Select Seats</h3>
               <span className="text-yellow-400 text-xl">🛞</span>
@@ -1119,9 +1245,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                       {row.map((seat, ci) => (
                         <div key={ci} className="flex items-center">
                           {/* Aisle gap — only shown when this row has no seat in the aisle column */}
-{ci === aisleAfterCol && row[aisleAfterCol - 1] === null && (
-  <div className="w-5" />
-)}
+                          {ci === aisleAfterCol &&
+                            row[aisleAfterCol - 1] === null && (
+                              <div className="w-5" />
+                            )}
                           {seat ? (
                             <SeatIcon
                               label={seat.seatLabel}
@@ -1140,11 +1267,11 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                 {/* Legend */}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-5 text-xs">
                   {[
-                    { color: "bg-gray-500",           label: "Booked"    },
-                    { color: "bg-orange-500",          label: "Locked"    },
-                    { color: "bg-blue-500",            label: "Selected"  },
+                    { color: "bg-gray-500", label: "Booked" },
+                    { color: "bg-orange-500", label: "Locked" },
+                    { color: "bg-blue-500", label: "Selected" },
                     { color: "border border-white/40", label: "Available" },
-                    { color: "bg-purple-500",          label: "Ladies"    },
+                    { color: "bg-purple-500", label: "Ladies" },
                   ].map(({ color, label }) => (
                     <div key={label} className="flex items-center gap-1">
                       <div className={`w-3 h-3 rounded ${color}`} />
@@ -1173,15 +1300,18 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
         {/* ════════════════════════════════════════════════════════════════
             RIGHT PANEL — Step-specific content
         ════════════════════════════════════════════════════════════════ */}
-        <div className="flex-1 border bg-white/10 backdrop-blur-md
-          border-white/20 rounded-xl p-6 min-h-[400px]">
-
+        <div
+          className="flex-1 border bg-white/10 backdrop-blur-md
+          border-white/20 rounded-xl p-6 min-h-[400px]"
+        >
           {/* ── STEP 2: Passenger Details ── */}
-          {step === 2 && (
-            selectedSeats.length === 0 ? (
+          {step === 2 &&
+            (selectedSeats.length === 0 ? (
               // Empty state — no seat selected yet
-              <div className="flex flex-col items-center justify-center
-                h-full gap-3 text-gray-400 py-20">
+              <div
+                className="flex flex-col items-center justify-center
+                h-full gap-3 text-gray-400 py-20"
+              >
                 <span className="text-5xl">💺</span>
                 <p className="text-lg">Click a seat on the map to begin</p>
                 {!user && (
@@ -1199,8 +1329,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
             ) : (
               <>
                 <h3 className="font-semibold text-green-300 mb-4">
-                  Passenger Details (
-                  {selectedSeats.length} seat
+                  Passenger Details ({selectedSeats.length} seat
                   {selectedSeats.length > 1 ? "s" : ""})
                 </h3>
 
@@ -1227,7 +1356,8 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                               value={passengerDetails[seat.id]?.name ?? ""}
                               onChange={(e) => {
                                 const value = e.target.value.replace(
-                                  /[^a-zA-Z\s.-]/g, ""
+                                  /[^a-zA-Z\s.-]/g,
+                                  "",
                                 );
                                 updatePassenger(seat.id, "name", value);
                               }}
@@ -1242,16 +1372,42 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                             <select
                               value={passengerDetails[seat.id]?.gender ?? ""}
                               onChange={(e) =>
-                                updatePassenger(seat.id, "gender", e.target.value)
+                                updatePassenger(
+                                  seat.id,
+                                  "gender",
+                                  e.target.value,
+                                )
                               }
                               className="w-full rounded bg-white/20 border
                                 border-white/30 text-white text-sm py-1"
                             >
-                              <option value=""                  className="text-black bg-white">Select</option>
-                              <option value="male"              className="text-black bg-white">Male</option>
-                              <option value="female"            className="text-black bg-white">Female</option>
-                              <option value="other"             className="text-black bg-white">Other</option>
-                              <option value="prefer_not_to_say" className="text-black bg-white">Prefer not to say</option>
+                              <option value="" className="text-black bg-white">
+                                Select
+                              </option>
+                              <option
+                                value="male"
+                                className="text-black bg-white"
+                              >
+                                Male
+                              </option>
+                              <option
+                                value="female"
+                                className="text-black bg-white"
+                              >
+                                Female
+                              </option>
+                              <option
+                                value="other"
+                                className="text-black bg-white"
+                              >
+                                Other
+                              </option>
+                              <option
+                                value="prefer_not_to_say"
+                                className="text-black bg-white"
+                              >
+                                Prefer not to say
+                              </option>
                             </select>
                           </td>
 
@@ -1301,8 +1457,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   </button>
                 </div>
               </>
-            )
-          )}
+            ))}
 
           {/* ── STEP 3: Contact Details ── */}
           {step === 3 && (
@@ -1320,10 +1475,14 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   <label className="text-xs text-gray-400 mb-1 block">
                     Mobile Number *
                   </label>
-                  <div className="flex items-center border border-white/20
-                    rounded-xl overflow-hidden">
-                    <span className="px-3 py-2.5 bg-white/10 text-sm
-                      text-gray-300 border-r border-white/20 select-none">
+                  <div
+                    className="flex items-center border border-white/20
+                    rounded-xl overflow-hidden"
+                  >
+                    <span
+                      className="px-3 py-2.5 bg-white/10 text-sm
+                      text-gray-300 border-r border-white/20 select-none"
+                    >
                       +91
                     </span>
                     <input
@@ -1363,8 +1522,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
               </div>
 
               {/* Booking summary */}
-              <div className="mt-6 p-4 rounded-xl bg-white/5 border
-                border-white/10 text-sm space-y-2 max-w-sm">
+              <div
+                className="mt-6 p-4 rounded-xl bg-white/5 border
+                border-white/10 text-sm space-y-2 max-w-sm"
+              >
                 <h4 className="text-gray-300 font-medium mb-2">
                   Booking Summary
                 </h4>
@@ -1375,7 +1536,9 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                       <span className="text-gray-400">
                         {d.name} ({d.gender}, {d.age} yrs)
                       </span>
-                      <span className="text-green-300">Seat {seat.seatLabel}</span>
+                      <span className="text-green-300">
+                        Seat {seat.seatLabel}
+                      </span>
                     </div>
                   );
                 })}
@@ -1425,9 +1588,11 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
               {/* Failed / cancelled payment banner */}
               {paymentFailed && (
-                <div className="mb-4 p-3 rounded-lg bg-red-500/20
+                <div
+                  className="mb-4 p-3 rounded-lg bg-red-500/20
                   border border-red-400/40 text-sm text-red-300
-                  flex items-start gap-2">
+                  flex items-start gap-2"
+                >
                   <span className="text-lg">⚠️</span>
                   <div>
                     <p className="font-semibold">Payment failed or cancelled</p>
@@ -1443,23 +1608,29 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
               )}
 
               {/* Payment method selection cards */}
-              <div className="grid grid-cols-2 gap-4 mb-6">
+              <div className="grid grid-cols-2 max-w-md gap-4 mb-6">
                 {[
-                  { key: "UPI",         icon: "📱", label: "UPI",          sub: "GPay, PhonePe, Paytm"    },
-                  { key: "CREDIT_CARD", icon: "💳", label: "Credit Card",  sub: "Visa, Mastercard, RuPay" },
-                  { key: "DEBIT_CARD",  icon: "🏧", label: "Debit Card",   sub: "All bank debit cards"    },
-                  { key: "NET_BANKING", icon: "🏦", label: "Net Banking",  sub: "All major banks"          },
-                  { key: "WALLET",      icon: "👛", label: "APSTS Wallet", sub: "Use your wallet balance"  },
+                  {
+                    key: "PHONEPE",
+                    icon: "📱",
+                    label: "Pay with PhonePe",
+                    sub: "UPI, Cards, Net Banking",
+                  },
+                  {
+                    key: "WALLET",
+                    icon: "👛",
+                    label: "APSTS Wallet",
+                    sub: "Use your wallet balance",
+                  },
                 ].map(({ key, icon, label, sub }) => (
                   <div
                     key={key}
                     onClick={() => setPaymentMethod(key)}
-                    className={`p-4 border rounded-xl cursor-pointer
-                      transition-all select-none ${
-                        paymentMethod === key
-                          ? "bg-green-500/30 border-green-400"
-                          : "bg-white/10 border-white/20 hover:bg-white/20"
-                      }`}
+                    className={`p-4 border rounded-xl cursor-pointer transition-all select-none ${
+                      paymentMethod === key
+                        ? "bg-green-500/30 border-green-400"
+                        : "bg-white/10 border-white/20 hover:bg-white/20"
+                    }`}
                   >
                     <div className="text-xl mb-1">{icon}</div>
                     <div className="font-semibold text-sm">{label}</div>
@@ -1475,19 +1646,25 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
 
               {/* Fare breakdown */}
               {booking && (
-                <div className="p-4 rounded-xl bg-white/5 border
-                  border-white/10 text-sm space-y-1.5 mb-5">
+                <div
+                  className="p-4 rounded-xl bg-white/5 border
+                  border-white/10 text-sm space-y-1.5 mb-5"
+                >
                   <h4 className="text-gray-300 font-medium mb-2">
                     Fare Breakdown
                   </h4>
                   <div className="flex justify-between text-gray-400">
                     <span>Base Fare</span>
-                    <span>₹ {Number(booking.baseFareTotal ?? 0).toFixed(2)}</span>
+                    <span>
+                      ₹ {Number(booking.baseFareTotal ?? 0).toFixed(2)}
+                    </span>
                   </div>
                   {Number(booking.reservationFeeTotal) > 0 && (
                     <div className="flex justify-between text-gray-400">
                       <span>Reservation Fee</span>
-                      <span>₹ {Number(booking.reservationFeeTotal).toFixed(2)}</span>
+                      <span>
+                        ₹ {Number(booking.reservationFeeTotal).toFixed(2)}
+                      </span>
                     </div>
                   )}
                   {Number(booking.gstAmount) > 0 && (
@@ -1499,11 +1676,15 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   {Number(booking.concessionDiscountTotal) > 0 && (
                     <div className="flex justify-between text-green-400">
                       <span>Concession Discount</span>
-                      <span>- ₹ {Number(booking.concessionDiscountTotal).toFixed(2)}</span>
+                      <span>
+                        - ₹ {Number(booking.concessionDiscountTotal).toFixed(2)}
+                      </span>
                     </div>
                   )}
-                  <div className="flex justify-between font-semibold text-white
-                    border-t border-white/10 pt-2 mt-2">
+                  <div
+                    className="flex justify-between font-semibold text-white
+                    border-t border-white/10 pt-2 mt-2"
+                  >
                     <span>Total Amount</span>
                     <span className="text-green-400">₹ {totalFare}</span>
                   </div>
@@ -1547,12 +1728,22 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
           {step === 5 && (
             <div className="flex flex-col items-center">
               <div className="flex items-center gap-2 text-green-400 mb-4">
-                <svg className="w-6 h-6" fill="none" stroke="currentColor"
-                  viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round"
-                    strokeWidth={2} d="M5 13l4 4L19 7" />
+                <svg
+                  className="w-6 h-6"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M5 13l4 4L19 7"
+                  />
                 </svg>
-                <span className="text-xl font-semibold">Booking Confirmed!</span>
+                <span className="text-xl font-semibold">
+                  Booking Confirmed!
+                </span>
               </div>
 
               {/* Printable / downloadable ticket card */}
@@ -1562,8 +1753,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   shadow-2xl bg-gradient-to-br from-[#0f2027] via-[#203a43]
                   to-[#2c5364] border border-white/20"
               >
-                <div className="py-3 text-center bg-green-500 font-semibold
-                  tracking-wide">
+                <div
+                  className="py-3 text-center bg-green-500 font-semibold
+                  tracking-wide"
+                >
                   🎟 APSTS Bus Ticket
                 </div>
 
@@ -1586,7 +1779,9 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Date</span>
-                    <span>{formatDate(date)} {formatTime(departure)}</span>
+                    <span>
+                      {formatDate(date)} {formatTime(departure)}
+                    </span>
                   </div>
 
                   {/* Passengers — prefer booking.passengers (server data),
@@ -1610,9 +1805,17 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   <div className="border-t border-white/10 pt-3">
                     <p className="text-gray-400 mb-2">Passengers</p>
                     {(booking?.passengers ?? []).map((p) => (
-                      <div key={p.reservationId} className="flex justify-between text-xs mt-1">
-                        <span>{p.passengerName} ({p.passengerGender}, {p.passengerAge} yrs)</span>
-                        <span className="text-green-300">Seat {p.seatLabel}</span>
+                      <div
+                        key={p.reservationId}
+                        className="flex justify-between text-xs mt-1"
+                      >
+                        <span>
+                          {p.passengerName} ({p.passengerGender},{" "}
+                          {p.passengerAge} yrs)
+                        </span>
+                        <span className="text-green-300">
+                          Seat {p.seatLabel}
+                        </span>
                       </div>
                     ))}
                   </div>
@@ -1625,11 +1828,13 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Status</span>
-                    <span className={`font-semibold ${
-                      booking?.bookingStatus === "CONFIRMED"
-                        ? "text-green-400"
-                        : "text-yellow-400"
-                    }`}>
+                    <span
+                      className={`font-semibold ${
+                        booking?.bookingStatus === "CONFIRMED"
+                          ? "text-green-400"
+                          : "text-yellow-400"
+                      }`}
+                    >
                       {booking?.bookingStatus}
                     </span>
                   </div>
@@ -1651,11 +1856,14 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                   <p className="text-center text-xs text-gray-400 mt-2">
                     Show this QR to the conductor for verification
                   </p>*/}
-                   {/* QR codes for conductor verification — one per passenger,
+                  {/* QR codes for conductor verification — one per passenger,
                       since each seat is validated/boarded independently */}
                   <div className="border-t border-white/10 pt-3 mt-3">
                     {(booking?.passengers ?? []).map((p) => (
-                      <div key={p.reservationId} className="flex flex-col items-center mt-4">
+                      <div
+                        key={p.reservationId}
+                        className="flex flex-col items-center mt-4"
+                      >
                         <QRCodeCanvas
                           value={p.qrCodeHash}
                           size={100}
@@ -1666,7 +1874,9 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                           {p.passengerName} — Seat {p.seatLabel}
                         </p>
                         {p.reservationStatus === "BOARDED" && (
-                          <span className="text-green-400 text-xs mt-0.5">✓ Boarded</span>
+                          <span className="text-green-400 text-xs mt-0.5">
+                            ✓ Boarded
+                          </span>
                         )}
                       </div>
                     ))}
@@ -1675,9 +1885,7 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
                     Show your QR to the conductor for verification
                   </p>
                 </div>
-              </div> 
-
-
+              </div>
 
               {/* Post-booking actions */}
               <div className="flex gap-4 mt-6">
@@ -1700,9 +1908,10 @@ const grid = Array.from({ length: maxRow }, (_, ri) =>
               </div>
             </div>
           )}
-
-        </div>{/* end RIGHT PANEL */}
-      </div>{/* end three-column layout */}
+        </div>
+        {/* end RIGHT PANEL */}
+      </div>
+      {/* end three-column layout */}
     </div>
   );
 }
