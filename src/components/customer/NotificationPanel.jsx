@@ -12,15 +12,19 @@ const STATUS_FILTERS = [
 ];
 
 const TYPE_ICONS = {
-  booking_confirmed: "🎫",
-  booking_cancelled: "❌",
-  payment_success:   "✅",
-  payment_failed:    "⚠️",
-  grievance_update:  "📋",
-  otp:               "🔑",
-  general:           "📢",
-  schedule_change:   "🕐",
-  seat_reminder:     "💺",
+  booking_confirmed:  "🎫",
+  booking_cancelled:  "❌",
+  refund_initiated:   "💸",
+  refund_completed:   "✅",
+  schedule_delayed:   "⏱️",
+  schedule_cancelled: "⚠️",
+  payment_success:    "✅",
+  payment_failed:     "⚠️",
+  grievance_update:   "📋",
+  otp:                "🔑",
+  general:            "📢",
+  schedule_change:    "🕐",
+  seat_reminder:      "💺",
 };
 
 const CHANNEL_LABELS = {

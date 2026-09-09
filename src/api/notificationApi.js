@@ -51,4 +51,8 @@ export const notificationApi = {
   // RETRY FAILED / PENDING NOTIFICATIONS  [notification:admin-retry]
   retryFailed: (limit = 50) =>
     api.post(`/admin/notifications/retry?limit=${limit}`),
+
+  // GET ALL TEMPLATES INCLUDING OTP  [notification:viewAll]
+  getTemplates: () =>
+    api.get("/admin/notifications/templates"),
 };
