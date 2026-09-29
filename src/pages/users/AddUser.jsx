@@ -156,7 +156,11 @@ import Spinner from "../../components/common/Spinner";
 
 // Matches backend Designation enum — verify against GET /admin/roles or
 // your Designation.java enum if this list drifts
-const DESIGNATIONS = ["conductor", "driver", "relief_driver", "guard", "depot_staff"];
+const DESIGNATIONS = [
+  "driver", "conductor", "ticket_checker", "depot_manager",
+  "route_manager", "accounts_officer", "state_admin", "it_admin",
+  "counter_clerk",
+];
 const EMPLOYMENT_TYPES = ["permanent", "contract", "temporary"];
 
 const AddUser = () => {

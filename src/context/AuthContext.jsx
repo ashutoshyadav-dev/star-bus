@@ -142,7 +142,8 @@ useEffect(() => {
   // const accountType = user?.accountType ?? null;
 const roleClass = classifyRole(user?.roles ?? []);
   const isAdmin     = roleClass === "admin";
-  const isDutyStaff = roleClass === "duty_staff";   
+    const isDutyStaff = roleClass === "duty_staff";
+  const isCounter   = roleClass === "counter";   
 
   const accountType = user?.accountType ?? null;
   return (
@@ -156,6 +157,7 @@ const roleClass = classifyRole(user?.roles ?? []);
         hasPermission,
         isAdmin,
         isDutyStaff,
+        isCounter,
         accountType,
       }}
     >

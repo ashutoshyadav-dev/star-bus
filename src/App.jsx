@@ -93,7 +93,10 @@ import Transport from "./pages/department/Transport";
 import MyDuty from "./pages/conductor/MyDuty";
 import ConductorScan from "./pages/conductor/ConductorScan";
 
-
+//--------------------imports for counter -------------------
+import CounterDashboard from "./pages/counter/CounterDashboard";
+import CounterBookTicket from "./pages/counter/CounterBookTicket";
+import CounterMyBookings from "./pages/counter/CounterMyBookings";
 
 
 //import for Role from constants/roles
@@ -124,14 +127,29 @@ function AdminRoute({ children }) {
   return children;
 }
 
+// function UserRoute({ children }) {
+//   const { user, isInitialized } = useAuth();
+
+//   if (!isInitialized) return <PageLoader />;
+//   if (!user) return <Navigate to="/home/login" replace />;
+
+//   return children;
+// }
+
+
 function UserRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
   if (!user) return <Navigate to="/home/login" replace />;
 
+  // Counter staff have their own area; passenger pages call endpoints they can't access
+  if (classifyRole(user?.roles ?? []) === "counter")
+    return <Navigate to="/counter/dashboard" replace />;
+
   return children;
 }
+
 
 function DutyStaffRoute({ children }) {
   const { user, isInitialized } = useAuth();
@@ -141,6 +159,18 @@ function DutyStaffRoute({ children }) {
 
   const roleClass = classifyRole(user?.roles ?? []);
   if (roleClass !== "duty_staff") return <Navigate to="/unauthorized" replace />;
+
+  return children;
+}
+
+function CounterRoute({ children }) {
+  const { user, isInitialized } = useAuth();
+
+  if (!isInitialized) return <PageLoader />;
+  if (!user) return <Navigate to="/home/login" replace />;
+
+  const roleClass = classifyRole(user?.roles ?? []);
+  if (roleClass !== "counter") return <Navigate to="/unauthorized" replace />;
 
   return children;
 }
@@ -173,7 +203,8 @@ function GuestRoute({ children }) {
   const roleClass = classifyRole(user?.roles ?? []);
   const target =
     roleClass === "admin"      ? "/admin/dashboard" :
-    roleClass === "duty_staff" ? "/conductor/duty"   :   // ADDED
+    roleClass === "duty_staff" ? "/conductor/duty"   :
+    roleClass === "counter"    ? "/counter/dashboard" :  
                                   "/user/dashboard";
 
   return <Navigate to={target} replace />;
@@ -320,6 +351,21 @@ function AppRoutes() {
         <Route path="scan/:scheduleId" element={<ConductorScan />} />
       </Route>
 
+
+{/* ── Counter Staff Area ────────────────────────────── */}
+      <Route
+        path="/counter"
+        element={
+          <CounterRoute>
+            <Outlet />
+          </CounterRoute>
+        }
+      >
+        <Route index element={<Navigate to="dashboard" replace />} />
+        <Route path="dashboard" element={<CounterDashboard />} />
+        <Route path="book" element={<CounterBookTicket />} />
+        <Route path="my-bookings" element={<CounterMyBookings />} />
+      </Route>
 
 
       {/* ── Public Website ────────────────────────────────── */}

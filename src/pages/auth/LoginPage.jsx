@@ -72,9 +72,10 @@ export default function LoginPage() {
       navigate(redirectTo, { replace: true });
       return;
     }
-    const target =
+        const target =
       roleClass === "admin"      ? "/admin/dashboard" :
-      roleClass === "duty_staff" ? "/conductor/duty"   :   // ADDED
+      roleClass === "duty_staff" ? "/conductor/duty"   :
+      roleClass === "counter"    ? "/counter/dashboard" :
                                     "/user/dashboard";
     navigate(target, { replace: true });
   };

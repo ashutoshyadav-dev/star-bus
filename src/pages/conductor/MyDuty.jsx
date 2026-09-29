@@ -1,24 +1,22 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
-import { getDutyAssignmentsByStaff, checkInDuty, checkOutDuty } from "../../api/schedule";
-import { useAuth } from "../../context/AuthContext";
+import { getMyDutyAssignments, checkInMyDuty, checkOutMyDuty } from "../../api/schedule";
 import Spinner from "../../components/common/Spinner";
 
 export default function MyDuty() {
-  const { user } = useAuth();
   const navigate = useNavigate();
   const [duties, setDuties] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const load = () => {
     setLoading(true);
-    getDutyAssignmentsByStaff(user.sub ?? user.id)
+    getMyDutyAssignments()
       .then((res) => {
         const all = res.data?.data ?? res.data ?? [];
         // Client-side filter to today — no dedicated backend query for this yet
         const today = new Date().toDateString();
-        setDuties(all.filter((d) => new Date(d.schedule?.journeyDate ?? d.journeyDate).toDateString() === today));
+        setDuties(all.filter((d) => new Date(d.journeyDate ?? d.schedule?.journeyDate).toDateString() === today));
       })
       .catch(() => toast.error("Failed to load duties"))
       .finally(() => setLoading(false));
@@ -28,7 +26,7 @@ export default function MyDuty() {
 
   const handleCheckIn = async (duty) => {
     try {
-      await checkInDuty(duty.id);
+      await checkInMyDuty(duty.id);
       toast.success("Checked in — loading manifest…");
       navigate(`/conductor/scan/${duty.scheduleId}`);
     } catch (err) {
@@ -38,7 +36,7 @@ export default function MyDuty() {
 
   const handleCheckOut = async (duty) => {
     try {
-      await checkOutDuty(duty.id);
+      await checkOutMyDuty(duty.id);
       toast.success("Checked out");
       load();
     } catch (err) {
@@ -60,7 +58,7 @@ export default function MyDuty() {
             <div key={duty.id} className="bg-white rounded-xl border border-gray-200 p-5">
               <div className="font-semibold text-gray-800">{duty.dutyRole}</div>
               <div className="text-sm text-gray-500 mb-3">
-                Schedule: {duty.scheduleId}
+                Route: {duty.routeName ?? duty.scheduleId}
               </div>
               {!duty.checkInAt ? (
                 <button onClick={() => handleCheckIn(duty)}
