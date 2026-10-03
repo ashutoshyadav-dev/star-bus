@@ -324,6 +324,7 @@ useEffect(() => {
                     <option value="conductor">Conductor</option>
                     <option value="depot_manager">Depot Manager</option>
                     <option value="ticket_checker">Ticket Checker</option>
+                    <option value="counter_clerk">Counter</option>
                   </select>
                 </Field>
 
