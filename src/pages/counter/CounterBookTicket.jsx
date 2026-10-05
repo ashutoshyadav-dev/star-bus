@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { counterApi } from "../../api/counter";
 import { stationApi } from "../../api/station";
 import { searchAvailableSchedules, getScheduleSeats, lockSeatForJourney } from "../../api/schedule";
 import Spinner from "../../components/common/Spinner";
+import { paymentApi } from "../../api/booking";
 
 const SEAT_LOCK_MINUTES = 10;
 const GENDERS = ["male", "female", "other", "prefer_not_to_say"];
@@ -132,7 +133,7 @@ export default function CounterBookTicket() {
     });
   };
 
-  const updateSeatDetail = (seatRowId, field, value) => {
+   const updateSeatDetail = (seatRowId, field, value) => {
     setSeatDetails((prev) => ({
       ...prev,
       [seatRowId]: { ...prev[seatRowId], [field]: value },
@@ -202,24 +203,30 @@ export default function CounterBookTicket() {
     }
   };
 
-  // ── Step 5: collect payment ───────────────────────────────────────────────
-  const [payMethod, setPayMethod] = useState("CASH_COUNTER");
-  const [upiRef, setUpiRef] = useState("");
+  // ── Step 5: collect payment ────────────────────────────────────────────
+  const [payMethod, setPayMethod] = useState("CASH_COUNTER"); // CASH_COUNTER | PHONEPE
   const [collecting, setCollecting] = useState(false);
+  const [gatewayWindow, setGatewayWindow] = useState(null);
+  const [polling, setPolling] = useState(false);
+  const pollTimerRef = useRef(null);
+  const pollDeadlineRef = useRef(null);
 
-  const handleCollectPayment = async () => {
-    if (payMethod === "UPI_COUNTER" && !upiRef.trim()) {
-      toast.error("Enter the UPI transaction reference");
-      return;
-    }
+  const stopPolling = () => {
+    if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+    pollTimerRef.current = null;
+    setPolling(false);
+  };
+
+  useEffect(() => stopPolling, []); // clear on unmount
+
+  const handleCollectCash = async () => {
     setCollecting(true);
     try {
       await counterApi.collectPayment({
         bookingId: booking.bookingId ?? booking.id,
-        paymentMethod: payMethod,
-        upiTransactionId: payMethod === "UPI_COUNTER" ? upiRef.trim() : undefined,
+        paymentMethod: "CASH_COUNTER",
       });
-      toast.success("Payment recorded — ticket confirmed!");
+      toast.success("Cash payment recorded — ticket confirmed!");
       setStep(5);
     } catch (err) {
       toast.error(err?.response?.data?.message ?? "Failed to record payment");
@@ -228,12 +235,86 @@ export default function CounterBookTicket() {
     }
   };
 
+  const handleStartOnlinePayment = async () => {
+    setCollecting(true);
+    try {
+      const res = await paymentApi.initiate({
+        bookingId: booking.bookingId ?? booking.id,
+        paymentMethod: "PHONEPE",
+      });
+      const data = res.data?.data ?? res.data;
+      const checkoutUrl = data.checkoutUrl ?? data.redirectUrl ?? data.paymentUrl;
+      if (!checkoutUrl) {
+        toast.error("Gateway did not return a checkout link");
+        return;
+      }
+
+      // Opens PhonePe's real hosted checkout — it renders the UPI QR itself,
+      // plus cards/netbanking. Point this window at the customer so they can
+      // scan with their own phone.
+      const win = window.open(checkoutUrl, "phonepe_checkout", "width=480,height=720");
+      setGatewayWindow(win);
+      toast("Show this window to the passenger to scan & pay", { icon: "📱" });
+
+      // Poll the real payment status — same source of truth the passenger
+      // flow relies on. The PhonePe webhook confirms the booking the moment
+      // payment succeeds; we just wait for that to reflect here.
+      setPolling(true);
+      pollDeadlineRef.current = Date.now() + 6 * 60 * 1000; // 6 min ceiling
+      pollTimerRef.current = setInterval(async () => {
+        if (Date.now() > pollDeadlineRef.current) {
+          stopPolling();
+          toast.error("Payment timed out — ask the passenger to retry or pay cash");
+          return;
+        }
+        try {
+          const payRes = await paymentApi.getByBookingId(booking.bookingId ?? booking.id);
+          const payment = payRes.data?.data ?? payRes.data;
+          if (payment?.paymentStatus === "SUCCESS") {
+            stopPolling();
+            win?.close?.();
+            toast.success("Payment confirmed — ticket confirmed!");
+            setStep(5);
+          } else if (payment?.paymentStatus === "FAILED") {
+            stopPolling();
+            toast.error("Payment failed — ask the passenger to retry or pay cash");
+          }
+        } catch {
+          // transient — keep polling until the deadline
+        }
+      }, 3000);
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? "Failed to start online payment");
+    } finally {
+      setCollecting(false);
+    }
+  };
+
+   const handleCheckNow = async () => {
+    try {
+      const payRes = await paymentApi.getByBookingId(booking.bookingId ?? booking.id);
+      const payment = payRes.data?.data ?? payRes.data;
+      if (payment?.paymentStatus === "SUCCESS") {
+        stopPolling();
+        gatewayWindow?.close?.();
+        toast.success("Payment confirmed — ticket confirmed!");
+        setStep(5);
+      } else {
+        toast("Not paid yet — still waiting", { icon: "⏳" });
+      }
+    } catch {
+      toast.error("Could not check payment status");
+    }
+  };
+
   const resetAll = () => {
+    stopPolling();
     setStep(1); setPhone(""); setPassenger(null); setNeedsRegistration(false); setNewName("");
     setFromId(""); setToId(""); setSchedules([]); setSelectedSchedule(null);
     setSeatMap([]); setSelectedSeats([]); setSeatDetails({}); setBooking(null);
-    setPayMethod("CASH_COUNTER"); setUpiRef("");
+    setPayMethod("CASH_COUNTER"); setGatewayWindow(null);
   };
+
 
   // ── Render ─────────────────────────────────────────────────────────────
   return (
@@ -399,32 +480,49 @@ export default function CounterBookTicket() {
       {step === 4 && booking && (
         <div className="bg-white rounded-xl border border-gray-200 p-6 max-w-md">
           <h2 className="font-semibold text-gray-800 mb-1">4. Collect Payment</h2>
-          <p className="text-sm text-gray-500 mb-4">PNR {booking.pnr} · Amount due <span className="font-bold text-gray-800">₹{booking.totalAmountPaid}</span></p>
+          <p className="text-sm text-gray-500 mb-4">
+            PNR {booking.pnr} · Amount due <span className="font-bold text-gray-800">₹{booking.totalAmountPaid}</span>
+          </p>
 
-          <div className="flex gap-2 mb-4">
-            <button onClick={() => setPayMethod("CASH_COUNTER")}
-                    className={`flex-1 rounded-lg py-2 font-semibold border ${payMethod === "CASH_COUNTER" ? "bg-blue-600 text-white border-blue-600" : "border-gray-300"}`}>
-              Cash
-            </button>
-            <button onClick={() => setPayMethod("UPI_COUNTER")}
-                    className={`flex-1 rounded-lg py-2 font-semibold border ${payMethod === "UPI_COUNTER" ? "bg-blue-600 text-white border-blue-600" : "border-gray-300"}`}>
-              UPI
-            </button>
-          </div>
-
-          {payMethod === "UPI_COUNTER" && (
-            <input
-              className="w-full border rounded-lg px-3 py-2 mb-4"
-              placeholder="UPI transaction reference (from passenger's payment app)"
-              value={upiRef}
-              onChange={(e) => setUpiRef(e.target.value)}
-            />
+          {!polling && (
+            <div className="flex gap-2 mb-4">
+              <button onClick={() => setPayMethod("CASH_COUNTER")}
+                      className={`flex-1 rounded-lg py-2 font-semibold border ${payMethod === "CASH_COUNTER" ? "bg-blue-600 text-white border-blue-600" : "border-gray-300"}`}>
+                Cash
+              </button>
+              <button onClick={() => setPayMethod("PHONEPE")}
+                      className={`flex-1 rounded-lg py-2 font-semibold border ${payMethod === "PHONEPE" ? "bg-blue-600 text-white border-blue-600" : "border-gray-300"}`}>
+                UPI / Card
+              </button>
+            </div>
           )}
 
-          <button onClick={handleCollectPayment} disabled={collecting}
-                  className="w-full bg-green-600 text-white rounded-lg py-2.5 font-semibold hover:bg-green-700 disabled:opacity-50">
-            {collecting ? "Recording…" : `Confirm ${payMethod === "CASH_COUNTER" ? "Cash" : "UPI"} Payment Received`}
-          </button>
+          {polling ? (
+            <div className="text-center py-4">
+              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full mx-auto mb-3" />
+              <p className="text-sm text-gray-600 mb-4">Waiting for the passenger to complete payment…</p>
+              <div className="flex gap-2">
+                <button onClick={handleCheckNow}
+                        className="flex-1 bg-blue-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-blue-700">
+                  Check Now
+                </button>
+                <button onClick={() => { stopPolling(); gatewayWindow?.close?.(); }}
+                        className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-semibold hover:bg-gray-200">
+                  Cancel
+                </button>
+              </div>
+            </div>
+          ) : payMethod === "CASH_COUNTER" ? (
+            <button onClick={handleCollectCash} disabled={collecting}
+                    className="w-full bg-green-600 text-white rounded-lg py-2.5 font-semibold hover:bg-green-700 disabled:opacity-50">
+              {collecting ? "Recording…" : "Confirm Cash Received"}
+            </button>
+          ) : (
+            <button onClick={handleStartOnlinePayment} disabled={collecting}
+                    className="w-full bg-green-600 text-white rounded-lg py-2.5 font-semibold hover:bg-green-700 disabled:opacity-50">
+              {collecting ? "Opening PhonePe…" : "Open PhonePe Checkout (QR / UPI / Card)"}
+            </button>
+          )}
         </div>
       )}
 

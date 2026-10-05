@@ -92,11 +92,14 @@ import Transport from "./pages/department/Transport";
 //--------------------imports for conductor profile -------------------
 import MyDuty from "./pages/conductor/MyDuty";
 import ConductorScan from "./pages/conductor/ConductorScan";
+import DutyStaffLayout from "./components/layout/DutyStaffLayout";
+
 
 //--------------------imports for counter -------------------
 import CounterDashboard from "./pages/counter/CounterDashboard";
 import CounterBookTicket from "./pages/counter/CounterBookTicket";
 import CounterMyBookings from "./pages/counter/CounterMyBookings";
+import CounterLayout from "./components/layout/CounterLayout";
 
 
 //import for Role from constants/roles
@@ -337,12 +340,11 @@ function AppRoutes() {
       </Route>
 
 
-{/* ── Duty Staff Area (conductor, driver, guard) ───────── */}
       <Route
         path="/conductor"
         element={
           <DutyStaffRoute>
-            <Outlet />
+            <DutyStaffLayout />
           </DutyStaffRoute>
         }
       >
@@ -351,13 +353,12 @@ function AppRoutes() {
         <Route path="scan/:scheduleId" element={<ConductorScan />} />
       </Route>
 
-
 {/* ── Counter Staff Area ────────────────────────────── */}
       <Route
         path="/counter"
         element={
           <CounterRoute>
-            <Outlet />
+            <CounterLayout />
           </CounterRoute>
         }
       >
@@ -367,7 +368,7 @@ function AppRoutes() {
         <Route path="my-bookings" element={<CounterMyBookings />} />
       </Route>
 
-
+      
       {/* ── Public Website ────────────────────────────────── */}
 {/* <Route path="/ap" element={<Transport />} /> */}
 <Route path="department" element={<Transport />} />
