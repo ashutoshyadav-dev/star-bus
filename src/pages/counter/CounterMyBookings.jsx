@@ -7,6 +7,37 @@ import Spinner from "../../components/common/Spinner";
 export default function CounterMyBookings() {
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
+    const [cancellingId, setCancellingId] = useState(null);
+  const [cancelReason, setCancelReason] = useState("");
+  const [submittingCancel, setSubmittingCancel] = useState(false);
+
+  const canCancel = (b) =>
+    b.bookingStatus !== "FULLY_CANCELLED" && b.bookingStatus !== "COMPLETED";
+
+  const submitCancel = async (bookingId) => {
+    setSubmittingCancel(true);
+    try {
+      const res = await counterApi.cancelBooking(bookingId, {
+        cancellationReason: cancelReason.trim() || undefined,
+      });
+      const refund = res.data?.data ?? res.data;
+      toast.success(
+        refund?.refundAmount != null
+          ? `Cancelled — refund of ₹${refund.refundAmount} initiated (${refund.refundMethod})`
+          : "Booking cancelled"
+      );
+      setCancellingId(null);
+      setCancelReason("");
+      // reload the list
+      counterApi.getMyBookings()
+        .then((r) => setBookings(r.data?.data ?? r.data ?? []))
+        .catch(() => {});
+    } catch (err) {
+      toast.error(err?.response?.data?.message ?? "Failed to cancel booking");
+    } finally {
+      setSubmittingCancel(false);
+    }
+  };
 
   useEffect(() => {
     counterApi.getMyBookings()
@@ -55,16 +86,56 @@ export default function CounterMyBookings() {
                 <div className="font-semibold text-gray-800">{b.pnr}</div>
                 <div className="text-sm text-gray-500">{b.passengerCount} passenger(s) · ₹{b.totalAmountPaid}</div>
               </div>
-              <div className="text-right">
+                            <div className="text-right">
                 <div className={`text-xs font-semibold uppercase ${
                   b.bookingStatus === "CONFIRMED" ? "text-green-600" : "text-orange-500"
                 }`}>
                   {b.bookingStatus}
                 </div>
-                <div className="text-xs text-gray-400">{b.payment?.paymentMethod ?? "Payment pending"}</div>
+                <div className="text-xs text-gray-400 mb-1">{b.payment?.paymentMethod ?? "Payment pending"}</div>
+                {canCancel(b) && (
+                  <button
+                    onClick={() => setCancellingId(b.bookingId ?? b.id)}
+                    className="text-xs text-red-600 font-semibold hover:underline"
+                  >
+                    Cancel Ticket
+                  </button>
+                )}
               </div>
             </div>
           ))}
+                {cancellingId && (
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+          <div className="bg-white rounded-xl p-6 w-full max-w-sm">
+            <h3 className="font-semibold text-gray-800 mb-2">Cancel this ticket?</h3>
+            <p className="text-sm text-gray-500 mb-3">
+              Refund amount depends on how close this is to departure, per the standard cancellation policy.
+            </p>
+            <textarea
+              className="w-full border rounded-lg px-3 py-2 text-sm mb-4"
+              placeholder="Reason (optional)"
+              value={cancelReason}
+              onChange={(e) => setCancelReason(e.target.value)}
+              rows={2}
+            />
+            <div className="flex gap-2">
+              <button
+                onClick={() => { setCancellingId(null); setCancelReason(""); }}
+                className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2 text-sm font-semibold hover:bg-gray-200"
+              >
+                Back
+              </button>
+              <button
+                onClick={() => submitCancel(cancellingId)}
+                disabled={submittingCancel}
+                className="flex-1 bg-red-600 text-white rounded-lg py-2 text-sm font-semibold hover:bg-red-700 disabled:opacity-50"
+              >
+                {submittingCancel ? "Cancelling…" : "Confirm Cancel"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
         </div>
       )}
     </div>

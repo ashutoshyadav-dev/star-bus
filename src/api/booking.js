@@ -11,6 +11,7 @@ export const bookingApi = {
   adminGetByPnr: (pnr) => api.get(`/bookings/admin/pnr/${pnr}`),
   adminCancel:    (id, data)   => api.post(`/bookings/admin/${id}/cancel`, data),
    adminSearch:        (q)          => api.get('/bookings/admin/search', { params: { q, limit: 10 } }),
+     downloadTicketUrl: (bookingId) => `${api.defaults.baseURL}/bookings/${bookingId}/ticket`,
 }
 
 export const paymentApi = {

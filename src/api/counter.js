@@ -15,4 +15,9 @@ export const counterApi = {
 
   collectPayment: (data) =>
     api.post("/counter/payments/collect", data),
+
+    downloadTicketUrl: (bookingId) => `${api.defaults.baseURL}/counter/bookings/${bookingId}/ticket`,
+
+      cancelBooking: (bookingId, data) =>
+    api.post(`/counter/bookings/${bookingId}/cancel`, data),
 };

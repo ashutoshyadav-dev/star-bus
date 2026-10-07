@@ -6,6 +6,7 @@ import { stationApi } from "../../api/station";
 import { searchAvailableSchedules, getScheduleSeats, lockSeatForJourney } from "../../api/schedule";
 import Spinner from "../../components/common/Spinner";
 import { paymentApi } from "../../api/booking";
+import api from "../../api/client";
 
 const SEAT_LOCK_MINUTES = 10;
 const GENDERS = ["male", "female", "other", "prefer_not_to_say"];
@@ -242,8 +243,9 @@ export default function CounterBookTicket() {
         bookingId: booking.bookingId ?? booking.id,
         paymentMethod: "PHONEPE",
       });
-      const data = res.data?.data ?? res.data;
-      const checkoutUrl = data.checkoutUrl ?? data.redirectUrl ?? data.paymentUrl;
+             const data = res.data?.data ?? res.data;
+             const checkoutUrl = data.transactionUrl;
+
       if (!checkoutUrl) {
         toast.error("Gateway did not return a checkout link");
         return;
@@ -304,6 +306,18 @@ export default function CounterBookTicket() {
       }
     } catch {
       toast.error("Could not check payment status");
+    }
+  };
+
+  
+
+  const openTicket = async (bookingId) => {
+    try {
+      const res = await api.get(`/counter/bookings/${bookingId}/ticket`, { responseType: "blob" });
+      const blobUrl = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      window.open(blobUrl, "_blank");
+    } catch {
+      toast.error("Failed to load ticket");
     }
   };
 
@@ -527,14 +541,21 @@ export default function CounterBookTicket() {
       )}
 
       {/* STEP 5 — Done */}
-      {step === 5 && booking && (
+       {step === 5 && booking && (
         <div className="bg-white rounded-xl border border-gray-200 p-8 max-w-md text-center">
           <div className="text-green-600 text-4xl mb-3">✓</div>
           <h2 className="text-xl font-semibold text-gray-800 mb-1">Ticket Confirmed</h2>
           <p className="text-gray-500 mb-6">PNR <span className="font-bold text-gray-800">{booking.pnr}</span></p>
-          <button onClick={resetAll} className="w-full bg-blue-600 text-white rounded-lg py-2.5 font-semibold hover:bg-blue-700">
-            Book Another Ticket
-          </button>
+          <div className="flex gap-2">
+            <button onClick={() => openTicket(booking.bookingId ?? booking.id)}
+                    className="flex-1 bg-gray-100 text-gray-700 rounded-lg py-2.5 font-semibold hover:bg-gray-200">
+              Print Ticket
+            </button>
+            <button onClick={resetAll}
+                    className="flex-1 bg-blue-600 text-white rounded-lg py-2.5 font-semibold hover:bg-blue-700">
+              Book Another Ticket
+            </button>
+          </div>
         </div>
       )}
     </div>

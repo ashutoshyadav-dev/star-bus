@@ -1030,17 +1030,28 @@ export default function SeatSelection() {
   // SECTION 8 — TICKET DOWNLOAD
   // ==========================================================================
 
-  const downloadTicket = async () => {
+  // const downloadTicket = async () => {
+  //   try {
+  //     const canvas = await html2canvas(ticketRef.current, {
+  //       backgroundColor: null,
+  //     });
+  //     const imgData = canvas.toDataURL("image/png");
+  //     const pdf = new jsPDF();
+  //     pdf.addImage(imgData, "PNG", 10, 10, 190, 130);
+  //     pdf.save(`ticket-${booking?.pnr ?? "bus"}.pdf`);
+  //   } catch {
+  //     toast.error("Failed to download ticket. Please try again.");
+  //   }
+  // };
+
+    const downloadTicket = async () => {
     try {
-      const canvas = await html2canvas(ticketRef.current, {
-        backgroundColor: null,
-      });
-      const imgData = canvas.toDataURL("image/png");
-      const pdf = new jsPDF();
-      pdf.addImage(imgData, "PNG", 10, 10, 190, 130);
-      pdf.save(`ticket-${booking?.pnr ?? "bus"}.pdf`);
+      const bookingId = booking.bookingId ?? booking.id;
+      const res = await api.get(`/bookings/${bookingId}/ticket`, { responseType: "blob" });
+      const blobUrl = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
+      window.open(blobUrl, "_blank"); // opens the browser's native PDF viewer — Print and Save both work from there
     } catch {
-      toast.error("Failed to download ticket. Please try again.");
+      toast.error("Failed to load ticket. Please try again.");
     }
   };
 
