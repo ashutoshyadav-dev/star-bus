@@ -9,6 +9,7 @@ import {
 } from "react-icons/fi";
 
 import { QRCodeCanvas } from "qrcode.react";
+import TripChartCard from "./TripChartCard";
 
 const STATUS_META = {
   CONFIRMED: {
@@ -348,6 +349,11 @@ export default function BookingDetails() {
           )}
         </div>
       </div>
+      
+      {/* Trip chart: driver, conductor, bus and your seats */}
+      {(booking.bookingStatus === "CONFIRMED" || booking.bookingStatus === "COMPLETED") && (
+        <TripChartCard bookingId={booking.bookingId} />
+      )}
 
       {/* Actions */}
       {!isCancelled && (

@@ -1,7 +1,7 @@
 import React from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { Ticket, ListChecks, LogOut } from "lucide-react";
+import { Ticket, ListChecks, LogOut, ClipboardList } from "lucide-react";
 
 export default function CounterDashboard() {
   const navigate = useNavigate();
@@ -39,6 +39,15 @@ export default function CounterDashboard() {
           <ListChecks className="text-green-600 mb-3" size={28} />
           <div className="font-semibold text-gray-800 text-lg">My Bookings</div>
           <div className="text-sm text-gray-500 mt-1">Every ticket you've sold — for end-of-shift cash reconciliation.</div>
+        </button>
+
+         <button
+          onClick={() => navigate("/counter/duty")}
+          className="bg-white border border-gray-200 rounded-2xl p-6 text-left hover:shadow-md hover:border-blue-300 transition"
+        >
+          <ClipboardList className="text-orange-600 mb-3" size={28} />
+          <div className="font-semibold text-gray-800 text-lg">Duty Roster</div>
+          <div className="text-sm text-gray-500 mt-1">Assign a driver and conductor to each trip and share the trip chart with passengers.</div>
         </button>
       </div>
     </div>

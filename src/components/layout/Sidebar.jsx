@@ -18,6 +18,7 @@ import {
   ChevronDown,
   CalendarDays,
   FileText,
+  ClipboardList,
   Newspaper,
   Image as ImageIcon,
 } from "lucide-react";
@@ -87,6 +88,12 @@ const navItems = [
     path: "/admin/schedules",
     icon: CalendarDays,
     perm: "schedule:view",
+  },
+  {
+    label: "Duty Roster",
+    path: "/admin/duty-roster",
+    icon: ClipboardList,
+    perm: "dutyAssignment:viewAll",
   },
   {
     label: "Grievance",

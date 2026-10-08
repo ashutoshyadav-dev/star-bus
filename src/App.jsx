@@ -43,6 +43,7 @@ import AddSchedule from "./pages/schedule/AddSchedule";
 import ScheduleDetails from "./pages/schedule/ScheduleDetails";
 import ScheduleInventoryManagement from "./pages/schedule/ScheduleInventoryManagement";
 import DutyAssignmentManagement from "./pages/schedule/DutyAssignmentManagement";
+import DutyRosterPage from "./pages/schedule/DutyRosterPage";
 import CmsFaqPage from "./pages/cms/faqPage";
 import AdminGrievancePage from "./pages/grievance/AdminGrievancePage"
 import AdminGallery from "./pages/cms/AdminGallery";
@@ -332,6 +333,7 @@ function AppRoutes() {
         <Route path="schedules/:id" element={<ScheduleDetails />} />
         <Route path="schedules/:id/seats" element={<ScheduleInventoryManagement />} />
         <Route path="schedules/:id/duty" element={<DutyAssignmentManagement />} />
+        <Route path="duty-roster" element={<DutyRosterPage />} />
         <Route path="faq"  element={<CmsFaqPage />} />
         <Route path="grievance" element={<AdminGrievancePage/>} />
         <Route path="cms/gallery" element={<AdminGallery />} />
@@ -366,6 +368,7 @@ function AppRoutes() {
         <Route path="dashboard" element={<CounterDashboard />} />
         <Route path="book" element={<CounterBookTicket />} />
         <Route path="my-bookings" element={<CounterMyBookings />} />
+        <Route path="duty" element={<DutyRosterPage />} />
       </Route>
 
       
