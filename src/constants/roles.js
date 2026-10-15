@@ -62,3 +62,15 @@ export function classifyRole(roles = []) {
   if (upper.some((r) => COUNTER_ROLES.includes(r))) return "counter";
   return "passenger";
 }
+
+// Drivers get their own area; everyone else on duty uses the conductor area.
+export const DRIVER_ROLES = ["DRIVER", "RELIEF_DRIVER"];
+
+// Where a duty-staff user lands after login.
+// A person who is a driver AND a conductor keeps the conductor screens.
+export function dutyHome(roles = []) {
+  const upper = roles.map((r) => r.toUpperCase());
+  const isConductor = upper.some((r) => r === "CONDUCTOR" || r === "GUARD");
+  const isDriver = upper.some((r) => DRIVER_ROLES.includes(r));
+  return isDriver && !isConductor ? "/driver/duty" : "/conductor/duty";
+}

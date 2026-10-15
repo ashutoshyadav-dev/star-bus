@@ -9,7 +9,7 @@ import logo from "../../assets/logo.png";
 import Spinner from "../../components/common/Spinner";
 import { useAuth } from "../../context/AuthContext";
 import { useOtpTimer } from "../../hooks/useOtpTimer";
-import { classifyRole } from "../../constants/roles";
+import { classifyRole, dutyHome } from "../../constants/roles";
 
 // const ADMIN_ROLES = ["SUPER_ADMIN", "STATE_ADMIN", "DEPOT_MANAGER", "STAFF"];
 
@@ -74,7 +74,8 @@ export default function LoginPage() {
     }
         const target =
       roleClass === "admin"      ? "/admin/dashboard" :
-      roleClass === "duty_staff" ? "/conductor/duty"   :
+      // roleClass === "duty_staff" ? "/conductor/duty"   :
+      roleClass === "duty_staff" ? dutyHome(userData?.roles ?? []) :
       roleClass === "counter"    ? "/counter/dashboard" :
                                     "/user/dashboard";
     navigate(target, { replace: true });

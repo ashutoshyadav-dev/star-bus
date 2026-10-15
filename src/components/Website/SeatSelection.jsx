@@ -28,7 +28,6 @@ import logo from "../../assets/logo.png";
 
 import {
   getScheduleSeats,
-  lockSeatForJourney,
   getScheduleById,
 } from "../../api/schedule";
 import api from "../../api/client";
@@ -819,37 +818,45 @@ export default function SeatSelection() {
         passengers,
         bookingSource: "WEB",
       });
+      // const created = res.data?.data ?? res.data;
+      // setBooking(created);
+
+      // const lockExpiry = new Date(
+      //   Date.now() + SEAT_LOCK_MINUTES * 60 * 1000,
+      // ).toISOString();
+      // setLockExpiresAt(lockExpiry);
+
+      // // Lock all selected seats concurrently; allSettled so one failure
+      // // doesn't block the rest
+      // await Promise.allSettled(
+      //   selectedSeats.map((seat) =>
+      //     lockSeatForJourney(
+      //       seat.seatId ?? seat.id,
+      //       scheduleId,
+      //       created.bookingId ?? created.id,
+      //       fromStopSeq,
+      //       toStopSeq,
+      //       lockExpiry,
+      //     ),
+      //   ),
+      // );
+
       const created = res.data?.data ?? res.data;
       setBooking(created);
 
-      const lockExpiry = new Date(
-        Date.now() + SEAT_LOCK_MINUTES * 60 * 1000,
-      ).toISOString();
-      setLockExpiresAt(lockExpiry);
-
-      // Lock all selected seats concurrently; allSettled so one failure
-      // doesn't block the rest
-      await Promise.allSettled(
-        selectedSeats.map((seat) =>
-          lockSeatForJourney(
-            seat.seatId ?? seat.id,
-            scheduleId,
-            created.bookingId ?? created.id,
-            fromStopSeq,
-            toStopSeq,
-            lockExpiry,
-          ),
-        ),
-      );
+      // The server locked the seats inside the booking request and tells us
+      // when the hold ends. The browser never chooses it.
+      setLockExpiresAt(created.seatHoldExpiresAt ?? null);
 
       toast.success("Booking created! Complete payment within 10 minutes.");
       setPaymentFailed(false);
       setStep(4);
-    } catch (err) {
+    }catch (err) {
       toast.error(
         err?.response?.data?.message ??
           "Failed to create booking. Please try again.",
       );
+      fetchSeats(); // a seat may have just been taken: show the current map
     } finally {
       setBookingLoading(false);
     }

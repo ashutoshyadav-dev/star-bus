@@ -94,6 +94,13 @@ import Transport from "./pages/department/Transport";
 import MyDuty from "./pages/conductor/MyDuty";
 import ConductorScan from "./pages/conductor/ConductorScan";
 import DutyStaffLayout from "./components/layout/DutyStaffLayout";
+import ConductorDutyDetails from "./pages/conductor/ConductorDutyDetails";
+
+
+//-------------------imports for Driver Profile-----------------------
+import DriverLayout from "./components/layout/DriverLayout";
+import DriverDuty from "./pages/driver/DriverDuty";
+import DriverDutyDetails from "./pages/driver/DriverDutyDetails";
 
 
 //--------------------imports for counter -------------------
@@ -104,7 +111,7 @@ import CounterLayout from "./components/layout/CounterLayout";
 
 
 //import for Role from constants/roles
-import { ADMIN_ROLES, classifyRole } from "./constants/roles";
+import { ADMIN_ROLES, classifyRole, dutyHome } from "./constants/roles";
 
 
 // ── Role constants ──────────────────────────────────────────────────────────
@@ -164,6 +171,22 @@ function DutyStaffRoute({ children }) {
   const roleClass = classifyRole(user?.roles ?? []);
   if (roleClass !== "duty_staff") return <Navigate to="/unauthorized" replace />;
 
+  if (dutyHome(user?.roles ?? []) === "/driver/duty") return <Navigate to="/driver/duty" replace />;
+
+  return children;
+}
+
+function DriverRoute({ children }) {
+  const { user, isInitialized } = useAuth();
+
+  if (!isInitialized) return <PageLoader />;
+  if (!user) return <Navigate to="/home/login" replace />;
+
+  const roleClass = classifyRole(user?.roles ?? []);
+  if (roleClass !== "duty_staff") return <Navigate to="/unauthorized" replace />;
+  // a conductor who is not a driver has no business here
+  if (dutyHome(user?.roles ?? []) !== "/driver/duty") return <Navigate to="/conductor/duty" replace />;
+
   return children;
 }
 
@@ -207,7 +230,8 @@ function GuestRoute({ children }) {
   const roleClass = classifyRole(user?.roles ?? []);
   const target =
     roleClass === "admin"      ? "/admin/dashboard" :
-    roleClass === "duty_staff" ? "/conductor/duty"   :
+    // roleClass === "duty_staff" ? "/conductor/duty"   :
+    roleClass === "duty_staff" ? dutyHome(user?.roles ?? []) :
     roleClass === "counter"    ? "/counter/dashboard" :  
                                   "/user/dashboard";
 
@@ -352,7 +376,23 @@ function AppRoutes() {
       >
         <Route index element={<Navigate to="duty" replace />} />
         <Route path="duty" element={<MyDuty />} />
+        <Route path="duty/:dutyId" element={<ConductorDutyDetails />} />
         <Route path="scan/:scheduleId" element={<ConductorScan />} />
+      </Route>
+
+
+      {/* ── Driver Area ───────────────────────────────────── */}
+      <Route
+        path="/driver"
+        element={
+          <DriverRoute>
+            <DriverLayout />
+          </DriverRoute>
+        }
+      >
+        <Route index element={<Navigate to="duty" replace />} />
+        <Route path="duty" element={<DriverDuty />} />
+        <Route path="duty/:dutyId" element={<DriverDutyDetails />} />
       </Route>
 
 {/* ── Counter Staff Area ────────────────────────────── */}

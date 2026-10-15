@@ -35,6 +35,11 @@ export const searchAvailableSchedules = (fromStationId, toStationId, date) =>
     api.get('/schedules/search', {
         params: { fromStationId, toStationId, date }
     });
+
+export const getMyDutyDetails = (id) =>
+  api.get(`/duty-assignments/me/${id}/details`);
+
+
 /* ─────────────────────────────
    Seat Inventory APIs
 ───────────────────────────── */
@@ -59,27 +64,27 @@ export const getScheduleSeatById = (id) =>
 export const initialiseScheduleSeats = (scheduleId) =>
   api.post(`/scheduleSeatInventory/schedules/${scheduleId}/seats/initialise`);
 
-export const lockScheduleSeat = (id, bookingId, lockExpiresAt) =>
-  api.patch(
-    `/scheduleSeatInventory/schedule-seats/${id}/lock`,
-    null,
-    {
-      params: {
-        bookingId,
-        lockExpiresAt,
-      },
-    }
-  );
+// export const lockScheduleSeat = (id, bookingId, lockExpiresAt) =>
+//   api.patch(
+//     `/scheduleSeatInventory/schedule-seats/${id}/lock`,
+//     null,
+//     {
+//       params: {
+//         bookingId,
+//         lockExpiresAt,
+//       },
+//     }
+//   );
 
  
-export const lockSeatForJourney = (seatId, scheduleId, bookingId, fromSeq, toSeq, lockExpiresAt) =>
-  api.patch(
-    `/scheduleSeatInventory/schedules/${scheduleId}/seats/${seatId}/lock-journey`,
-    null,                              // ← no body
-    {
-      params: { bookingId, fromStopSequence: fromSeq, toStopSequence: toSeq, lockExpiresAt },
-    }
-  );
+// export const lockSeatForJourney = (seatId, scheduleId, bookingId, fromSeq, toSeq, lockExpiresAt) =>
+//   api.patch(
+//     `/scheduleSeatInventory/schedules/${scheduleId}/seats/${seatId}/lock-journey`,
+//     null,                              // ← no body
+//     {
+//       params: { bookingId, fromStopSequence: fromSeq, toStopSequence: toSeq, lockExpiresAt },
+//     }
+//   );
 
 export const confirmScheduleSeatBooking = (id, bookingId) =>
   api.patch(

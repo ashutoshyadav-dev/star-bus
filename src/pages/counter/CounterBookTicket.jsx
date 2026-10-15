@@ -3,12 +3,12 @@ import { useNavigate } from "react-router-dom";
 import toast from "react-hot-toast";
 import { counterApi } from "../../api/counter";
 import { stationApi } from "../../api/station";
-import { searchAvailableSchedules, getScheduleSeats, lockSeatForJourney } from "../../api/schedule";
+import { searchAvailableSchedules, getScheduleSeats } from "../../api/schedule";
 import Spinner from "../../components/common/Spinner";
 import { paymentApi } from "../../api/booking";
 import api from "../../api/client";
 
-const SEAT_LOCK_MINUTES = 10;
+
 const GENDERS = ["male", "female", "other", "prefer_not_to_say"];
 
 export default function CounterBookTicket() {
@@ -181,19 +181,7 @@ export default function CounterBookTicket() {
       const created = res.data?.data ?? res.data;
       setBooking(created);
 
-      const lockExpiry = new Date(Date.now() + SEAT_LOCK_MINUTES * 60 * 1000).toISOString();
-      await Promise.allSettled(
-        selectedSeats.map((seat) =>
-          lockSeatForJourney(
-            seat.seatId ?? seat.id,
-            selectedSchedule.scheduleId,
-            created.bookingId ?? created.id,
-            selectedSchedule.fromStopSequence,
-            selectedSchedule.toStopSequence,
-            lockExpiry,
-          ),
-        ),
-      );
+      
 
       toast.success("Booking created — collect payment to confirm");
       setStep(4);
