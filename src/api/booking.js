@@ -5,6 +5,10 @@ export const bookingApi = {
   getById:        (id)         => api.get(`/bookings/${id}`),
   getByPnr:       (pnr)        => api.get(`/bookings/pnr/${pnr}`),
   getMine:        ()           => api.get('/bookings/my'),
+  // latest unpaid booking for a journey (restore seats + details after a missed payment)
+  getResumable:   (params)     => api.get('/bookings/resume', { params }),
+  // edit name/age/gender of an unpaid booking, then pay again
+  updatePassengers: (id, data) => api.put(`/bookings/${id}/passengers`, data),
   getMyDetails:       ()             => api.get('/bookings/my/details'),
   cancel:         (id, data)   => api.post(`/bookings/${id}/cancel`, data),
   adminGetBySchedule: (scheduleId) => api.get(`/bookings/admin/schedule/${scheduleId}`),

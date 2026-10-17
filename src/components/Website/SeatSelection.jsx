@@ -52,6 +52,18 @@ const PAYMENT_SOURCE = "WEB";
 // needed anymore — SBI ePay needs no client-side SDK or public key at all.
 const PAYMENT_SESSION_PREFIX = "apsts_pending_payment_";
 
+// Contact details are not stored on the booking, so keep them for this browser tab
+// (sessionStorage - gone when the tab closes, safe on shared computers).
+const CONTACT_DRAFT_KEY = "apsts_contact_draft";
+function loadContactDraft() {
+  try {
+    const raw = sessionStorage.getItem(CONTACT_DRAFT_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
 // Seat fill colours for the seat map legend and SVG rendering
 const SEAT_COLORS = {
   selected: "#3b82f6",
@@ -493,7 +505,7 @@ export default function SeatSelection() {
 
   // ── Contact details (step 3) ─────────────────────────────────────────────
   const [contact, setContact] = useState(
-    restored?.contact ?? { mobile: "", email: "" },
+    restored?.contact ?? loadContactDraft() ?? { mobile: "", email: "" },
   );
   const [emailError, setEmailError] = useState("");
 
@@ -506,6 +518,12 @@ export default function SeatSelection() {
   const [initiating, setInitiating] = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
+
+  // Latest unpaid booking of this passenger for this journey (from the server).
+  // Lets them come back after a missed payment, edit details and repay.
+  const [resumeInfo, setResumeInfo] = useState(null);
+  const [resumeChecked, setResumeChecked] = useState(false);
+  const prefilledRef = useRef(false);
 
   // Set once we've finished resolving a returning-payment redirect, so the
   // rest of the component's effects (seat fetching etc.) don't fire on top
@@ -573,6 +591,32 @@ export default function SeatSelection() {
         const cleaned = new URLSearchParams(searchParams);
         cleaned.delete("bookingId");
         cleaned.delete("paymentStatus");
+        // The gateway hop dropped the journey from the URL. Put it back so a refresh,
+        // or coming back later, still knows which schedule this is.
+        const snap = restoredSnapshotRef.current;
+        if (snap?.scheduleId && !cleaned.get("scheduleId")) {
+          cleaned.set("scheduleId", snap.scheduleId);
+          cleaned.set("from", encodeURIComponent(snap.fromLabel ?? ""));
+          cleaned.set("to", encodeURIComponent(snap.toLabel ?? ""));
+          cleaned.set("fromId", snap.fromId ?? "");
+          cleaned.set("toId", snap.toId ?? "");
+          cleaned.set("date", snap.date ?? "");
+          cleaned.set("bus", encodeURIComponent(snap.busLabel ?? ""));
+          cleaned.set("departure", snap.departure ?? "");
+        } else if (!cleaned.get("scheduleId") && returningBookingId) {
+          // no snapshot (new tab / cleared storage): recover what the booking itself knows
+          try {
+            const b = (await bookingApi.getById(returningBookingId)).data;
+            const bk = b?.data ?? b;
+            if (bk?.scheduleId) {
+              cleaned.set("scheduleId", bk.scheduleId);
+              cleaned.set("fromId", bk.fromStationId);
+              cleaned.set("toId", bk.toStationId);
+            }
+          } catch {
+            /* nothing more we can recover */
+          }
+        }
         setSearchParams(cleaned, { replace: true });
         setResolvingReturn(false);
       }
@@ -645,6 +689,137 @@ export default function SeatSelection() {
       fetchSeats();
     }
   }, [resolvingReturn, fetchSeats, fromStopSeq, toStopSeq]);
+  // Coming back to the seat step (e.g. after a failed payment): reload the map so seats
+  // held by this passenger's own unpaid booking show as theirs, not as "locked".
+  useEffect(() => {
+    if (resolvingReturn || step !== 2) return;
+    if (fromStopSeq !== null && toStopSeq !== null) fetchSeats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [step]);
+
+  /* ── Ask the server for this passenger's unpaid booking on this journey ── */
+  useEffect(() => {
+    if (resolvingReturn || !user || !scheduleId) return;
+    let cancelled = false;
+    bookingApi
+      .getResumable({
+        scheduleId,
+        fromStationId: fromId || undefined,
+        toStationId: toId || undefined,
+      })
+      .then((res) => {
+        if (cancelled) return;
+        const data = res.data?.data ?? null;
+        setResumeInfo(data);
+      })
+      .catch(() => {})
+      .finally(() => !cancelled && setResumeChecked(true));
+    return () => {
+      cancelled = true;
+    };
+  }, [resolvingReturn, user, scheduleId, fromId, toId]);
+
+  /* ── Restore mobile + email typed on the earlier attempt (only fills empty fields) ── */
+  const contactRestoredRef = useRef(false);
+  useEffect(() => {
+    if (contactRestoredRef.current || !resumeInfo) return;
+    contactRestoredRef.current = true;
+    if (!contact.mobile && !contact.email &&
+        (resumeInfo.contactMobile || resumeInfo.contactEmail)) {
+      setContact({
+        mobile: resumeInfo.contactMobile ?? "",
+        email: resumeInfo.contactEmail ?? "",
+      });
+    }
+    // The timer must show how long the seats are REALLY held (payment extends the
+    // hold), otherwise it hits zero while the seats are still locked.
+    if (resumeInfo.resumable && resumeInfo.holdExpiresAt && booking) {
+      setLockExpiresAt(resumeInfo.holdExpiresAt);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [resumeInfo]);
+
+  /* ── Put the passenger back where they were: seats + details pre-filled ── */
+  useEffect(() => {
+    if (prefilledRef.current || !resumeChecked || loadingSeats) return;
+    if (!resumeInfo?.passengers?.length || seatMap.length === 0) return;
+    if (selectedSeats.length > 0) {
+      prefilledRef.current = true; // they already have a selection (restored snapshot)
+      return;
+    }
+    const seats = [];
+    const details = {};
+    for (const p of resumeInfo.passengers) {
+      const seat = seatMap.find((s) => (s.seatId ?? s.id) === p.seatId);
+      if (!seat) continue;
+      const st = (seat.seatStatus ?? "").toLowerCase();
+      const usable = st === "available" || seat.heldByMe;
+      if (!usable) continue;
+      seats.push(seat);
+      details[seat.id] = {
+        name: p.passengerName ?? "",
+        gender: p.passengerGender ?? "",
+        age: p.passengerAge != null ? String(p.passengerAge) : "",
+      };
+    }
+    prefilledRef.current = true;
+    if (seats.length === 0) return;
+    setSelectedSeats(seats);
+    setPassengerDetails((prev) => ({ ...details, ...prev }));
+    toast("We restored your previous seats and passenger details.", {
+      icon: "↩️",
+    });
+  }, [resumeChecked, resumeInfo, seatMap, loadingSeats, selectedSeats.length]);
+
+  /* ── Keep the selection honest against the latest seat map ──
+     Re-point each selected seat at its current map entry (ids stay in sync),
+     and drop any that somebody else has since taken. */
+  useEffect(() => {
+    if (resolvingReturn || step === 5 || seatMap.length === 0) return;
+    if (selectedSeats.length === 0) return;
+    let changed = false;
+    const kept = [];
+    const movedDetails = {};
+    for (const sel of selectedSeats) {
+      const key = sel.seatId ?? sel.id;
+      const cur = seatMap.find((s) => (s.seatId ?? s.id) === key);
+      if (!cur) {
+        changed = true;
+        continue;
+      }
+      const st = (cur.seatStatus ?? "").toLowerCase();
+      const takenByOthers =
+        st === "booked" || ((st === "locked" || st === "hold") && !cur.heldByMe);
+      if (takenByOthers) {
+        changed = true;
+        continue;
+      }
+      if (cur.id !== sel.id) {
+        movedDetails[cur.id] = passengerDetails[sel.id];
+        changed = true;
+      }
+      kept.push(cur);
+    }
+    if (!changed) return;
+    if (kept.length < selectedSeats.length) {
+      toast.error("A seat you selected is no longer available.");
+    }
+    setSelectedSeats(kept);
+    if (Object.keys(movedDetails).length) {
+      setPassengerDetails((prev) => ({ ...movedDetails, ...prev }));
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [seatMap]);
+
+  // remember contact details for this tab
+  useEffect(() => {
+    try {
+      sessionStorage.setItem(CONTACT_DRAFT_KEY, JSON.stringify(contact));
+    } catch {
+      /* storage full / blocked - not critical */
+    }
+  }, [contact]);
+
   // ==========================================================================
   // SECTION 2 — SEAT MAP GRID COMPUTATION
   // Builds a 2-D array (rows × cols) from the flat seatMap list so we can
@@ -690,7 +865,10 @@ export default function SeatSelection() {
     const status = (seat.seatStatus ?? "").toLowerCase();
 
     if (status === "booked") return "booked";
-    if (status === "locked" || status === "hold") return "locked";
+    // locked by SOMEONE ELSE; a seat held by this passenger's own unpaid booking
+    // is theirs to pick again
+    if ((status === "locked" || status === "hold") && !seat.heldByMe)
+      return "locked";
 
     if (seat.isDriverSeat) return "driver"; // NEW
     if (seat.isLadiesQuota) return "ladies";
@@ -711,7 +889,8 @@ export default function SeatSelection() {
       }
 
       const status = (seat.seatStatus ?? "").toLowerCase();
-      if (["booked", "locked", "hold"].includes(status)) return;
+      if (status === "booked") return;
+      if (["locked", "hold"].includes(status) && !seat.heldByMe) return;
 
       // Functional updater prevents stale-closure issues
       setSelectedSeats((prev) =>
@@ -782,12 +961,6 @@ export default function SeatSelection() {
   // ==========================================================================
 
   const handleCreateBooking = async () => {
-    // If booking already created (user navigated back), skip to payment
-    if (booking) {
-      setStep(4);
-      return;
-    }
-
     if (!contact.mobile || contact.mobile.length < 10) {
       toast.error("Enter a valid 10-digit mobile number");
       return;
@@ -795,6 +968,62 @@ export default function SeatSelection() {
     if (!emailRegex.test(contact.email.trim())) {
       toast.error("Enter a valid email address");
       return;
+    }
+
+    // ── Unpaid booking already exists for these very seats (missed / failed
+    //    payment, or the user stepped back)? Save any edited passenger details
+    //    onto THAT booking and go on to payment - no new booking, no new PNR.
+    const existing =
+      booking ?? (resumeInfo?.resumable ? resumeInfo : null);
+    if (existing?.passengers?.length) {
+      const bookedIds = existing.passengers.map((p) => p.seatId).sort();
+      const pickedIds = selectedSeats.map((s) => s.seatId ?? s.id).sort();
+      const sameSeats =
+        bookedIds.length === pickedIds.length &&
+        bookedIds.every((id, i) => id === pickedIds[i]);
+
+      if (sameSeats) {
+        setBookingLoading(true);
+        try {
+          const res = await bookingApi.updatePassengers(
+            existing.bookingId ?? existing.id,
+            {
+              contactMobile: contact.mobile,
+              contactEmail: contact.email.trim(),
+              passengers: selectedSeats.map((seat) => {
+                const d = passengerDetails[seat.id];
+                return {
+                  seatId: seat.seatId ?? seat.id,
+                  passengerName: d.name.trim(),
+                  passengerAge: Number(d.age),
+                  passengerGender: d.gender,
+                };
+              }),
+            },
+          );
+          const updated = res.data?.data ?? res.data;
+          setBooking(updated);
+          setLockExpiresAt(updated.seatHoldExpiresAt ?? null);
+          setPaymentFailed(false);
+          setStep(4);
+        } catch (err) {
+          toast.error(
+            err?.response?.data?.message ??
+              "Could not update passenger details. Please try again.",
+          );
+          // hold gone (or booking no longer editable): start a clean booking next time
+          setBooking(null);
+          setResumeInfo(null);
+          setLockExpiresAt(null);
+          fetchSeats();
+        } finally {
+          setBookingLoading(false);
+        }
+        return;
+      }
+      // Different seats than the unpaid booking: fall through and create a new
+      // booking - the server frees the old unpaid one unless its payment could
+      // still go through (then it says so).
     }
 
     setBookingLoading(true);
@@ -817,6 +1046,9 @@ export default function SeatSelection() {
         toStationId: toId,
         passengers,
         bookingSource: "WEB",
+        // stored on the booking so they come back if the passenger has to rebook
+        contactMobile: contact.mobile,
+        contactEmail: contact.email.trim(),
       });
       // const created = res.data?.data ?? res.data;
       // setBooking(created);
@@ -843,6 +1075,7 @@ export default function SeatSelection() {
 
       const created = res.data?.data ?? res.data;
       setBooking(created);
+      setResumeInfo(null);
 
       // The server locked the seats inside the booking request and tells us
       // when the hold ends. The browser never chooses it.
@@ -868,12 +1101,14 @@ export default function SeatSelection() {
 
   /* ── Handle lock expiry — reset everything and go back to seat map ── */
   const handleLockExpired = useCallback(() => {
-    toast.error("Session expired. Seats released. Please start again.", {
-      duration: 6000,
-    });
+    // Keep what the passenger typed - only the hold is gone. Seats that are still
+    // free stay selected after the map reloads; taken ones are dropped.
+    toast.error(
+      "Your seat hold expired. Please confirm your seats again - your details are saved.",
+      { duration: 6000 },
+    );
     setBooking(null);
-    setSelectedSeats([]);
-    setPassengerDetails({});
+    setResumeInfo(null);
     setLockExpiresAt(null);
     setPaymentFailed(false);
     setStep(2);
@@ -1621,6 +1856,14 @@ export default function SeatSelection() {
                       </span>
                       ) is still active.
                     </p>
+                    <button
+                      type="button"
+                      onClick={() => setStep(2)}
+                      className="mt-2 px-3 py-1 rounded-md bg-white/10
+                        hover:bg-white/20 text-xs text-white border border-white/20"
+                    >
+                      ✏️ Edit passenger details
+                    </button>
                   </div>
                 </div>
               )}
