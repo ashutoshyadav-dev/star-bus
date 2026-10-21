@@ -56,12 +56,19 @@ const TIER_META = {
     bannerStyle: "bg-amber-50 border-amber-200 text-amber-800",
     icon: <FiAlertCircle className="text-amber-500 w-4 h-4 shrink-0 mt-0.5" />,
   },
-  TIER_4_NO_REFUND_LT_2H: {
-    pct: "0%", shortLabel: "No refund",
-    label: "Cancelled less than 2h before departure. No refund applicable per APSTS policy.",
-    badgeStyle: "bg-red-100 text-red-700",
-    bannerStyle: "bg-red-50 border-red-200 text-red-800",
-    icon: <FiAlertCircle className="text-red-500 w-4 h-4 shrink-0 mt-0.5" />,
+  TIER_4_25PCT_LT_2H: {
+    pct: "25%", shortLabel: "25% refund",
+    label: "Cancelled less than 2h before departure. 75% cancellation penalty applied.",
+    badgeStyle: "bg-orange-100 text-orange-700",
+    bannerStyle: "bg-orange-50 border-orange-200 text-orange-800",
+    icon: <FiAlertCircle className="text-orange-500 w-4 h-4 shrink-0 mt-0.5" />,
+  },
+  TIER_5_SPECIAL_ADMIN_DECIDED: {
+    pct: "Special", shortLabel: "Trip cancelled by APSTS",
+    label: "APSTS cancelled this trip. Your refund amount was decided by APSTS for this cancellation.",
+    badgeStyle: "bg-green-100 text-green-700",
+    bannerStyle: "bg-green-50 border-green-200 text-green-800",
+    icon: <FiCheckCircle className="text-green-500 w-4 h-4 shrink-0 mt-0.5" />,
   },
 };
 
@@ -257,7 +264,7 @@ function RefundDetail({ refund, onBack }) {
           <div>
             <p className="font-semibold">No refund applicable</p>
             <p className="text-red-500 text-xs mt-0.5">
-              Cancelled within 2 hours of departure — Tier 4 policy applies.
+              No refund is applicable for this cancellation under the APSTS policy.
             </p>
           </div>
         </div>
@@ -451,7 +458,8 @@ export default function MyRefunds() {
                 <p>✅ APSTS cancelled service → 100% refund</p>
                 <p>🔵 Cancelled &gt;24h before → 75% refund</p>
                 <p>🟡 Cancelled 2–24h before → 50% refund</p>
-                <p>🔴 Cancelled &lt;2h before → no refund</p>
+                <p>🔴 Cancelled &lt;2h before → 25% refund</p>
+                <p>⚫ After departure → no refund</p>
               </div>
               <p className="text-xs text-blue-500 mt-1.5">
                 Refunds to original source take 5–7 business days. Wallet credits are instant.

@@ -19,6 +19,7 @@ import {
   CalendarDays,
   FileText,
   ClipboardList,
+  AlertTriangle,
   Newspaper,
   Image as ImageIcon,
 } from "lucide-react";
@@ -94,6 +95,12 @@ const navItems = [
     path: "/admin/duty-roster",
     icon: ClipboardList,
     perm: "dutyAssignment:viewAll",
+  },
+  {
+    label: "Special Cancellations",
+    path: "/admin/special-cancellations",
+    icon: AlertTriangle,
+    perm: "specialCancellation:viewAll",
   },
   {
     label: "Grievance",

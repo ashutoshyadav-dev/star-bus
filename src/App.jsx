@@ -49,6 +49,7 @@ import AdminGrievancePage from "./pages/grievance/AdminGrievancePage"
 import AdminGallery from "./pages/cms/AdminGallery";
 import AdminMenu    from "./pages/cms/AdminMenu";
 import AdminCmsPages from "./pages/cms/AdminCmsPages";
+import AdminSpecialCancellations from "./pages/refund/AdminSpecialCancellations";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
@@ -108,6 +109,9 @@ import CounterDashboard from "./pages/counter/CounterDashboard";
 import CounterBookTicket from "./pages/counter/CounterBookTicket";
 import CounterMyBookings from "./pages/counter/CounterMyBookings";
 import CounterLayout from "./components/layout/CounterLayout";
+import CounterSpecialCancellation from "./pages/counter/CounterSpecialCancellation";
+import CounterRefunds from "./pages/counter/CounterRefunds";
+import CounterCancelByPnr from "./pages/counter/CounterCancelByPnr";
 
 
 //import for Role from constants/roles
@@ -358,6 +362,7 @@ function AppRoutes() {
         <Route path="schedules/:id/seats" element={<ScheduleInventoryManagement />} />
         <Route path="schedules/:id/duty" element={<DutyAssignmentManagement />} />
         <Route path="duty-roster" element={<DutyRosterPage />} />
+        <Route path="special-cancellations" element={<AdminSpecialCancellations />} />
         <Route path="faq"  element={<CmsFaqPage />} />
         <Route path="grievance" element={<AdminGrievancePage/>} />
         <Route path="cms/gallery" element={<AdminGallery />} />
@@ -409,6 +414,9 @@ function AppRoutes() {
         <Route path="book" element={<CounterBookTicket />} />
         <Route path="my-bookings" element={<CounterMyBookings />} />
         <Route path="duty" element={<DutyRosterPage />} />
+        <Route path="special-cancellation" element={<CounterSpecialCancellation />} />
+        <Route path="refunds" element={<CounterRefunds />} />
+        <Route path="cancel-booking" element={<CounterCancelByPnr />} />
       </Route>
 
       

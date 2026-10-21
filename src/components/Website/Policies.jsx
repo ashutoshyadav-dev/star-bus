@@ -22,11 +22,11 @@ function CancellationPolicy() {
   const rows = c.chargesTable?.rows ?? [
     { period: "Before 24 Hours of Departure",        deduction: "25%",  color: "green"  },
     { period: "Between 24 Hours and 2 Hours",         deduction: "50%",  color: "orange" },
-    { period: "Between 2 Hours and Departure Time",   deduction: "100%", color: "red"    },
+    { period: "Between 2 Hours and Departure Time",   deduction: "75%", color: "red" },
   ];
 
   const terms = c.termsSections?.[0]?.items ?? [
-    "Cancellation is not allowed after 2 hours before the scheduled departure time from the origin station.",
+    "Cancelling less than 2 hours before the scheduled departure refunds 25% of the fare (the reservation fee is not refunded). No refund is given once the bus has departed.",
     "Reservation fee is non-refundable except when the service is completely cancelled by APSTS.",
     "No refund will be provided to No-Show passengers.",
     "Refunds are generally processed within one month after ticket cancellation.",

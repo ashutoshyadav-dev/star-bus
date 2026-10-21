@@ -51,9 +51,10 @@ function hoursUntilDeparture(journeyDate, departureTime) {
  * Mirrors RefundService.resolveTier() on the backend.
  */
 function resolveTier(hours) {
-  if (hours > 24) return { tier: "TIER_2_75PCT_GT_24H",  pct: 75, label: ">24h before departure — 25% penalty" };
-  if (hours >= 2) return { tier: "TIER_3_50PCT_2TO24H",  pct: 50, label: "2–24h before departure — 50% penalty" };
-  return              { tier: "TIER_4_NO_REFUND_LT_2H", pct: 0,  label: "<2h before departure — no refund" };
+  if (hours > 24) return { tier: "TIER_2_75PCT_GT_24H",    pct: 75, label: ">24h before departure — 25% penalty" };
+  if (hours >= 2) return { tier: "TIER_3_50PCT_2TO24H",    pct: 50, label: "2–24h before departure — 50% penalty" };
+  if (hours > 0)  return { tier: "TIER_4_25PCT_LT_2H",     pct: 25, label: "<2h before departure — 75% penalty" };
+  return                 { tier: "TIER_4_NO_REFUND_LT_2H", pct: 0,  label: "After departure — no refund" };
 }
 
 function Spinner({ size = "w-5 h-5" }) {
