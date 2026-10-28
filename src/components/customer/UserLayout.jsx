@@ -48,10 +48,10 @@ function Sidebar({ isOpen }) {
           <FiCreditCard className="text-lg flex-shrink-0" />
           {isOpen && <span>Refunds</span>}
         </NavLink>
-        <NavLink to="/user/wallet"      className={linkClass}>
+        {/* <NavLink to="/user/wallet"      className={linkClass}>
           <FiUser className="text-lg flex-shrink-0" />
           {isOpen && <span>Wallet</span>}
-        </NavLink>
+        </NavLink> */}
         <NavLink to="/user/helpdesk"    className={linkClass}>
           <FiHeadphones className="text-lg flex-shrink-0" />
           {isOpen && <span>Helpdesk</span>}

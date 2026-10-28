@@ -314,7 +314,7 @@ function AppRoutes() {
         <Route path="helpdesk" element={<Helpdesk />} />
         <Route path="my-refunds" element={<MyRefunds />} />
 
-        <Route path="wallet" element={<MyWallet/>} />
+        {/* <Route path="wallet" element={<MyWallet/>} /> */}
         <Route path="all-grievance" element={<AllGrievance/>} />
 
       </Route>
@@ -340,7 +340,7 @@ function AppRoutes() {
         <Route path="staff-reservation" element={<AdminStaffReservation />} />
         <Route path="payments"       element={<PaymentsPage />} />
         <Route path="refunds"        element={<RefundsPage />} />
-        <Route path="wallet"         element={<AdminWalletPage />} />
+        {/* <Route path="wallet"         element={<AdminWalletPage />} /> */}
         <Route path="usermanagement" element={<UserManagement />} />
         <Route path="routes"         element={<RouteManagement />} />
         <Route path="depot"          element={<DepotForm />} />

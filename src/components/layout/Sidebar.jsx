@@ -76,11 +76,11 @@ const navItems = [
     icon: RotateCcw,
     perm: "refund:manage",
   },
-  {
-    label: "Wallet",
-    path: "/admin/wallet",
-    icon: Wallet,
-  },
+  // {
+  //   label: "Wallet",
+  //   path: "/admin/wallet",
+  //   icon: Wallet,
+  // },
   {
     label: "Route Management",
     path: "/admin/routes",
