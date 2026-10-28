@@ -9,6 +9,7 @@ import {
 import NotificationPanel, { NotificationBell } from "./NotificationPanel";
 import { notificationApi } from "../../api/notificationApi";
 import logo from "../../assets/logo.png";
+import { getRoleLabel } from "../../constants/roles";
 
 // ── Sidebar ──────────────────────────────────────────────────────────────────
 
@@ -154,7 +155,8 @@ function TopNavbar({ toggleSidebar, user, onLogout }) {
         <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
           <FiUser />
           <span className="text-xs hidden sm:block">
-            {user?.name ?? user?.phone ?? "Passenger"}
+            {/* {user?.name ?? user?.phone ?? "Passenger"} */}
+                        {getRoleLabel(user)}
           </span>
         </div>
 

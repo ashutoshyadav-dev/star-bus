@@ -33,6 +33,7 @@ export const createSeat         = (payload)             => api.post("/busSeat/bu
 export const bulkCreateSeats    = (requests)            => api.post("/busSeat/bus-seats/bulk", requests);
 export const updateSeat         = (id, payload)         => api.put(`/busSeat/bus-seats/${id}`, payload);
 export const deactivateSeat     = (id)                  => api.delete(`/busSeat/bus-seats/${id}`);
+export const renameSeatLabel    = (id, seatLabel)       => api.patch(`/busSeat/bus-seats/${id}/label`, { seatLabel });
 
 // ── Maintenance Records ───────────────────────────────────────────────────────
 export const getMaintenanceByBus   = (busId, activeOnly = false) => api.get(`/maintenances/buses/${busId}/maintenance?activeOnly=${activeOnly}`);

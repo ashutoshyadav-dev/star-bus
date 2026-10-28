@@ -5,6 +5,7 @@ import { Bell, LogOut, Settings, UserCircle } from "lucide-react";
 import AdminNotificationPanel from "../../pages/notification/AdminNotificationPanel";
 import { notificationApi } from "../../api/notificationApi";
 import logo from "../../assets/logo.png";
+import { getRoleLabel } from "../../constants/roles";
 
 export default function Navbar() {
   const { user, logout } = useAuth();
@@ -107,7 +108,8 @@ export default function Navbar() {
         <div className="flex items-center gap-2 bg-white/10 rounded-lg px-3 py-1.5">
           <UserCircle className="w-4 h-4 text-orange-400" />
           <span className="text-xs text-gray-200 font-medium">
-            {user?.name ?? user?.phone ?? "Admin"}
+            {/* {user?.name ?? user?.phone ?? "Admin"} */}
+                        {getRoleLabel(user)}
           </span>
         </div>
 

@@ -5,6 +5,7 @@ import { FiMenu, FiLogOut, FiUser } from "react-icons/fi";
 import NotificationPanel, { NotificationBell } from "../customer/NotificationPanel";
 import { notificationApi } from "../../api/notificationApi";
 import logo from "../../assets/logo.png";
+import { getRoleLabel } from "../../constants/roles";
 
 function StaffSidebar({ isOpen, navItems }) {
   const linkClass = ({ isActive }) =>
@@ -96,7 +97,8 @@ function StaffTopNavbar({ toggleSidebar, user, onLogout, roleLabel, showNotifica
         <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full">
           <FiUser />
           <span className="text-xs hidden sm:block">
-            {user?.fullName ?? user?.phoneNumber ?? roleLabel}
+            {/* {user?.fullName ?? user?.phoneNumber ?? roleLabel} */}
+                        {roleLabel ?? getRoleLabel(user)}
           </span>
         </div>
 

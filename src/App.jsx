@@ -50,6 +50,7 @@ import AdminGallery from "./pages/cms/AdminGallery";
 import AdminMenu    from "./pages/cms/AdminMenu";
 import AdminCmsPages from "./pages/cms/AdminCmsPages";
 import AdminSpecialCancellations from "./pages/refund/AdminSpecialCancellations";
+import AdminStaffReservation from "./pages/admin/AdminStaffReservation";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
@@ -281,7 +282,7 @@ function AppRoutes() {
           </GuestRoute>
         }
       />
-
+       
       <Route
         path="/register"
         element={<Navigate to="/home/login" replace />}
@@ -336,6 +337,7 @@ function AppRoutes() {
         <Route path="roles"          element={<RolesPage />} />
         <Route path="audit"          element={<AuditPage />} />
         <Route path="bookings"       element={<BookingsPage />} />
+        <Route path="staff-reservation" element={<AdminStaffReservation />} />
         <Route path="payments"       element={<PaymentsPage />} />
         <Route path="refunds"        element={<RefundsPage />} />
         <Route path="wallet"         element={<AdminWalletPage />} />

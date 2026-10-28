@@ -74,3 +74,23 @@ export function dutyHome(roles = []) {
   const isDriver = upper.some((r) => DRIVER_ROLES.includes(r));
   return isDriver && !isConductor ? "/driver/duty" : "/conductor/duty";
 }
+
+
+// Label shown in the header / sidebar instead of the phone number.
+// New logins get `roleDisplayName` from the backend (roles.display_name);
+// sessions created before that change fall back to the local ROLE_LABELS map.
+export function getRoleLabel(user) {
+  if (user?.roleDisplayName) return user.roleDisplayName;
+  const first = user?.roles?.[0];
+  const key = String(first?.name ?? first ?? "").toUpperCase();
+  return ROLE_LABELS[key] ?? "Passenger";
+}
+
+export function getRoleInitials(user) {
+  return getRoleLabel(user)
+    .split(" ")
+    .map((w) => w[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}

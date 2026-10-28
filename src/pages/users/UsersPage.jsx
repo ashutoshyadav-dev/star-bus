@@ -12,6 +12,7 @@ import {
   CreditCard, Building2, User
 } from 'lucide-react'
 import { format } from 'date-fns'
+import PasswordInput from "../../components/common/PasswordInput";
 
 /* ─────────────────────────────────────────────
    HELPERS
@@ -276,8 +277,8 @@ useEffect(() => {
 
                 {/* Password */}
                 <Field label="Login Password">
-                  <input className={inputCls} type="password" placeholder="Set initial password"
-                    value={form.password} onChange={set('password')} required />
+                  <PasswordInput className={inputCls} type="password" placeholder="Set initial password"
+                    value={form.password} onChange={set('password')} autoComplete="new-password" required />
                 </Field>
 
                 {/* Employee Code */}

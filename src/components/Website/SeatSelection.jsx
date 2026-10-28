@@ -42,6 +42,8 @@ import { FiUser, FiLogOut } from "react-icons/fi";
 
 const SEAT_LOCK_MINUTES = 10;
 
+const MAX_SEATS_PER_BOOKING = 6;
+
 // This build always runs in a browser — the backend needs this to know
 // which client to redirect back to after SBI ePay's hosted payment page.
 const PAYMENT_SOURCE = "WEB";
@@ -892,12 +894,22 @@ export default function SeatSelection() {
       if (status === "booked") return;
       if (["locked", "hold"].includes(status) && !seat.heldByMe) return;
 
-      // Functional updater prevents stale-closure issues
-      setSelectedSeats((prev) =>
-        prev.find((s) => s.id === seat.id)
-          ? prev.filter((s) => s.id !== seat.id)
-          : [...prev, seat],
-      );
+            // Functional updater prevents stale-closure issues
+      setSelectedSeats((prev) => {
+        // Clicking a selected seat un-selects it
+        if (prev.find((s) => s.id === seat.id)) {
+          return prev.filter((s) => s.id !== seat.id);
+        }
+        // Adding a new seat: enforce the per-booking limit
+        if (prev.length >= MAX_SEATS_PER_BOOKING) {
+          toast.error(
+            `You can book a maximum of ${MAX_SEATS_PER_BOOKING} seats at a time`,
+            { id: "max-seats" },
+          );
+          return prev;
+        }
+        return [...prev, seat];
+      });
     },
     [user],
   );

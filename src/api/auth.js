@@ -34,4 +34,6 @@ export const authApi = {
 
   // ── Logout all devices ────────────────────────────────────────────────────
   logoutAll: () => api.post("/auth/logout/all"),
+
+  getCaptcha: () => api.get("/auth/captcha"),
 };

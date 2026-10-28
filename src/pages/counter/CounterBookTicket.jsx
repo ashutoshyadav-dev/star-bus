@@ -16,11 +16,12 @@ export default function CounterBookTicket() {
   const [step, setStep] = useState(1); // 1=passenger 2=search 3=seats 4=payment 5=done
 
   // ── Step 1: passenger ──────────────────────────────────────────────────
-  const [phone, setPhone] = useState("");
   const [passenger, setPassenger] = useState(null);
   const [needsRegistration, setNeedsRegistration] = useState(false);
   const [newName, setNewName] = useState("");
   const [resolving, setResolving] = useState(false);
+  const [phoneDigits, setPhoneDigits] = useState("");
+  const phone = `+91${phoneDigits}`; 
 
   const handleLookup = async () => {
     if (!/^\+91[6-9]\d{9}$/.test(phone)) {
@@ -329,12 +330,20 @@ export default function CounterBookTicket() {
           <h2 className="font-semibold text-gray-800 mb-4">1. Passenger</h2>
           <label className="text-sm text-gray-600">Phone number</label>
           <div className="flex gap-2 mt-1 mb-4">
-            <input
-              className="flex-1 border rounded-lg px-3 py-2"
-              placeholder="+91XXXXXXXXXX"
-              value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-            />
+          <div className="flex">
+              <span className="inline-flex items-center px-3 rounded-l border border-r-0 border-gray-300 bg-gray-100 text-gray-700 select-none">
+                +91
+              </span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                maxLength={10}
+                value={phoneDigits}
+                onChange={(e) => setPhoneDigits(e.target.value.replace(/\D/g, "").slice(0, 10))}
+                placeholder="10-digit mobile number"
+                className="flex-1 rounded-r border border-gray-300 px-3 py-2"
+              />
+          </div>
             <button onClick={handleLookup} disabled={resolving}
                     className="bg-blue-600 text-white rounded-lg px-4 font-semibold hover:bg-blue-700 disabled:opacity-50">
               {resolving ? "…" : "Find"}

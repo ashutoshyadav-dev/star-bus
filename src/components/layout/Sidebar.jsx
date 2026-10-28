@@ -1,5 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
+import { getRoleLabel, getRoleInitials } from "../../constants/roles";
 
 import {
   LayoutDashboard,
@@ -56,6 +57,12 @@ const navItems = [
     path: "/admin/bookings",
     icon: Ticket,
     perm: "booking:view_all",
+  },
+    {
+    label: "Staff Reservation",
+    path: "/admin/staff-reservation",
+    icon: ClipboardList,
+    perm: "booking:createStaffReservation",
   },
   {
     label: "Payments",
@@ -299,18 +306,15 @@ export default function Sidebar() {
 
           <div className="w-8 h-8 rounded-full bg-orange-600 flex items-center justify-center text-xs font-bold text-white uppercase">
 
-            {(user?.name ?? user?.phone ?? "U").slice(0, 2)}
+            {/* {(user?.name ?? user?.phone ?? "U").slice(0, 2)} */}
+                        {getRoleInitials(user)}
 
           </div>
 
           <div className="flex-1 min-w-0">
 
             <p className="text-xs font-medium text-gray-200 truncate">
-              {user?.name ?? user?.phone ?? "Admin"}
-            </p>
-
-            <p className="text-[10px] text-gray-500 truncate">
-              {user?.roles?.[0] ?? ""}
+              {getRoleLabel(user)}
             </p>
           </div>
         </div>
