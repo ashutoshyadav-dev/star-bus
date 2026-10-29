@@ -632,7 +632,7 @@ export default function LoginPage() {
       setStep(2);
       startTimer();
     } catch (err) {
-      toast.error(err?.response?.data?.message || "Failed to send OTP");
+      // toast.error(err?.response?.data?.message || "Failed to send OTP");
     } finally {
       setLoading(false);
       loadCaptcha(); // captcha is single-use
