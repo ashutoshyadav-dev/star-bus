@@ -1080,14 +1080,7 @@ export default function Profile() {
     toast.success("Changes discarded");
   };
 
-  // =========================
-  // LOYALTY TIER HELPER
-  // =========================
-  const getLoyaltyTier = (points) => {
-    if (points >= 5000) return { label: "Gold", color: "text-yellow-600 bg-yellow-50" };
-    if (points >= 1000) return { label: "Silver", color: "text-gray-500 bg-gray-100" };
-    return { label: "Bronze", color: "text-orange-600 bg-orange-50" };
-  };
+
 
   // =========================
   // ID PROOF NUMBER RESTRICTIONS
@@ -1152,7 +1145,7 @@ export default function Profile() {
     return <div className="p-6 text-red-500">Failed to load profile</div>;
   }
 
-  const loyaltyTier = getLoyaltyTier(profileResponse?.loyaltyPoints ?? 0);
+  // const loyaltyTier = getLoyaltyTier(profileResponse?.loyaltyPoints ?? 0);
   const idProps = getIdProofInputProps();
 
   // =========================
@@ -1514,13 +1507,13 @@ export default function Profile() {
       </div>
 
       {/* Wallet & Account Info */}
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+      {/* <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
         <h3 className="font-semibold text-gray-800 mb-4">Account Info</h3>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        <div className="grid grid-cols-2 sm:grid-cols-3 gap-3"> */}
 
           {/* Wallet Balance */}
-          <div className="bg-green-50 rounded-xl p-4">
+          {/* <div className="bg-green-50 rounded-xl p-4">
             <p className="text-xs text-green-700 font-medium mb-1">Wallet Balance</p>
             <p className="text-lg font-bold text-green-900">
               ₹{(profileResponse?.walletBalance ?? 0).toLocaleString("en-IN", {
@@ -1531,10 +1524,10 @@ export default function Profile() {
             {profileResponse?.walletFrozen && (
               <span className="text-xs text-red-600 font-medium mt-1 block">🔒 Frozen</span>
             )}
-          </div>
+          </div> */}
 
           {/* Loyalty Points */}
-          <div className="bg-orange-50 rounded-xl p-4">
+          {/* <div className="bg-orange-50 rounded-xl p-4">
             <p className="text-xs text-orange-700 font-medium mb-1">Loyalty Points</p>
             <p className="text-lg font-bold text-orange-900">
               {(profileResponse?.loyaltyPoints ?? 0).toLocaleString("en-IN")}
@@ -1544,10 +1537,10 @@ export default function Profile() {
             >
               {loyaltyTier.label}
             </span>
-          </div>
+          </div> */}
 
           {/* Special categories */}
-          <div className="bg-gray-50 rounded-xl p-4 flex flex-col gap-2 justify-center">
+          {/* <div className="bg-gray-50 rounded-xl p-4 flex flex-col gap-2 justify-center">
             {profileResponse?.isSeniorCitizen && (
               <span className="text-xs text-green-700 font-medium">🧓 Senior Citizen</span>
             )}
@@ -1559,7 +1552,7 @@ export default function Profile() {
             )}
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 }

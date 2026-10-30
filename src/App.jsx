@@ -139,7 +139,7 @@ function AdminRoute({ children }) {
   const { pathname } = useLocation();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/home/login" replace />;
+  if (!user) return <Navigate to="/staff/login" replace />;
 
   const isAdmin = user?.roles?.some((r) =>
     ADMIN_ROLES.includes(r.toUpperCase())
@@ -183,7 +183,7 @@ function DutyStaffRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/home/login" replace />;
+  if (!user) return <Navigate to="/staff/login" replace />;
 
   const roleClass = classifyRole(user?.roles ?? []);
   if (roleClass !== "duty_staff") return <Navigate to="/unauthorized" replace />;
@@ -197,7 +197,7 @@ function DriverRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/home/login" replace />;
+  if (!user) return <Navigate to="/staff/login" replace />;
 
   const roleClass = classifyRole(user?.roles ?? []);
   if (roleClass !== "duty_staff") return <Navigate to="/unauthorized" replace />;
@@ -211,7 +211,7 @@ function CounterRoute({ children }) {
   const { user, isInitialized } = useAuth();
 
   if (!isInitialized) return <PageLoader />;
-  if (!user) return <Navigate to="/home/login" replace />;
+  if (!user) return <Navigate to="/staff/login" replace />;
 
   const roleClass = classifyRole(user?.roles ?? []);
   if (roleClass !== "counter") return <Navigate to="/unauthorized" replace />;

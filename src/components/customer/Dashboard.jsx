@@ -75,18 +75,6 @@ export default function UserDashboard() {
       icon: <FiXCircle size={18} />,
       color: "bg-red-50 text-red-600",
     },
-    {
-      title: "Wallet Balance",
-      value: summary?.walletBalance != null ? `₹${Number(summary.walletBalance).toLocaleString("en-IN")}` : "—",
-      icon: <FiCreditCard size={18} />,
-      color: "bg-yellow-50 text-yellow-600",
-    },
-    {
-      title: "Reward Points",
-      value: summary?.loyaltyPoints ?? "—",
-      icon: <FiGift size={18} />,
-      color: "bg-pink-50 text-pink-600",
-    },
   ];
 
   const upcoming = summary?.upcomingJourney;

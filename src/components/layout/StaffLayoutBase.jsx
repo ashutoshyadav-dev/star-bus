@@ -117,7 +117,7 @@ export default function StaffLayoutBase({ navItems, roleLabel, showNotifications
 
   const handleLogout = async () => {
     await logout();
-    navigate("/home/login");
+    navigate("/staff/login");
   };
 
   return (
