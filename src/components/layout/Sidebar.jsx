@@ -1,6 +1,6 @@
 import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
-import { getRoleLabel, getRoleInitials } from "../../constants/roles";
+import { getRoleLabel, getRoleInitials, isHodOnly, HOD_ALLOWED_PATHS } from "../../constants/roles";
 
 import {
   LayoutDashboard,
@@ -23,6 +23,8 @@ import {
   AlertTriangle,
   Newspaper,
   Image as ImageIcon,
+  BarChart3,
+  UserCheck,
 } from "lucide-react";
 
 import logo from "../../assets/logo.png";
@@ -35,10 +37,22 @@ const navItems = [
     icon: LayoutDashboard,
   },
   {
+    label: "HOD Dashboard",
+    path: "/admin/hod-dashboard",
+    icon: BarChart3,
+    role: ["HOD", "SUPER_ADMIN", "STATE_ADMIN"],
+  },
+  {
     label: "Users",
     path: "/admin/users",
     icon: Users,
     perm: "user:view",
+  },
+  {
+    label: "Staff Requests",
+    path: "/admin/staff-requests",
+    icon: UserCheck,
+    perm: "staff:create",
   },
   {
     label: "Roles",
@@ -76,11 +90,11 @@ const navItems = [
     icon: RotateCcw,
     perm: "refund:manage",
   },
-  // {
-  //   label: "Wallet",
-  //   path: "/admin/wallet",
-  //   icon: Wallet,
-  // },
+  {
+    label: "Wallet",
+    path: "/admin/wallet",
+    icon: Wallet,
+  },
   {
     label: "Route Management",
     path: "/admin/routes",
@@ -169,12 +183,18 @@ export default function Sidebar() {
 
   const handleLogout = async () => {
     await logout();
-    navigate("/home/login");
+    navigate("/staff/login");
   };
 
-  const visibleItems = navItems.filter(
-    (item) => !item.perm || hasPermission(item.perm)
-  );
+  const roleNames = (user?.roles ?? []).map((r) => String(r?.name ?? r).toUpperCase());
+  const hodOnly = isHodOnly(user?.roles ?? []);
+
+  // Head of Department sees only the HOD dashboard and the grievance desk.
+  const visibleItems = navItems.filter((item) => {
+    if (hodOnly) return HOD_ALLOWED_PATHS.some((p) => item.path.startsWith(p));
+    if (item.role && !item.role.some((r) => roleNames.includes(r))) return false;
+    return !item.perm || hasPermission(item.perm);
+  });
 
   return (
     <aside className="fixed top-0 left-0 h-screen w-[240px] bg-[#0c1f2c] border-r border-white/10 flex flex-col z-40">
@@ -222,6 +242,8 @@ export default function Sidebar() {
           </NavLink>
         ))}
 
+        {!hodOnly && (
+          <>
         {/* Master Management */}
         <button
           onClick={() => setMasterOpen((o) => !o)}
@@ -297,6 +319,8 @@ export default function Sidebar() {
               {label}
             </NavLink>
           ))}
+          </>
+        )}
       </nav>
 
       {/* User Info */}

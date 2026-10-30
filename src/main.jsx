@@ -10,6 +10,7 @@ import {
 import { Toaster } from "react-hot-toast";
 
 import App from "./App";
+import { ConfirmProvider } from "./components/common/ConfirmDialog";
 import "./index.css";
 
 const queryClient = new QueryClient({
@@ -27,7 +28,9 @@ ReactDOM.createRoot(
   <React.StrictMode>
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
-        <App />
+        <ConfirmProvider>
+          <App />
+        </ConfirmProvider>
 
         <Toaster
           position="top-right"

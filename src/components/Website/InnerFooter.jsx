@@ -1,3 +1,4 @@
+import { Link } from "react-router-dom";
 function InnerFooter() {
   return (
     <footer className="bg-[#0B2C6B] text-white">
@@ -38,6 +39,12 @@ function InnerFooter() {
       {/* Bottom Strip */}
       <div className="bg-[#08204d] text-center text-sm py-3">
         © 2026 APSTS. All rights reserved.
+        <div className="mt-1">
+          {/* Staff / admin entry — deliberately small and at the very bottom */}
+          <Link to="/staff/login" className="text-[11px] text-white/40 hover:text-white/80 hover:underline">
+            Staff / Admin Login
+          </Link>
+        </div>
       </div>
 
     </footer>

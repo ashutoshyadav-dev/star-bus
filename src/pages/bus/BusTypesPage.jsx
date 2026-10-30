@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/common/ConfirmDialog";
 // import { useState, useEffect, useRef } from "react";
 // import toast from "react-hot-toast";
 // import {
@@ -752,6 +753,7 @@ function generateTemplateJson(rows, cols, aisleCol, lastRowFull) {
 }
 
 function SeatLayoutBuilder({ value, onChange, onTotalSeatsChange }) {
+  const confirm = useConfirm();
   const [rows,        setRows]        = useState(10);
   const [cols,        setCols]        = useState(5);
   const [aisleCol,    setAisleCol]    = useState(3);
@@ -771,10 +773,15 @@ function SeatLayoutBuilder({ value, onChange, onTotalSeatsChange }) {
     pLastFull = t.lastRowFull ?? false;
   } catch (_) {}
 
-  const handleGenerate = () => {
+  const handleGenerate = async () => {
     // Regenerating renumbers every seat, so warn before throwing away custom numbers.
     if (value && value.trim() &&
-        !window.confirm("Regenerating will replace your custom seat numbers. Continue?")) {
+        !(await confirm({
+          title: "Regenerate seat layout?",
+          message: "Regenerating will replace your custom seat numbers.",
+          tone: "warning",
+          confirmText: "Regenerate",
+        }))) {
       return;
     }
     const json = generateTemplateJson(rows, cols, aisleCol, lastRowFull);

@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/common/ConfirmDialog";
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useQuery, useQueryClient } from "react-query";
@@ -39,6 +40,7 @@ const DESTINATION_TEXT = {
 };
 
 export default function CounterCancelByPnr() {
+  const confirm = useConfirm();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
 
@@ -77,8 +79,13 @@ export default function CounterCancelByPnr() {
   const canCancel = booking?.cancellable && !nothingSelected && /^\d{4}$/.test(phoneLast4) && !cancelling;
 
   const cancel = async () => {
-    const ok = window.confirm(
-      `Cancel ${booking.pnr}?\n\nRefund: ${money(preview?.refundAmount)}\n${DESTINATION_TEXT[preview?.destination] ?? ""}\n\nThis cannot be undone.`);
+    const ok = await confirm({
+      title: `Cancel ${booking.pnr}?`,
+      message: `Refund: ${money(preview?.refundAmount)}\n${DESTINATION_TEXT[preview?.destination] ?? ""}\n\nThis cannot be undone.`,
+      tone: "danger",
+      confirmText: "Cancel booking",
+      cancelText: "Keep booking",
+    });
     if (!ok) return;
     setCancelling(true);
     try {

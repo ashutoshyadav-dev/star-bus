@@ -502,14 +502,12 @@
 
 import { useEffect, useState } from "react";
 import toast from "react-hot-toast";
-import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { authApi } from "../../api/auth";
 import BusImage from "../../assets/bus.png";
 import logo from "../../assets/logo.png";
 import Spinner from "../../components/common/Spinner";
 import CaptchaBox from "../../components/common/CaptchaBox";
-import PasswordInput from "../../components/common/PasswordInput";
 import { useAuth } from "../../context/AuthContext";
 import { useOtpTimer } from "../../hooks/useOtpTimer";
 import { classifyRole, dutyHome } from "../../constants/roles";
@@ -517,22 +515,19 @@ import { classifyRole, dutyHome } from "../../constants/roles";
 const MODES = [
   { key: "login",    label: "Passenger Login" },
   { key: "register", label: "Register" },
-  { key: "staff",    label: "Staff / Admin" },
 ];
 
 export default function LoginPage() {
   const [searchParams] = useSearchParams();
   const [mode, setMode] = useState(() => {
     const m = searchParams.get("mode");
-    return m === "staff" || m === "register" ? m : "login";
+    return m === "register" ? m : "login";
   });
   const [step, setStep] = useState(1);
   const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
   const [otp, setOtp] = useState("");
   const [requestId, setRequestId] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showPass, setShowPass] = useState(false);
   const [hasConsent, setHasConsent] = useState(false);
   const [showConsentError, setShowConsentError] = useState(false);
 
@@ -566,6 +561,12 @@ export default function LoginPage() {
   const navigate = useNavigate();
 
   const redirectTo = searchParams.get("redirect");
+
+  // Old links (?mode=staff) now land on the separate staff page
+  useEffect(() => {
+    if (searchParams.get("mode") === "staff") navigate("/staff/login", { replace: true });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // OTP countdown timer via hook (no raw setInterval in component body)
   const { timer: otpTimer, start: startTimer, reset: resetTimer } = useOtpTimer(60);
@@ -632,7 +633,7 @@ export default function LoginPage() {
       setStep(2);
       startTimer();
     } catch (err) {
-      // toast.error(err?.response?.data?.message || "Failed to send OTP");
+      toast.error(err?.response?.data?.message || "Failed to send OTP");
     } finally {
       setLoading(false);
       loadCaptcha(); // captcha is single-use
@@ -706,33 +707,6 @@ export default function LoginPage() {
   };
 
   // ── Staff / Admin login ───────────────────────────────────────────────────
-  const handleStaffLogin = async (e) => {
-    e.preventDefault();
-    if (!phone || phone.length !== 10) {
-      return toast.error("Enter a valid 10-digit mobile number");
-    }
-    if (!password) return toast.error("Enter your password");
-    if (captchaAnswer.length < 4) return toast.error("Enter the captcha");
-    setLoading(true);
-    try {
-      const { data } = await authApi.loginStaff({
-        phone: fullPhone,
-        password,
-        captchaId,
-        captchaAnswer,
-      });
-      const res = data.data;
-      const userData = buildUserData(res);
-      saveTokens(res.accessToken, res.refreshToken, userData);
-      toast.success("Welcome back!");
-      handleRedirect(userData);
-    } catch (err) {
-      toast.error(err?.response?.data?.message || "Login failed. Check credentials.");
-    } finally {
-      setLoading(false);
-      loadCaptcha(); // captcha is single-use
-    }
-  };
 
   // ────────────────────────────────────────────────────────────────────────
   // RENDER
@@ -789,7 +763,7 @@ export default function LoginPage() {
         <p className="text-center text-gray-500 text-sm mb-5">
           {mode === "register"
             ? "Register to start your journey"
-            : "Login using OTP or Staff Password"}
+            : "Login with your mobile number and OTP"}
         </p>
 
         {/* Booking redirect hint */}
@@ -935,40 +909,6 @@ export default function LoginPage() {
               </form>
             )}
           </>
-        )}
-
-        {/* ── Staff Login (password, not pastable) ── */}
-        {mode === "staff" && (
-          <form onSubmit={handleStaffLogin} className="space-y-3">
-            <div className="relative">
-              <PasswordInput
-                type={showPass ? "text" : "password"}
-                placeholder="Enter Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-sm
-                  outline-none focus:ring-2 focus:ring-[#0F3D2E]"
-              />
-              <button
-                type="button"
-                onClick={() => setShowPass(!showPass)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-              >
-                {showPass ? <FaEyeSlash /> : <FaEye />}
-              </button>
-            </div>
-
-            {captchaBox}
-
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl
-                flex justify-center items-center font-semibold transition-colors disabled:opacity-60"
-            >
-              {loading ? <Spinner size="sm" /> : "Login"}
-            </button>
-          </form>
         )}
 
         {/* Register / Login toggle */}

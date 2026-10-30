@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/common/ConfirmDialog";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "react-query";
 import toast from "react-hot-toast";
@@ -46,6 +47,7 @@ function Row({ label, value }) {
 }
 
 function DetailModal({ request, canDecide, onClose, onChanged }) {
+  const confirm = useConfirm();
   const [mode, setMode] = useState("PERCENT");
   const [value, setValue] = useState("100");
   const [note, setNote] = useState("");
@@ -72,9 +74,14 @@ function DetailModal({ request, canDecide, onClose, onChanged }) {
 
   const approve = async () => {
     const d = preview.data;
-    const ok = window.confirm(
-      `Approve and cancel this trip?\n\n${d.totalBookings} booking(s), ${d.totalSeats} seat(s)\n` +
-      `Total refund: ${money(d.estimatedRefund)}\n\nThis cannot be undone.`);
+    const ok = await confirm({
+      title: "Approve and cancel this trip?",
+      message:
+        `${d.totalBookings} booking(s), ${d.totalSeats} seat(s)\n` +
+        `Total refund: ${money(d.estimatedRefund)}\n\nThis cannot be undone.`,
+      tone: "danger",
+      confirmText: "Approve & cancel trip",
+    });
     if (!ok) return;
     setBusy(true);
     try {

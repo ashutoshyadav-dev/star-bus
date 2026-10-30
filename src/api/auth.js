@@ -26,6 +26,9 @@ export const authApi = {
   // ── Staff login (phone + password) ───────────────────────────────────────
   loginStaff: (data) => api.post("/auth/staff/login", data),
 
+  // Staff self-registration — no role until an administrator assigns one
+  registerStaff: (data) => api.post("/auth/staff/register", data),
+
   // ── Silent token refresh ──────────────────────────────────────────────────
   refreshToken: (data) => api.post("/auth/token/refresh", data),
 

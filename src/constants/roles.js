@@ -18,7 +18,27 @@
 //   REFUND_MANAGE:   "refund:manage",
 // };
 
-export const ADMIN_ROLES = ["SUPER_ADMIN", "STATE_ADMIN", "DEPOT_MANAGER", "STAFF"];
+export const ADMIN_ROLES = ["SUPER_ADMIN", "STATE_ADMIN", "DEPOT_MANAGER", "STAFF", "HOD"];
+
+// Head of Department: lands on the reports dashboard and may only use these admin pages.
+export const HOD_ALLOWED_PATHS = ["/admin/hod-dashboard", "/admin/grievance"];
+
+const roleNames = (roles = []) =>
+  roles.map((r) => String(r?.name ?? r).toUpperCase());
+
+// True when HOD is the user's only admin-area role (a State Admin who is also HOD keeps full access).
+export function isHodOnly(roles = []) {
+  const upper = roleNames(roles);
+  return (
+    upper.includes("HOD") &&
+    !upper.some((r) => r !== "HOD" && ADMIN_ROLES.includes(r))
+  );
+}
+
+// Where an admin-area user lands after login.
+export function adminHome(roles = []) {
+  return isHodOnly(roles) ? "/admin/hod-dashboard" : "/admin/dashboard";
+}
 
 // Duty-staff roles that get their own area (conductor's on-bus flow), NOT the admin panel.
 export const DUTY_STAFF_ROLES = ["CONDUCTOR", "DRIVER", "GUARD", "RELIEF_DRIVER"];
@@ -31,6 +51,7 @@ export const ROLE_LABELS = {
   STATE_ADMIN:    "State Admin",
   DEPOT_MANAGER:  "Depot Manager",
   STAFF:          "Staff",
+  HOD:            "Head of Department",
   CONDUCTOR:      "conductor",
   DRIVER:         "Driver",
   GUARD:          "Guard",

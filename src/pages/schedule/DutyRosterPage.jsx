@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/common/ConfirmDialog";
 import React, { useMemo, useState } from "react";
 import { useQuery, useQueryClient } from "react-query";
 import toast from "react-hot-toast";
@@ -208,6 +209,7 @@ function SlotCell({ slot, role, row, locked, perms, busy, onPick, onRemove }) {
 
 // ── page ───────────────────────────────────────────────────────────────────
 export default function DutyRosterPage() {
+  const confirm = useConfirm();
   const { hasPermission } = useAuth();
   const queryClient = useQueryClient();
 
@@ -252,7 +254,12 @@ export default function DutyRosterPage() {
   const refresh = () => queryClient.invalidateQueries(["duty-roster"]);
 
   const handleRemove = async (slot, role) => {
-    if (!window.confirm(`Remove ${slot.staffName} as ${role} from this trip?`)) return;
+    if (!(await confirm({
+      title: "Remove from duty?",
+      message: `Remove ${slot.staffName} as ${role} from this trip?`,
+      tone: "danger",
+      confirmText: "Remove",
+    }))) return;
     setBusyId(slot.dutyId);
     try {
       await dutyRosterApi.unassign(slot.dutyId);
@@ -267,7 +274,12 @@ export default function DutyRosterPage() {
 
   const handleShare = async (row) => {
     const again = row.tripChartSharedAt ? "again " : "";
-    if (!window.confirm(`Send the trip chart ${again}to all passengers of this trip?`)) return;
+    if (!(await confirm({
+      title: "Share trip chart?",
+      message: `Send the trip chart ${again}to all passengers of this trip?`,
+      tone: "info",
+      confirmText: "Send to passengers",
+    }))) return;
     setBusyId(row.scheduleId);
     try {
       const res = await tripChartApi.share(row.scheduleId);

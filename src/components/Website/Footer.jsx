@@ -127,7 +127,16 @@ function Footer() {
 
       {/* Bottom */}
       <div className="mt-6 text-xs text-center text-gray-300 sm:text-sm">
-        © 2026 Arunachal Pradesh Car Rental. All rights reserved.
+        © 2026 Arunachal Pradesh State Transport Services. All rights reserved.
+      </div>
+      {/* Staff / admin entry — deliberately small and at the very bottom, away from passenger navigation */}
+      <div className="mt-3 text-center">
+        <Link
+          to="/staff/login"
+          className="text-[11px] text-gray-500 hover:text-gray-300 hover:underline"
+        >
+          Staff / Admin Login
+        </Link>
       </div>
     </div>
   );

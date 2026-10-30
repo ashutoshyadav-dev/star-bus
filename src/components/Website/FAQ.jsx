@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { cmsApi } from "../../api/cms";
 import faqImg from "../../assets/faq.png";
 
-const TABS = ["booking", "cancellation", "refund", "payment"];
+const TAB_ORDER = ["booking", "payment", "cancellation", "refund", "account", "travel", "grievance"];
 
 const TAB_STYLE = {
   booking:      "bg-yellow-400 text-black",
@@ -33,7 +33,13 @@ function FAQ() {
       .finally(() => setLoading(false));
   }, []);
 
-  const items = faqMap[activeTab] ?? [];
+  // Tabs follow the categories that actually have FAQs (known ones first, in a fixed order)
+  const tabs = [
+    ...TAB_ORDER.filter((t) => faqMap[t]),
+    ...Object.keys(faqMap).filter((t) => !TAB_ORDER.includes(t)),
+  ];
+  const currentTab = tabs.includes(activeTab) ? activeTab : tabs[0];
+  const items = faqMap[currentTab] ?? [];
 
   return (
     <div className="py-16 px-10 bg-[#f3f6f9]">
@@ -46,12 +52,12 @@ function FAQ() {
 
       {/* Tabs */}
       <div className="flex justify-center gap-4 mb-10 flex-wrap">
-        {TABS.map((tab) => (
+        {tabs.map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
             className={`px-5 py-2 rounded-full text-sm capitalize font-medium transition
-              ${activeTab === tab ? TAB_STYLE[tab] : "bg-[#2c4a5a] text-white"}`}
+              ${currentTab === tab ? (TAB_STYLE[tab] ?? "bg-yellow-400 text-black") : "bg-[#2c4a5a] text-white"}`}
           >
             {tab}
           </button>

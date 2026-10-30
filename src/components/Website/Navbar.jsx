@@ -54,7 +54,6 @@ export default function Navbar() {
       .then((res) => setMenus(res.data?.data ?? res.data ?? []))
       .catch(console.error);
   }, []);
-console.log("menus",menus);
 
   // Filter by position — matches cms_menu_position_enum values
   const menuFor = (position) =>
@@ -94,40 +93,19 @@ console.log("menus",menus);
           </span>
 
           <Dropdown label="About Us"       menuKey="ABOUT"    openMenu={openMenu} setOpenMenu={setOpenMenu} width="w-56" items={menuFor("ABOUT")} />
-          <Dropdown label="Any Query"      menuKey="QUERY"    openMenu={openMenu} setOpenMenu={setOpenMenu} width="w-48" items={menuFor("QUERY")} />
           <Dropdown label="Online Services" menuKey="SERVICES" openMenu={openMenu} setOpenMenu={setOpenMenu} width="w-56" items={menuFor("SERVICES")} />
+          <Dropdown label="Any Query"      menuKey="QUERY"    openMenu={openMenu} setOpenMenu={setOpenMenu} width="w-48" items={menuFor("QUERY")} />
         </div>
 
-        {/* LOGIN — same structure, now API-driven */}
-        <div
-          className="relative h-full flex items-center"
-          onMouseEnter={() => setOpenMenu("LOGIN")}
-          onMouseLeave={() => setOpenMenu(null)}
-        >
-          <div className="flex items-center gap-2 px-5 py-2 rounded-full cursor-pointer text-[14px] font-medium bg-white/10 border border-white/10 backdrop-blur-md hover:bg-white/20 transition-all duration-200">
+        {/* LOGIN — passenger only. Staff / admin sign-in lives in the footer. */}
+        <div className="relative h-full flex items-center">
+          <Link
+            to="/home/login"
+            className="flex items-center gap-2 px-5 py-2 rounded-full text-[14px] font-medium bg-white/10 border border-white/20 hover:bg-white/20 transition-all duration-200"
+          >
             <FaUserCircle size={16} />
-            <span>Login</span>
-            <FaChevronDown size={10} />
-          </div>
-
-          {openMenu === "LOGIN" && (
-            <div className="absolute top-full right-0 pt-2 w-52 z-[9999]">
-              <div className="rounded-xl overflow-hidden bg-[#0b1f2c]/95 backdrop-blur-xl border border-white/10 shadow-[0_10px_40px_rgba(0,0,0,0.45)]">
-                <div className="py-2">
-                  {menuFor("LOGIN").map((item) => (
-                    <Link
-                      key={item.id}
-                      to={item.path}
-                      onClick={() => setOpenMenu(null)}
-                      className="block px-4 py-3 text-[13px] text-white/90 cursor-pointer transition-all duration-200 hover:bg-white/10 hover:text-white"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
+            <span>Login / Register</span>
+          </Link>
 
           {/* <img src={Logo} alt="Right Logo" className="w-15 h-9 object-cover border border-white/30 shadow-md ml-2" /> */}
           <div className="flex justify-center md:justify-end ml-2">

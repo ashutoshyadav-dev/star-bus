@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/common/ConfirmDialog";
 import { format } from "date-fns";
 import {
   AlertTriangle,
@@ -49,6 +50,7 @@ function InfoRow({ label, value }) {
 
 /* ═══════════════════════════════════════════════════════════ STOPS TAB */
 function StopsTab({ routeId }) {
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [editStop, setEditStop] = useState(null);
@@ -237,7 +239,7 @@ function StopsTab({ routeId }) {
                         <Pencil size={13} />
                       </button>
                       <button
-                        onClick={() => { if (window.confirm("Remove this stop?")) removeMut.mutate(s.id); }}
+                        onClick={async () => { if (await confirm({ title: "Remove this stop?", message: "The stop will be removed from this route.", tone: "danger", confirmText: "Remove" })) removeMut.mutate(s.id); }}
                         className="p-1.5 hover:bg-red-100 text-red-500 rounded"
                       >
                         <Trash2 size={13} />
@@ -436,6 +438,7 @@ function StopsTab({ routeId }) {
 
 /* ══════════════════════════════════════════════════════ VIA POINTS TAB */
 function ViaPointsTab({ routeId }) {
+  const confirm = useConfirm();
   const qc = useQueryClient();
   const [showAdd, setShowAdd] = useState(false);
   const [form, setForm] = useState({
@@ -498,7 +501,7 @@ function ViaPointsTab({ routeId }) {
                 )}
               </div>
               <button
-                onClick={() => { if (window.confirm("Remove this via point?")) removeMut.mutate(vp.id); }}
+                onClick={async () => { if (await confirm({ title: "Remove this via point?", message: "The via point will be removed from this route.", tone: "danger", confirmText: "Remove" })) removeMut.mutate(vp.id); }}
                 className="p-1.5 hover:bg-red-100 text-red-500 rounded"
               >
                 <Trash2 size={13} />

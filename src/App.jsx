@@ -54,6 +54,12 @@ import AdminStaffReservation from "./pages/admin/AdminStaffReservation";
 
 // ── Auth ────────────────────────────────────────────────────────────────────
 import LoginPage from "./pages/auth/LoginPage";
+import StaffLoginPage from "./pages/auth/StaffLoginPage";
+import StaffRegisterPage from "./pages/auth/StaffRegisterPage";
+import FaqPage from "./components/Website/FaqPage";
+import DepartmentSection from "./pages/department/DepartmentSection";
+import HodDashboard from "./pages/dashboard/HodDashboard";
+import StaffRequestsPage from "./pages/users/StaffRequestsPage";
 import NotFound from "./pages/NotFound";
 import Unauthorized from "./pages/Unauthorized";
 
@@ -116,7 +122,7 @@ import CounterCancelByPnr from "./pages/counter/CounterCancelByPnr";
 
 
 //import for Role from constants/roles
-import { ADMIN_ROLES, classifyRole, dutyHome } from "./constants/roles";
+import { ADMIN_ROLES, HOD_ALLOWED_PATHS, adminHome, classifyRole, dutyHome, isHodOnly } from "./constants/roles";
 
 
 // ── Role constants ──────────────────────────────────────────────────────────
@@ -130,6 +136,7 @@ import { ADMIN_ROLES, classifyRole, dutyHome } from "./constants/roles";
 // ── Route Guards ────────────────────────────────────────────────────────────
 function AdminRoute({ children }) {
   const { user, isInitialized } = useAuth();
+  const { pathname } = useLocation();
 
   if (!isInitialized) return <PageLoader />;
   if (!user) return <Navigate to="/home/login" replace />;
@@ -139,6 +146,11 @@ function AdminRoute({ children }) {
   );
 
   if (!isAdmin) return <Navigate to="/unauthorized" replace />;
+
+  // Head of Department only sees the HOD dashboard and the grievance queue.
+  if (isHodOnly(user?.roles ?? []) && !HOD_ALLOWED_PATHS.some((p) => pathname.startsWith(p))) {
+    return <Navigate to="/admin/hod-dashboard" replace />;
+  }
 
   return children;
 }
@@ -234,7 +246,7 @@ function GuestRoute({ children }) {
 
   const roleClass = classifyRole(user?.roles ?? []);
   const target =
-    roleClass === "admin"      ? "/admin/dashboard" :
+    roleClass === "admin"      ? adminHome(user?.roles ?? []) :
     // roleClass === "duty_staff" ? "/conductor/duty"   :
     roleClass === "duty_staff" ? dutyHome(user?.roles ?? []) :
     roleClass === "counter"    ? "/counter/dashboard" :  
@@ -252,10 +264,13 @@ const MAIN_PAGES = ["/home"];
 function WebsiteLayout() {
   const { pathname } = useLocation();
   const isMain = MAIN_PAGES.includes(pathname);
+  // Seat selection has its own top bar (with its own Login / Register button);
+  // rendering the site navbar as well showed two login buttons stacked on top of each other.
+  const hideSiteNavbar = pathname.startsWith("/home/seat-selection");
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      <Navbar />
+      {!hideSiteNavbar && <Navbar />}
 
       <main className="flex-grow">
         <Outlet />
@@ -288,6 +303,24 @@ function AppRoutes() {
         element={<Navigate to="/home/login" replace />}
       />
 
+      {/* Staff / admin sign-in and registration — separate from the passenger page */}
+      <Route
+        path="/staff/login"
+        element={
+          <GuestRoute>
+            <StaffLoginPage />
+          </GuestRoute>
+        }
+      />
+      <Route
+        path="/staff/register"
+        element={
+          <GuestRoute>
+            <StaffRegisterPage />
+          </GuestRoute>
+        }
+      />
+
       {/* ── Utility pages ─────────────────────────────────── */}
       <Route path="/unauthorized" element={<Unauthorized />} />
       <Route path="/404" element={<NotFound />} />
@@ -314,7 +347,7 @@ function AppRoutes() {
         <Route path="helpdesk" element={<Helpdesk />} />
         <Route path="my-refunds" element={<MyRefunds />} />
 
-        {/* <Route path="wallet" element={<MyWallet/>} /> */}
+        <Route path="wallet" element={<MyWallet/>} />
         <Route path="all-grievance" element={<AllGrievance/>} />
 
       </Route>
@@ -340,7 +373,7 @@ function AppRoutes() {
         <Route path="staff-reservation" element={<AdminStaffReservation />} />
         <Route path="payments"       element={<PaymentsPage />} />
         <Route path="refunds"        element={<RefundsPage />} />
-        {/* <Route path="wallet"         element={<AdminWalletPage />} /> */}
+        <Route path="wallet"         element={<AdminWalletPage />} />
         <Route path="usermanagement" element={<UserManagement />} />
         <Route path="routes"         element={<RouteManagement />} />
         <Route path="depot"          element={<DepotForm />} />
@@ -352,6 +385,8 @@ function AppRoutes() {
         <Route path="buses/:id/edit" element={<BusFormPage />} />
         <Route path="bus-types"      element={<BusTypesPage />} />
         <Route path="adduser"        element={<AddUser />} />
+        <Route path="staff-requests" element={<StaffRequestsPage />} />
+        <Route path="hod-dashboard"  element={<HodDashboard />} />
         <Route path="addroute"       element={<AddRoute />} />
         {/* <Route path="/admin/passengerProfile/:id" element={<AdminPassengerProfile/>}/> */}
         <Route path="user-profile/:id/:type" element={<AdminUserProfile />}/>
@@ -447,6 +482,8 @@ function AppRoutes() {
         />
         
         <Route path="department" element={<Transport />} />
+        <Route path="department/:section" element={<DepartmentSection />} />
+        <Route path="faq" element={<FaqPage />} />
 
         <Route
           path="helpdesk"

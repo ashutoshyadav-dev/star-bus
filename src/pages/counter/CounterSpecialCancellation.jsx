@@ -1,3 +1,4 @@
+import { useConfirm } from "../../components/common/ConfirmDialog";
 import React, { useState } from "react";
 import { useQuery, useQueryClient } from "react-query";
 import toast from "react-hot-toast";
@@ -47,6 +48,7 @@ const STATUS_LABEL = {
 };
 
 export default function CounterSpecialCancellation() {
+  const confirm = useConfirm();
   const queryClient = useQueryClient();
   const [date, setDate] = useState(toLocalISO(new Date()));
   const [routeId, setRouteId] = useState("");
@@ -91,7 +93,12 @@ export default function CounterSpecialCancellation() {
   };
 
   const withdraw = async (id) => {
-    if (!window.confirm("Withdraw this request?")) return;
+    if (!(await confirm({
+      title: "Withdraw this request?",
+      message: "The special cancellation request will be withdrawn.",
+      tone: "warning",
+      confirmText: "Withdraw",
+    }))) return;
     try {
       await specialCancellationApi.withdraw(id);
       toast.success("Request withdrawn");

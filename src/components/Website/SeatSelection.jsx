@@ -1579,17 +1579,6 @@ export default function SeatSelection() {
               >
                 <span className="text-5xl">💺</span>
                 <p className="text-lg">Click a seat on the map to begin</p>
-                {!user && (
-                  <p className="text-sm text-orange-300 text-center">
-                    You must be logged in.{" "}
-                    <span
-                      className="underline cursor-pointer"
-                      onClick={() => setShowLoginGate(true)}
-                    >
-                      Login here
-                    </span>
-                  </p>
-                )}
               </div>
             ) : (
               <>
