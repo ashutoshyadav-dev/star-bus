@@ -92,7 +92,7 @@ export default function CounterMyBookings() {
                 }`}>
                   {b.bookingStatus}
                 </div>
-                <div className="text-xs text-gray-400 mb-1">{b.payment?.paymentMethod ?? "Payment pending"}</div>
+                <div className="text-xs text-gray-400 mb-1">{b.payment?.paymentStatus ?? "Payment pending"}</div>
                 {canCancel(b) && (
                   <button
                     onClick={() => setCancellingId(b.bookingId ?? b.id)}

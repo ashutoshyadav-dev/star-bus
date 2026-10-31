@@ -71,7 +71,7 @@ function Hero() {
         {/* Content */}
         <div className="relative z-10 flex flex-col items-center justify-center min-h-[100vh] text-white text-center px-4">
           <h1 className="text-4xl font-bold leading-tight md:text-6xl">
-            EXPLORE <br /> ARUNACHAL PRADESH
+            WELCOME TO ARUNACHAL PRADESH <br /> TRANSPORT SERVICES
           </h1>
           <p className="mt-4 text-lg text-gray-200">
             Book a Bus and discover the beauty of Northeast India
