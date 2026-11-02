@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext";
 import { NavLink } from "react-router-dom";
 import {
   FiHome, FiCreditCard, FiSearch, FiUser,
-  FiHeadphones, FiMenu, FiLogOut,
+  FiHeadphones, FiMenu, FiLogOut,FiCalendar,
 } from "react-icons/fi";
 import NotificationPanel, { NotificationBell } from "./NotificationPanel";
 import { notificationApi } from "../../api/notificationApi";
@@ -35,6 +35,10 @@ function Sidebar({ isOpen }) {
         <NavLink to="/user/profile"     className={linkClass}>
           <FiUser className="text-lg flex-shrink-0" />
           {isOpen && <span>Profile</span>}
+        </NavLink>
+        <NavLink to="/user/schedule" className={linkClass}>
+          <FiCalendar className="text-lg flex-shrink-0" />
+          {isOpen && <span>Schedule</span>}
         </NavLink>
         <NavLink to="/user/my-bookings" className={linkClass}>
           <FiCreditCard className="text-lg flex-shrink-0" />

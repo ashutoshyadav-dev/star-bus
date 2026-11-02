@@ -1878,12 +1878,12 @@ export default function SeatSelection() {
                     label: "Pay with PhonePe",
                     sub: "UPI, Cards, Net Banking",
                   },
-                  {
+                  {/* {
                     key: "WALLET",
                     icon: "👛",
                     label: "APSTS Wallet",
                     sub: "Use your wallet balance",
-                  },
+                  }, */}
                 ].map(({ key, icon, label, sub }) => (
                   <div
                     key={key}

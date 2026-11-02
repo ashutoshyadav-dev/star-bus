@@ -86,6 +86,7 @@ import ContactUs from "./components/Website/ContactUs";
 import UserLayout from "./components/customer/UserLayout";
 import Dashboard from "./components/customer/Dashboard";
 import MyBookings from "./components/customer/MyBookings";
+import Schedules from "./components/customer/Schedules";
 import BookingDetails from "./components/customer/BookingDetails";
 import Profile from "./components/customer/Profile";
 import Helpdesk from "./components/customer/Helpdesk";
@@ -341,6 +342,7 @@ function AppRoutes() {
 
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="book-ticket" element={<BookTicket />} />
+        <Route path="schedule" element={<Schedules />} />
         <Route path="my-bookings" element={<MyBookings />} />
         <Route path="booking/:id" element={<BookingDetails />} />
         <Route path="profile" element={<Profile />} />
