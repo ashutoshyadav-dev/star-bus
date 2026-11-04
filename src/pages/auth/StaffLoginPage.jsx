@@ -9,6 +9,10 @@ import Spinner from "../../components/common/Spinner";
 import StaffAuthShell from "../../components/auth/StaffAuthShell";
 import { useAuth } from "../../context/AuthContext";
 import { adminHome, classifyRole, dutyHome } from "../../constants/roles";
+import { validators, filters } from "../../utils/validators";
+
+const ErrorText = ({ children }) =>
+  children ? <p role="alert" className="mt-1 text-xs text-red-500">{children}</p> : null;
 
 export default function StaffLoginPage() {
   const navigate = useNavigate();
@@ -19,6 +23,7 @@ export default function StaffLoginPage() {
   const [showPass, setShowPass] = useState(false);
   const [loading, setLoading] = useState(false);
   const [pending, setPending] = useState(false);
+  const [errors, setErrors] = useState({});
 
   const [captchaId, setCaptchaId] = useState("");
   const [captchaImage, setCaptchaImage] = useState("");
@@ -56,12 +61,21 @@ export default function StaffLoginPage() {
     navigate(target, { replace: true });
   };
 
+  const clearErr = (k) => setErrors((p) => ({ ...p, [k]: "" }));
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setPending(false);
-    if (!phone || phone.length !== 10) return toast.error("Enter a valid 10-digit mobile number");
-    if (!password) return toast.error("Enter your password");
-    if (captchaAnswer.length < 4) return toast.error("Enter the captcha");
+
+    // ALL problems are reported together; a captcha message never hides a mobile error (item 15)
+    const errs = {
+      phone: validators.mobile(phone),
+      password: password ? "" : "Password is required",
+      captcha: validators.captcha(captchaAnswer),
+    };
+    Object.keys(errs).forEach((k) => !errs[k] && delete errs[k]);
+    setErrors(errs);
+    if (Object.keys(errs).length) return;
 
     setLoading(true);
     try {
@@ -101,46 +115,56 @@ export default function StaffLoginPage() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="space-y-3">
-        <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0F3D2E]">
-          <span className="px-3 py-2.5 bg-gray-50 text-sm font-medium text-gray-600 border-r select-none">+91</span>
-          <input
-            type="tel"
-            placeholder="10-digit mobile number"
-            value={phone}
-            maxLength={10}
-            onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-            className="w-full px-3 py-2.5 text-sm outline-none text-gray-800"
-            autoComplete="username"
-          />
+      <form onSubmit={handleSubmit} className="space-y-3" noValidate>
+        <div>
+          <div className={`flex items-center border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0F3D2E] ${errors.phone ? "border-red-400" : "border-gray-300"}`}>
+            <span className="px-3 py-2.5 bg-gray-50 text-sm font-medium text-gray-600 border-r select-none">+91</span>
+            <input
+              type="tel"
+              inputMode="numeric"
+              placeholder="10-digit mobile number *"
+              value={phone}
+              maxLength={10}
+              onChange={(e) => { setPhone(filters.digits(e.target.value, 10)); clearErr("phone"); }}
+              className="w-full px-3 py-2.5 text-sm outline-none text-gray-800"
+              autoComplete="username"
+            />
+          </div>
+          <ErrorText>{errors.phone}</ErrorText>
         </div>
 
-        <div className="relative">
-          <PasswordInput
-            type={showPass ? "text" : "password"}
-            placeholder="Password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            className="w-full border border-gray-300 rounded-xl px-4 py-2.5 pr-11 text-sm outline-none focus:ring-2 focus:ring-[#0F3D2E]"
-            autoComplete="current-password"
-          />
-          <button
-            type="button"
-            onClick={() => setShowPass((v) => !v)}
-            aria-label={showPass ? "Hide password" : "Show password"}
-            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
-          >
-            {showPass ? <FaEyeSlash /> : <FaEye />}
-          </button>
+        <div>
+          <div className="relative">
+            <PasswordInput
+              type={showPass ? "text" : "password"}
+              placeholder="Password *"
+              value={password}
+              onChange={(e) => { setPassword(e.target.value); clearErr("password"); }}
+              className={`w-full border rounded-xl px-4 py-2.5 pr-11 text-sm outline-none focus:ring-2 focus:ring-[#0F3D2E] ${errors.password ? "border-red-400" : "border-gray-300"}`}
+              autoComplete="current-password"
+            />
+            <button
+              type="button"
+              onClick={() => setShowPass((v) => !v)}
+              aria-label={showPass ? "Hide password" : "Show password"}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600"
+            >
+              {showPass ? <FaEyeSlash /> : <FaEye />}
+            </button>
+          </div>
+          <ErrorText>{errors.password}</ErrorText>
         </div>
 
-        <CaptchaBox
-          image={captchaImage}
-          value={captchaAnswer}
-          onChange={setCaptchaAnswer}
-          onRefresh={loadCaptcha}
-          loading={captchaLoading}
-        />
+        <div>
+          <CaptchaBox
+            image={captchaImage}
+            value={captchaAnswer}
+            onChange={(v) => { setCaptchaAnswer(v); clearErr("captcha"); }}
+            onRefresh={loadCaptcha}
+            loading={captchaLoading}
+          />
+          <ErrorText>{errors.captcha}</ErrorText>
+        </div>
 
         <button
           type="submit"
@@ -158,7 +182,7 @@ export default function StaffLoginPage() {
             Register here
           </Link>
         </p>
-        <p className="text-xs text-gray-400">
+        <p className="text-xs text-gray-500">
           Passenger?{" "}
           <Link to="/home/login" className="hover:underline">
             Go to passenger login

@@ -7,7 +7,11 @@ import CaptchaBox from "../../components/common/CaptchaBox";
 import PasswordInput from "../../components/common/PasswordInput";
 import Spinner from "../../components/common/Spinner";
 import StaffAuthShell from "../../components/auth/StaffAuthShell";
+import FormField, { inputCls } from "../../components/common/FormField";
+import DateField from "../../components/common/DateField";
 import { useOtpTimer } from "../../hooks/useOtpTimer";
+import { validators, filters } from "../../utils/validators";
+import { validateDob, todayISO } from "../../utils/dateUtils";
 
 const DESIGNATIONS = [
   { value: "driver",           label: "Driver" },
@@ -26,23 +30,8 @@ const EMPLOYMENT = [
   { value: "daily_wage", label: "Daily wage" },
 ];
 
-const PASSWORD_RE = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,64}$/;
+const STRONG_PASSWORD = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z0-9]).{8,64}$/;
 const LICENSE_ROLES = ["driver", "conductor"];
-
-const inputCls =
-  "w-full border border-gray-300 rounded-xl px-3 py-2.5 text-sm outline-none focus:ring-2 focus:ring-[#0F3D2E]";
-
-function Field({ label, required, children }) {
-  return (
-    <label className="block">
-      <span className="mb-1 block text-xs font-medium text-gray-600">
-        {label}
-        {required && <span className="text-red-500"> *</span>}
-      </span>
-      {children}
-    </label>
-  );
-}
 
 export default function StaffRegisterPage() {
   const navigate = useNavigate();
@@ -55,12 +44,17 @@ export default function StaffRegisterPage() {
   const [otp, setOtp] = useState("");
   const [requestId, setRequestId] = useState("");
   const [hasConsent, setHasConsent] = useState(false);
+  const [errors, setErrors] = useState({});
   const [form, setForm] = useState({
     fullName: "", employeeCode: "", designation: "", employmentType: "",
     dateOfBirth: "", joiningDate: "", licenseNumber: "", licenseExpiryDate: "",
     email: "", password: "", confirmPassword: "",
   });
-  const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }));
+  const setVal = (k, v) => {
+    setForm((f) => ({ ...f, [k]: v }));
+    setErrors((p) => (p[k] ? { ...p, [k]: "" } : p));
+  };
+  const set = (k) => (e) => setVal(k, e.target.value);
 
   const [captchaId, setCaptchaId] = useState("");
   const [captchaImage, setCaptchaImage] = useState("");
@@ -87,9 +81,41 @@ export default function StaffRegisterPage() {
     loadCaptcha();
   }, []);
 
+  const needsLicense = LICENSE_ROLES.includes(form.designation);
+
+  const validateStep1 = () => {
+    const e = { phone: validators.mobile(phone), captcha: validators.captcha(captchaAnswer) };
+    Object.keys(e).forEach((k) => !e[k] && delete e[k]);
+    setErrors(e);
+    return !Object.keys(e).length;
+  };
+
+  const validateStep2 = () => {
+    const e = {
+      otp: validators.otp(otp),
+      fullName: validators.name(form.fullName, "Full name"),
+      employeeCode: /^[A-Z0-9]{3,20}$/.test(form.employeeCode) ? "" : "Employee code: 3-20 letters/digits",
+      designation: form.designation ? "" : "Select a designation",
+      employmentType: form.employmentType ? "" : "Select an employment type",
+      email: validators.email(form.email, { required: false }),
+      dateOfBirth: validateDob(form.dateOfBirth, { minAge: 18 }),
+      joiningDate: form.joiningDate
+        ? form.joiningDate > todayISO() ? "Joining date cannot be in the future" : ""
+        : "Joining date is required",
+      password: STRONG_PASSWORD.test(form.password)
+        ? ""
+        : "Password needs 8-64 characters with upper, lower, digit and special character",
+      confirmPassword: form.password === form.confirmPassword ? "" : "Passwords do not match",
+      consent: hasConsent ? "" : "Please provide your consent to continue",
+    };
+    if (needsLicense && !form.licenseNumber.trim()) e.licenseNumber = "Licence number is required for this designation";
+    Object.keys(e).forEach((k) => !e[k] && delete e[k]);
+    setErrors(e);
+    return !Object.keys(e).length;
+  };
+
   const sendOtp = async () => {
-    if (phone.length !== 10) return toast.error("Enter a valid 10-digit mobile number");
-    if (captchaAnswer.length < 4) return toast.error("Enter the captcha");
+    if (!validateStep1()) return;
     setLoading(true);
     try {
       const { data } = await authApi.requestOtp({
@@ -115,21 +141,14 @@ export default function StaffRegisterPage() {
     setStep(1);
     setOtp("");
     setRequestId("");
+    setErrors({});
     resetTimer();
     loadCaptcha();
   };
 
-  const needsLicense = LICENSE_ROLES.includes(form.designation);
-
   const submit = async (e) => {
     e.preventDefault();
-    if (otp.length !== 6) return toast.error("Enter the 6-digit OTP");
-    if (!PASSWORD_RE.test(form.password))
-      return toast.error("Password needs 8-64 characters with upper, lower, digit and special character");
-    if (form.password !== form.confirmPassword) return toast.error("Passwords do not match");
-    if (!hasConsent) return toast.error("Please provide your consent to continue");
-    if (needsLicense && !form.licenseNumber.trim())
-      return toast.error("Licence number is required for this designation");
+    if (!validateStep2()) return toast.error("Please correct the highlighted fields", { id: "reg-invalid" });
 
     setLoading(true);
     try {
@@ -185,24 +204,30 @@ export default function StaffRegisterPage() {
     >
       {step === 1 && (
         <div className="space-y-3">
-          <div className="flex items-center border border-gray-300 rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0F3D2E]">
-            <span className="px-3 py-2.5 bg-gray-50 text-sm font-medium text-gray-600 border-r select-none">+91</span>
-            <input
-              type="tel"
-              placeholder="10-digit mobile number"
-              value={phone}
-              maxLength={10}
-              onChange={(e) => setPhone(e.target.value.replace(/\D/g, ""))}
-              className="w-full px-3 py-2.5 text-sm outline-none text-gray-800"
+          <FormField label="Mobile number" required error={errors.phone}>
+            <div className={`flex items-center border rounded-xl overflow-hidden focus-within:ring-2 focus-within:ring-[#0F3D2E] ${errors.phone ? "border-red-400" : "border-gray-300"}`}>
+              <span className="px-3 py-2.5 bg-gray-50 text-sm font-medium text-gray-600 border-r select-none">+91</span>
+              <input
+                type="tel"
+                inputMode="numeric"
+                placeholder="10-digit mobile number"
+                value={phone}
+                maxLength={10}
+                onChange={(e) => { setPhone(filters.digits(e.target.value, 10)); setErrors((p) => ({ ...p, phone: "" })); }}
+                className="w-full px-3 py-2.5 text-sm outline-none text-gray-800"
+              />
+            </div>
+          </FormField>
+          <div>
+            <CaptchaBox
+              image={captchaImage}
+              value={captchaAnswer}
+              onChange={(v) => { setCaptchaAnswer(v); setErrors((p) => ({ ...p, captcha: "" })); }}
+              onRefresh={loadCaptcha}
+              loading={captchaLoading}
             />
+            {errors.captcha && <p role="alert" className="mt-1 text-xs text-red-500">{errors.captcha}</p>}
           </div>
-          <CaptchaBox
-            image={captchaImage}
-            value={captchaAnswer}
-            onChange={setCaptchaAnswer}
-            onRefresh={loadCaptcha}
-            loading={captchaLoading}
-          />
           <button
             onClick={sendOtp}
             disabled={loading}
@@ -214,7 +239,7 @@ export default function StaffRegisterPage() {
       )}
 
       {step === 2 && (
-        <form onSubmit={submit} className="space-y-4">
+        <form onSubmit={submit} className="space-y-4" noValidate>
           <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs text-gray-600">
             <span>
               OTP sent to <span className="font-semibold text-gray-800">+91 {phone}</span>
@@ -225,68 +250,78 @@ export default function StaffRegisterPage() {
           </div>
 
           <div className="grid gap-4 sm:grid-cols-2">
-            <Field label="OTP" required>
+            <FormField
+              label="OTP" required error={errors.otp}
+              hint={otpTimer > 0 ? `Resend available in ${otpTimer}s` : "Did not get it? Change number and request again."}
+            >
               <input
                 inputMode="numeric"
                 maxLength={6}
                 value={otp}
-                onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
-                className={`${inputCls} tracking-widest font-mono`}
+                onChange={(e) => { setOtp(filters.digits(e.target.value, 6)); setErrors((p) => ({ ...p, otp: "" })); }}
+                className={`${inputCls(errors.otp)} tracking-widest font-mono`}
                 placeholder="6-digit OTP"
               />
-              <span className="mt-1 block text-[11px] text-gray-400">
-                {otpTimer > 0 ? `Resend available in ${otpTimer}s` : "Did not get it? Change number and request again."}
-              </span>
-            </Field>
-            <Field label="Full name" required>
-              <input value={form.fullName} onChange={set("fullName")} required maxLength={150} className={inputCls} />
-            </Field>
-            <Field label="Employee code" required>
-              <input value={form.employeeCode} onChange={set("employeeCode")} required maxLength={20} className={inputCls} />
-            </Field>
-            <Field label="Designation" required>
-              <select value={form.designation} onChange={set("designation")} required className={inputCls}>
+            </FormField>
+            <FormField label="Full name" required error={errors.fullName}>
+              <input value={form.fullName} onChange={(e) => setVal("fullName", filters.name(e.target.value, 150))}
+                     maxLength={150} className={inputCls(errors.fullName)} />
+            </FormField>
+            <FormField label="Employee code" required error={errors.employeeCode}>
+              <input value={form.employeeCode} onChange={(e) => setVal("employeeCode", filters.upper(e.target.value, 20))}
+                     maxLength={20} className={inputCls(errors.employeeCode)} />
+            </FormField>
+            <FormField label="Designation" required error={errors.designation}>
+              <select value={form.designation} onChange={set("designation")} className={inputCls(errors.designation)}>
                 <option value="">Select designation</option>
                 {DESIGNATIONS.map((d) => (
                   <option key={d.value} value={d.value}>{d.label}</option>
                 ))}
               </select>
-            </Field>
-            <Field label="Employment type" required>
-              <select value={form.employmentType} onChange={set("employmentType")} required className={inputCls}>
+            </FormField>
+            <FormField label="Employment type" required error={errors.employmentType}>
+              <select value={form.employmentType} onChange={set("employmentType")} className={inputCls(errors.employmentType)}>
                 <option value="">Select type</option>
                 {EMPLOYMENT.map((d) => (
                   <option key={d.value} value={d.value}>{d.label}</option>
                 ))}
               </select>
-            </Field>
-            <Field label="Email (optional)">
-              <input type="email" value={form.email} onChange={set("email")} className={inputCls} />
-            </Field>
-            <Field label="Date of birth" required>
-              <input type="date" value={form.dateOfBirth} onChange={set("dateOfBirth")} required className={inputCls}
-                max={new Date().toISOString().slice(0, 10)} />
-            </Field>
-            <Field label="Joining date" required>
-              <input type="date" value={form.joiningDate} onChange={set("joiningDate")} required className={inputCls} />
-            </Field>
+            </FormField>
+            <FormField label="Email (optional)" error={errors.email}>
+              <input type="text" inputMode="email" value={form.email}
+                     onChange={(e) => setVal("email", e.target.value.replace(/\s/g, ""))}
+                     className={inputCls(errors.email)} />
+            </FormField>
+            <FormField label="Date of birth" required error={errors.dateOfBirth}>
+              <div className={`relative ${inputCls(errors.dateOfBirth)}`}>
+                <DateField value={form.dateOfBirth} onChange={(v) => setVal("dateOfBirth", v)} max={todayISO()} />
+              </div>
+            </FormField>
+            <FormField label="Joining date" required error={errors.joiningDate}>
+              <div className={`relative ${inputCls(errors.joiningDate)}`}>
+                <DateField value={form.joiningDate} onChange={(v) => setVal("joiningDate", v)} max={todayISO()} />
+              </div>
+            </FormField>
             {needsLicense && (
               <>
-                <Field label="Driving licence number" required>
-                  <input value={form.licenseNumber} onChange={set("licenseNumber")} maxLength={20} className={inputCls} />
-                </Field>
-                <Field label="Licence expiry date">
-                  <input type="date" value={form.licenseExpiryDate} onChange={set("licenseExpiryDate")} className={inputCls} />
-                </Field>
+                <FormField label="Driving licence number" required error={errors.licenseNumber}>
+                  <input value={form.licenseNumber} onChange={(e) => setVal("licenseNumber", filters.upper(e.target.value, 20))}
+                         maxLength={20} className={inputCls(errors.licenseNumber)} />
+                </FormField>
+                <FormField label="Licence expiry date" error={errors.licenseExpiryDate}>
+                  <div className={`relative ${inputCls(errors.licenseExpiryDate)}`}>
+                    <DateField value={form.licenseExpiryDate} onChange={(v) => setVal("licenseExpiryDate", v)} />
+                  </div>
+                </FormField>
               </>
             )}
-            <Field label="Create password" required>
+            <FormField label="Create password" required error={errors.password}>
               <div className="relative">
                 <PasswordInput
                   type={showPass ? "text" : "password"}
                   value={form.password}
                   onChange={set("password")}
-                  className={`${inputCls} pr-10`}
+                  className={`${inputCls(errors.password)} pr-10`}
                   autoComplete="new-password"
                 />
                 <button
@@ -298,37 +333,40 @@ export default function StaffRegisterPage() {
                   {showPass ? <FaEyeSlash /> : <FaEye />}
                 </button>
               </div>
-            </Field>
-            <Field label="Confirm password" required>
+            </FormField>
+            <FormField label="Confirm password" required error={errors.confirmPassword}>
               <PasswordInput
                 type={showPass ? "text" : "password"}
                 value={form.confirmPassword}
                 onChange={set("confirmPassword")}
-                className={inputCls}
+                className={inputCls(errors.confirmPassword)}
                 autoComplete="new-password"
               />
-            </Field>
+            </FormField>
           </div>
-          <p className="text-[11px] text-gray-400">
+          <p className="text-[11px] text-gray-500">
             Password: 8-64 characters with an uppercase letter, a lowercase letter, a digit and a special character.
           </p>
 
-          <label className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 cursor-pointer">
-            <input
-              type="checkbox"
-              checked={hasConsent}
-              onChange={(e) => setHasConsent(e.target.checked)}
-              className="mt-1 h-4 w-4 accent-[#0F3D2E]"
-            />
-            <span className="text-xs leading-5 text-gray-700">
-              I consent to receive OTPs and service-related notifications on my mobile number for authentication and
-              official duty communication.<span className="text-red-500"> *</span>
-            </span>
-          </label>
+          <div>
+            <label className="flex items-start gap-3 rounded-lg border border-gray-200 bg-gray-50 p-3 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={hasConsent}
+                onChange={(e) => { setHasConsent(e.target.checked); setErrors((p) => ({ ...p, consent: "" })); }}
+                className="mt-1 h-4 w-4 accent-[#0F3D2E]"
+              />
+              <span className="text-xs leading-5 text-gray-700">
+                I consent to receive OTPs and service-related notifications on my mobile number for authentication and
+                official duty communication.<span className="text-red-500"> *</span>
+              </span>
+            </label>
+            {errors.consent && <p role="alert" className="mt-1 text-xs text-red-500">{errors.consent}</p>}
+          </div>
 
           <button
             type="submit"
-            disabled={loading || !hasConsent}
+            disabled={loading}
             className="w-full bg-orange-500 hover:bg-orange-600 text-white py-2.5 rounded-xl flex justify-center items-center font-semibold disabled:opacity-60"
           >
             {loading ? <Spinner size="sm" /> : "Submit registration"}

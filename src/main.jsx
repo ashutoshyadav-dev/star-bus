@@ -12,6 +12,14 @@ import { Toaster } from "react-hot-toast";
 import App from "./App";
 import { ConfirmProvider } from "./components/common/ConfirmDialog";
 import "./index.css";
+import toast from "react-hot-toast";
+
+// Same text ⇒ same id ⇒ react-hot-toast shows ONE toast instead of two
+// (axios interceptor + page catch both toast the same server message).
+const _error = toast.error.bind(toast);
+toast.error = (msg, opts = {}) => _error(msg, { id: typeof msg === "string" ? `e:${msg}` : undefined, ...opts });
+const _success = toast.success.bind(toast);
+toast.success = (msg, opts = {}) => _success(msg, { id: typeof msg === "string" ? `s:${msg}` : undefined, ...opts });
 
 const queryClient = new QueryClient({
   defaultOptions: {

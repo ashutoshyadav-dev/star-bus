@@ -111,7 +111,8 @@ function PayModal({ refund, onClose, onDone }) {
 
 export default function CounterRefunds() {
   const queryClient = useQueryClient();
-  const [q, setQ] = useState("");
+  const [input, setInput] = useState("");   
+  const [q, setQ] = useState("");           
   const [paying, setPaying] = useState(null);
 
   const { data: refunds = [], isLoading } = useQuery(
@@ -134,11 +135,17 @@ export default function CounterRefunds() {
         Passengers who booked at a counter are refunded here, by cash, UPI or bank transfer. Any counter can pay them.
       </p>
 
-      <div className="relative max-w-sm mb-5">
-        <FiSearch className="absolute left-3 top-3 text-gray-400" />
-        <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search PNR, name or phone"
-          className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm" />
-      </div>
+      <form className="flex max-w-lg gap-2 mb-5" onSubmit={(e) => { e.preventDefault(); setQ(input.trim()); }}>
+        <div className="relative flex-1">
+          <FiSearch className="absolute left-3 top-3 text-gray-400" />
+          <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="Search PNR, name or phone"
+                 className="w-full border border-gray-300 rounded-lg pl-9 pr-3 py-2 text-sm" />
+        </div>
+        <button type="submit" className="bg-blue-600 hover:bg-blue-700 text-white rounded-lg px-5 text-sm font-semibold">Search</button>
+        {(q || input) && (
+          <button type="button" onClick={() => { setInput(""); setQ(""); }} className="border border-gray-300 rounded-lg px-4 text-sm text-gray-600 hover:bg-gray-50">Clear</button>
+        )}
+      </form>
 
       {isLoading ? (
         <div className="text-gray-400 py-10">Loading…</div>

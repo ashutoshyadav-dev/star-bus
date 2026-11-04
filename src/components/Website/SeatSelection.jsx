@@ -1,18 +1,18 @@
 // =============================================================================
 // SeatSelection.jsx
-// Public route (/home/seat-selection) — accessible from both home page and
-// the logged-in dashboard. Auth state is handled inline:
-//   • Guest  → sees Login button in navbar + LoginGateModal on seat click
-//   • Logged-in passenger → sees name + logout button in navbar
+// Public route (/home/seat-selection).
 //
-// PAYMENT FLOW (SBI ePay 2.0):
-//   Unlike Razorpay, SBI ePay has no in-page checkout modal. Paying means the
-//   whole browser navigates AWAY to a bank-hosted page, then gets redirected
-//   BACK by our own backend (GET /payments/callback) to this same route with
-//   `?bookingId=...&paymentStatus=success|failed` appended.
-//   Because the page fully reloads, all React state is lost in between — so
-//   right before redirecting we snapshot booking/seats/contact into
-//   sessionStorage, and restore it on mount if we detect a returning payment.
+// SEAT HOLD (server side):  every seat tap PUTs the full desired seat set to /seat-holds.
+//   The database decides who wins; the loser gets 409 and the tap rolls back.
+//   The hold id is carried into POST /bookings (holdId) so there is no gap where
+//   the seat is free. Timers always use SERVER time (skew learned from serverTime).
+//
+// REFRESH SAFETY: step, seats, passenger details, contact, holdId and bookingId are
+//   saved to sessionStorage (FLOW_KEY) and re-validated on load.
+//
+// PAYMENT FLOW (SBI ePay / PhonePe hosted page): full-page redirect, so a separate
+//   snapshot is saved right before leaving and restored when the gateway sends the
+//   browser back with ?bookingId=&paymentStatus=.
 // =============================================================================
 
 import { useState, useEffect, useRef, useCallback } from "react";
@@ -20,16 +20,17 @@ import { useNavigate, useSearchParams } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import toast from "react-hot-toast";
 import { QRCodeCanvas } from "qrcode.react";
-import jsPDF from "jspdf";
-import html2canvas from "html2canvas";
 
 import sideBg from "../../assets/side-bg.jpeg";
 import logo from "../../assets/logo.png";
+import useSeatHold from "../../hooks/useSeatHold";
+import { seatHoldApi } from "../../api/seatHold";
+import { validators, filters, blockNumberKeys } from "../../utils/validators";
+import { formatINR } from "../../utils/money";
+import { isoToDMY } from "../../utils/dateUtils";
+import FareSummary from "../common/FareSummary";
 
-import {
-  getScheduleSeats,
-  getScheduleById,
-} from "../../api/schedule";
+import { getScheduleSeats, getScheduleById } from "../../api/schedule";
 import api from "../../api/client";
 import { bookingApi, paymentApi } from "../../api/booking";
 import { ProgressBar } from "./BusList";
@@ -40,23 +41,10 @@ import { FiUser, FiLogOut } from "react-icons/fi";
 // CONSTANTS
 // =============================================================================
 
-const SEAT_LOCK_MINUTES = 10;
-
 const MAX_SEATS_PER_BOOKING = 6;
-
-// This build always runs in a browser — the backend needs this to know
-// which client to redirect back to after SBI ePay's hosted payment page.
-const PAYMENT_SOURCE = "WEB";
-
-// sessionStorage key prefix used to snapshot page state before redirecting
-// the browser away to SBI ePay's hosted payment page, and to restore it when
-// the bank redirects back. NOTE: no gateway key/method-map constants are
-// needed anymore — SBI ePay needs no client-side SDK or public key at all.
 const PAYMENT_SESSION_PREFIX = "apsts_pending_payment_";
-
-// Contact details are not stored on the booking, so keep them for this browser tab
-// (sessionStorage - gone when the tab closes, safe on shared computers).
 const CONTACT_DRAFT_KEY = "apsts_contact_draft";
+
 function loadContactDraft() {
   try {
     const raw = sessionStorage.getItem(CONTACT_DRAFT_KEY);
@@ -66,28 +54,19 @@ function loadContactDraft() {
   }
 }
 
-// Seat fill colours for the seat map legend and SVG rendering
 const SEAT_COLORS = {
   selected: "#3b82f6",
   ladies: "#a855f7",
   booked: "#6b7280",
   locked: "#f97316",
   hold: "#f97316",
+  driver: "#334155",
   available: "white",
 };
 
 // =============================================================================
 // PURE HELPERS
 // =============================================================================
-
-function formatDate(d) {
-  if (!d) return "";
-  return new Date(d).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-  });
-}
 
 function formatTime(t) {
   if (!t) return "";
@@ -96,14 +75,9 @@ function formatTime(t) {
   return `${hour % 12 || 12}:${m} ${hour >= 12 ? "PM" : "AM"}`;
 }
 
-/* ── Session snapshot helpers ──
-   Used to survive the full-page redirect to/from SBI ePay's hosted page. ── */
 function savePaymentSession(bookingId, snapshot) {
   try {
-    sessionStorage.setItem(
-      PAYMENT_SESSION_PREFIX + bookingId,
-      JSON.stringify(snapshot),
-    );
+    sessionStorage.setItem(PAYMENT_SESSION_PREFIX + bookingId, JSON.stringify(snapshot));
   } catch (e) {
     console.error("Failed to save payment session snapshot", e);
   }
@@ -113,8 +87,7 @@ function loadPaymentSession(bookingId) {
   try {
     const raw = sessionStorage.getItem(PAYMENT_SESSION_PREFIX + bookingId);
     return raw ? JSON.parse(raw) : null;
-  } catch (e) {
-    console.error("Failed to read payment session snapshot", e);
+  } catch {
     return null;
   }
 }
@@ -127,161 +100,61 @@ function clearPaymentSession(bookingId) {
 // SMALL SHARED UI COMPONENTS
 // =============================================================================
 
-/* ── Spinner ── */
 function Spinner() {
   return (
-    <svg
-      className="w-4 h-4 animate-spin shrink-0"
-      fill="none"
-      viewBox="0 0 24 24"
-    >
-      <circle
-        className="opacity-25"
-        cx="12"
-        cy="12"
-        r="10"
-        stroke="currentColor"
-        strokeWidth="4"
-      />
-      <path
-        className="opacity-75"
-        fill="currentColor"
-        d="M4 12a8 8 0 018-8v8H4z"
-      />
+    <svg className="w-4 h-4 animate-spin shrink-0" fill="none" viewBox="0 0 24 24">
+      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z" />
     </svg>
   );
 }
 
-/* ── Seat SVG icon — renders one seat cell on the seat map ── new update*/
 function SeatIcon({ label, displayType, onClick }) {
   const fill = SEAT_COLORS[displayType] || "white";
-
   return (
-    <button
-      onClick={onClick}
-      className="cursor-pointer hover:scale-105 transition-transform"
-    >
+    <button onClick={onClick} className="cursor-pointer hover:scale-105 transition-transform" aria-label={`Seat ${label}`}>
       <svg width="42" height="52" viewBox="0 0 42 52">
-        {/* Seat body */}
-        <rect
-          x="8"
-          y="6"
-          width="26"
-          height="30"
-          rx="3"
-          fill={fill}
-          stroke="#444"
-          strokeWidth="1.5"
-        />
-
-        {/* left arm */}
-        <rect
-          x="3"
-          y="8"
-          width="5"
-          height="22"
-          rx="2"
-          fill="#fff"
-          stroke="#666"
-        />
-
-        {/* right arm */}
-        <rect
-          x="34"
-          y="8"
-          width="5"
-          height="22"
-          rx="2"
-          fill="#fff"
-          stroke="#666"
-        />
-
-        {/* bottom cushion */}
-        <rect
-          x="10"
-          y="33"
-          width="22"
-          height="6"
-          rx="2"
-          fill="#fff"
-          stroke="#666"
-        />
-
-        {/* seat number */}
-        <text
-          x="21"
-          y="24"
-          textAnchor="middle"
-          fontSize="11"
-          fontWeight="700"
-          fill="#222"
-        >
-          {label}
-        </text>
+        <rect x="8" y="6" width="26" height="30" rx="3" fill={fill} stroke="#444" strokeWidth="1.5" />
+        <rect x="3" y="8" width="5" height="22" rx="2" fill="#fff" stroke="#666" />
+        <rect x="34" y="8" width="5" height="22" rx="2" fill="#fff" stroke="#666" />
+        <rect x="10" y="33" width="22" height="6" rx="2" fill="#fff" stroke="#666" />
+        <text x="21" y="24" textAnchor="middle" fontSize="11" fontWeight="700" fill="#222">{label}</text>
       </svg>
     </button>
   );
 }
 
-/* ── Contextual top navbar ──
-   Shows passenger info + logout when logged in; Login button when guest.
-   Replaces the public Navbar since this page is mounted outside UserLayout. ── */
 function SeatNavbar({ user, onLogout }) {
   const navigate = useNavigate();
-
   return (
-    <div
-      className="fixed top-0 left-0 w-full z-50 flex items-center justify-between
-      px-6 py-2 bg-gradient-to-r from-[#163F2D] via-[#081935] to-[#163F2D]
-      text-white shadow-lg h-14"
-    >
-      {/* Left — logo + title */}
-      <div
-        onClick={() => navigate("/home")}
-        className="flex items-center gap-3 cursor-pointer"
-      >
-        <img
-          src={logo}
-          alt="APSTS"
-          className="w-8 h-8 rounded-full object-cover border border-white/30"
-        />
+    <div className="fixed top-0 left-0 w-full z-50 flex items-center justify-between px-6 py-2 bg-gradient-to-r from-[#163F2D] via-[#081935] to-[#163F2D] text-white shadow-lg h-14">
+      <div onClick={() => navigate("/home")} className="flex items-center gap-3 cursor-pointer">
+        <img src={logo} alt="APSTS" className="w-8 h-8 rounded-full object-cover border border-white/30" />
         <div className="leading-tight hidden sm:block">
-          <p className="text-sm font-semibold">
-            Arunachal Pradesh State Transport
-          </p>
+          <p className="text-sm font-semibold">Arunachal Pradesh State Transport</p>
           <p className="text-[10px] text-gray-300">Online Bus Booking</p>
         </div>
       </div>
 
-      {/* Right — auth-aware actions */}
       {user ? (
-        // Logged-in: show passenger name and logout
         <div className="flex items-center gap-3">
-          <div
-            className="flex items-center gap-2 bg-white/10 px-3 py-1.5
-            rounded-full text-sm"
-          >
+          <div className="flex items-center gap-2 bg-white/10 px-3 py-1.5 rounded-full text-sm">
             <FiUser />
-            <span className="hidden sm:block">
-              {user.name ?? user.phone ?? "Passenger"}
-            </span>
+            <span className="hidden sm:block">{user.name ?? user.phone ?? "Passenger"}</span>
           </div>
           <button
             onClick={onLogout}
             title="Logout"
-            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full
-              bg-red-500/20 hover:bg-red-500/40 border border-red-400/30 transition"
+            className="flex items-center gap-1 text-sm px-3 py-1.5 rounded-full bg-red-500/20 hover:bg-red-500/40 border border-red-400/30 transition"
           >
             <FiLogOut />
             <span className="hidden sm:block">Logout</span>
           </button>
         </div>
       ) : (
-        // Guest: prompt to login
         <button
           onClick={() => navigate("/home/login")}
-          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm
-            font-medium bg-orange-500 hover:bg-orange-600 transition"
+          className="flex items-center gap-2 px-4 py-1.5 rounded-full text-sm font-medium bg-orange-500 hover:bg-orange-600 transition"
         >
           <FiUser size={14} />
           Login / Register
@@ -295,38 +168,20 @@ function SeatNavbar({ user, onLogout }) {
 // MODALS
 // =============================================================================
 
-/* ── Login gate — shown when a guest tries to click a seat ── */
 function LoginGateModal({ onClose, onLogin }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div
-        className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43]
-        to-[#2c5364] p-8 rounded-2xl border border-white/20 text-white
-        text-center shadow-2xl"
-      >
+      <div className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] p-8 rounded-2xl border border-white/20 text-white text-center shadow-2xl">
         <div className="text-4xl mb-4">🔐</div>
-        <h2 className="text-xl font-semibold text-green-400 mb-2">
-          Login Required
-        </h2>
+        <h2 className="text-xl font-semibold text-green-400 mb-2">Login Required</h2>
         <p className="text-gray-300 text-sm mb-6">
-          You need to be logged in to book a seat. Your seat selection will be
-          preserved after login.
+          You need to be logged in to book a seat. Your seat selection will be preserved after login.
         </p>
         <div className="flex gap-3 justify-center">
-          <button
-            type="button"
-            onClick={onClose}
-            className="px-5 py-2 rounded-lg bg-white/10 border border-white/20
-              hover:bg-white/20"
-          >
+          <button type="button" onClick={onClose} className="px-5 py-2 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20">
             Cancel
           </button>
-          <button
-            type="button"
-            onClick={onLogin}
-            className="px-5 py-2 rounded-lg bg-orange-500 hover:bg-orange-600
-              font-semibold"
-          >
+          <button type="button" onClick={onLogin} className="px-5 py-2 rounded-lg bg-orange-500 hover:bg-orange-600 font-semibold">
             Login / Register
           </button>
         </div>
@@ -335,42 +190,21 @@ function LoginGateModal({ onClose, onLogin }) {
   );
 }
 
-/* ── Abandon booking confirmation — shown when user tries to navigate away
-   while a booking exists and seats are locked at step 4 ── */
 function AbandonModal({ onStay, onLeave }) {
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-      <div
-        className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43]
-        to-[#2c5364] p-8 rounded-2xl border border-white/20 text-white
-        text-center shadow-2xl"
-      >
+      <div className="w-[400px] bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] p-8 rounded-2xl border border-white/20 text-white text-center shadow-2xl">
         <div className="text-4xl mb-4">⚠️</div>
-        <h2 className="text-xl font-semibold text-orange-400 mb-2">
-          Booking in Progress
-        </h2>
-        <p className="text-gray-300 text-sm mb-2">
-          You have an active booking with seats locked.
-        </p>
+        <h2 className="text-xl font-semibold text-orange-400 mb-2">Booking in Progress</h2>
+        <p className="text-gray-300 text-sm mb-2">You have an active booking with seats locked.</p>
         <p className="text-gray-400 text-xs mb-6">
-          If you leave now, your seats will be released after the lock expires.
-          Your PNR will remain and you can retry payment later.
+          If you leave now, your seats will be released when the timer ends. Your PNR will remain and you can retry payment later.
         </p>
         <div className="flex gap-3 justify-center">
-          <button
-            type="button"
-            onClick={onStay}
-            className="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700
-              font-semibold"
-          >
+          <button type="button" onClick={onStay} className="px-5 py-2 rounded-lg bg-green-600 hover:bg-green-700 font-semibold">
             Stay & Pay
           </button>
-          <button
-            type="button"
-            onClick={onLeave}
-            className="px-5 py-2 rounded-lg bg-white/10 border border-white/20
-              hover:bg-white/20"
-          >
+          <button type="button" onClick={onLeave} className="px-5 py-2 rounded-lg bg-white/10 border border-white/20 hover:bg-white/20">
             Leave Anyway
           </button>
         </div>
@@ -380,57 +214,39 @@ function AbandonModal({ onStay, onLeave }) {
 }
 
 // =============================================================================
-// LOCK TIMER
-// Counts down from expiresAt to zero. Fires onExpired when it reaches 00:00.
+// LOCK TIMER — counts down to the SERVER's expiry (skew-corrected)
 // =============================================================================
 
-function LockTimer({ expiresAt, onExpired }) {
-  const [remaining, setRemaining] = useState("");
-
+function LockTimer({ expiresAt, skewMs = 0, onExpired }) {
+  const [left, setLeft] = useState(null);
+  const firedRef = useRef(false);
   useEffect(() => {
+    firedRef.current = false;
     if (!expiresAt) return;
-
-    const compute = () => {
-      const diff = new Date(expiresAt) - Date.now();
-      if (diff <= 0) {
-        setRemaining("00:00");
+    const tick = () => {
+      const ms = new Date(expiresAt).getTime() - (Date.now() + skewMs); // server clock, not the PC clock
+      setLeft(Math.max(0, ms));
+      if (ms <= 0 && !firedRef.current) {
+        firedRef.current = true;
         onExpired?.();
-        return false; // signal: stop the interval
       }
-      const m = String(Math.floor(diff / 60000)).padStart(2, "0");
-      const s = String(Math.floor((diff % 60000) / 1000)).padStart(2, "0");
-      setRemaining(`${m}:${s}`);
-      return true;
     };
-
-    compute(); // run once immediately to avoid blank flash on mount
-    const interval = setInterval(() => {
-      if (!compute()) clearInterval(interval);
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [expiresAt, onExpired]);
-
-  if (!remaining) return null;
-
-  // Compare numerically — string comparison on "05:00" is unreliable
-  const [mm, ss] = remaining.split(":").map(Number);
-  const totalSecs = mm * 60 + ss;
-  const isUrgent = totalSecs < 300; // red warning under 5 minutes
-
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, [expiresAt, skewMs]); // eslint-disable-line react-hooks/exhaustive-deps
+  if (left === null) return null;
+  const m = String(Math.floor(left / 60000)).padStart(2, "0");
+  const s = String(Math.floor((left % 60000) / 1000)).padStart(2, "0");
   return (
-    <div
-      className={`flex items-center gap-2 px-3 py-1 rounded-lg text-sm
-      font-semibold ${
-        isUrgent
-          ? "bg-red-500/30 text-red-300"
-          : "bg-yellow-500/20 text-yellow-300"
-      }`}
-    >
-      ⏱ {remaining}
+    <div className={`px-3 py-1 rounded-lg text-sm font-mono font-semibold ${left < 60000 ? "bg-red-500/30 text-red-300" : "bg-white/10 text-green-300"}`}>
+      ⏱ Seats held for {m}:{s}
     </div>
   );
 }
+
+const FieldError = ({ children }) =>
+  children ? <p role="alert" className="text-red-400 text-xs mt-1">{children}</p> : null;
 
 // =============================================================================
 // MAIN COMPONENT
@@ -442,110 +258,93 @@ export default function SeatSelection() {
   const { user, logout } = useAuth();
   const ticketRef = useRef();
 
-  // ── Detect a "returning from SBI ePay" load ─────────────────────────────
-  // The backend's /payments/callback redirects the browser back here as:
-  //   /home/seat-selection?bookingId=<uuid>&paymentStatus=success|failed
-  // (none of the original journey query params survive that hop, which is
-  // exactly why we snapshot everything into sessionStorage before leaving).
+  // ── Returning from the payment gateway? ──────────────────────────────────
   const returningBookingId = searchParams.get("bookingId");
   const returningStatus = searchParams.get("paymentStatus");
   const isReturningPayment = Boolean(returningBookingId && returningStatus);
 
-  // Restored snapshot (only populated when isReturningPayment is true) —
-  // read once, synchronously, so the very first render already has the
-  // right journey details instead of flashing empty state.
-  const restoredSnapshotRef = useRef(
-    isReturningPayment ? loadPaymentSession(returningBookingId) : null,
-  );
+  const restoredSnapshotRef = useRef(isReturningPayment ? loadPaymentSession(returningBookingId) : null);
   const restored = restoredSnapshotRef.current;
 
-  // ── URL params passed from BusList (or restored from sessionStorage
-  //    when returning from the SBI ePay redirect) ─────────────────────────
+  // ── Journey params (URL, or the snapshot when returning from the gateway) ──
   const scheduleId = restored?.scheduleId ?? searchParams.get("scheduleId");
-  const fromLabel =
-    restored?.fromLabel ?? decodeURIComponent(searchParams.get("from") ?? "");
-  const toLabel =
-    restored?.toLabel ?? decodeURIComponent(searchParams.get("to") ?? "");
+  const fromLabel = restored?.fromLabel ?? decodeURIComponent(searchParams.get("from") ?? "");
+  const toLabel = restored?.toLabel ?? decodeURIComponent(searchParams.get("to") ?? "");
   const fromId = restored?.fromId ?? Number(searchParams.get("fromId") ?? 0);
   const toId = restored?.toId ?? Number(searchParams.get("toId") ?? 0);
   const date = restored?.date ?? searchParams.get("date") ?? "";
-  const busLabel =
-    restored?.busLabel ?? decodeURIComponent(searchParams.get("bus") ?? "");
+  const busLabel = restored?.busLabel ?? decodeURIComponent(searchParams.get("bus") ?? "");
   const departure = restored?.departure ?? searchParams.get("departure") ?? "";
 
-  // ── Booking flow step ────────────────────────────────────────────────────
-  // 2 = seat selection + passenger details
-  // 3 = contact details
-  // 4 = payment
-  // 5 = confirmed ticket
-  const [step, setStep] = useState(2);
+  // ── Flow persistence (must be declared BEFORE `step`, which reads it) ─────
+  const FLOW_KEY = `apsts:flow:${scheduleId}:${fromId}:${toId}`;
+  const flowRef = useRef(null);
+  if (flowRef.current === null) {
+    try {
+      flowRef.current = JSON.parse(sessionStorage.getItem(FLOW_KEY) || "null") ?? {};
+    } catch {
+      flowRef.current = {};
+    }
+  }
+
+  // 2 = seats + passengers · 3 = contact · 4 = payment · 5 = confirmed
+  const [step, setStep] = useState(isReturningPayment ? 2 : Math.min(flowRef.current?.step ?? 2, 4));
 
   // ── Seat inventory ───────────────────────────────────────────────────────
   const [seatMap, setSeatMap] = useState([]);
   const [loadingSeats, setLoadingSeats] = useState(true);
   const [seatError, setSeatError] = useState("");
-
-  // Stop sequences resolved from route stops — needed for segment seat query
   const [fromStopSeq, setFromStopSeq] = useState(null);
   const [toStopSeq, setToStopSeq] = useState(null);
 
   // ── Passenger selection & details ───────────────────────────────────────
-  const [selectedSeats, setSelectedSeats] = useState(
-    restored?.selectedSeats ?? [],
-  );
-  const [passengerDetails, setPassengerDetails] = useState(
-    restored?.passengerDetails ?? {},
-  );
+  const [selectedSeats, setSelectedSeats] = useState(restored?.selectedSeats ?? []);
+  const [passengerDetails, setPassengerDetails] = useState(restored?.passengerDetails ?? {});
+  const [passengerErrors, setPassengerErrors] = useState({});
 
-  // ── Modal visibility ─────────────────────────────────────────────────────
+  // ── Modals ───────────────────────────────────────────────────────────────
   const [showLoginGate, setShowLoginGate] = useState(false);
   const [showAbandon, setShowAbandon] = useState(false);
-
-  // Stores where the user was trying to go when the abandon modal fired,
-  // so we can navigate there if they confirm "Leave Anyway"
   const abandonTargetRef = useRef(null);
 
-  // ── Contact details (step 3) ─────────────────────────────────────────────
-  const [contact, setContact] = useState(
-    restored?.contact ?? loadContactDraft() ?? { mobile: "", email: "" },
-  );
+  // ── Contact (step 3) ─────────────────────────────────────────────────────
+  const [contact, setContact] = useState(restored?.contact ?? loadContactDraft() ?? { mobile: "", email: "" });
   const [emailError, setEmailError] = useState("");
+  const [mobileError, setMobileError] = useState("");
 
-  // ── Booking & payment state ──────────────────────────────────────────────
+  // ── Booking & payment ────────────────────────────────────────────────────
   const [booking, setBooking] = useState(restored?.booking ?? null);
   const [bookingLoading, setBookingLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState("");
-  // `initiating` = API call in flight (includes the moment right before the
-  // full-page redirect fires — there is no "modal open" state anymore)
   const [initiating, setInitiating] = useState(false);
   const [paymentFailed, setPaymentFailed] = useState(false);
   const [lockExpiresAt, setLockExpiresAt] = useState(null);
 
-  // Latest unpaid booking of this passenger for this journey (from the server).
-  // Lets them come back after a missed payment, edit details and repay.
   const [resumeInfo, setResumeInfo] = useState(null);
   const [resumeChecked, setResumeChecked] = useState(false);
   const prefilledRef = useRef(false);
-
-  // Set once we've finished resolving a returning-payment redirect, so the
-  // rest of the component's effects (seat fetching etc.) don't fire on top
-  // of a booking that's already confirmed/failed.
   const [resolvingReturn, setResolvingReturn] = useState(isReturningPayment);
 
-  // ── Derived ──────────────────────────────────────────────────────────────
-  const totalFare = booking?.totalAmountPaid
-    ? Number(booking.totalAmountPaid).toFixed(2)
-    : "0.00";
+  // ── Live seat hold ───────────────────────────────────────────────────────
+  const fetchSeatsRef = useRef(null);
+  const holdApi = useSeatHold({
+    scheduleId,
+    fromId,
+    toId,
+    enabled: step === 2 && !resolvingReturn && !booking,
+    fetchSeats: () => fetchSeatsRef.current?.(),
+  });
+  const bookingRef = useRef(null);
+  bookingRef.current = booking;
+
+  // ── Live fare preview (same server code as the real booking) ─────────────
+  const [quote, setQuote] = useState(null);
+
+  const totalFare = Number(booking?.totalAmountPaid ?? 0).toFixed(2);
 
   // ==========================================================================
-  // SECTION 0 — RESOLVE RETURN FROM SBI EPAY
-  // Runs once on mount when the URL carries ?bookingId=&paymentStatus= (i.e.
-  // the backend just redirected us back after /payments/callback finished
-  // verifying with SBI ePay). We re-fetch the booking from our own API as the
-  // source of truth (never trust the query param alone), then land on the
-  // right step and clean the URL so a refresh doesn't re-trigger this.
+  // SECTION 0 — RESOLVE RETURN FROM THE PAYMENT GATEWAY
   // ==========================================================================
-
   useEffect(() => {
     if (!isReturningPayment) return;
 
@@ -555,9 +354,7 @@ export default function SeatSelection() {
         const freshBooking = res.data?.data ?? res.data;
         setBooking(freshBooking);
 
-        const confirmed =
-          freshBooking?.bookingStatus === "CONFIRMED" ||
-          returningStatus === "success";
+        const confirmed = freshBooking?.bookingStatus === "CONFIRMED" || returningStatus === "success";
         const stillPending = !confirmed && returningStatus === "pending";
 
         if (confirmed) {
@@ -566,35 +363,23 @@ export default function SeatSelection() {
           setLockExpiresAt(null);
           setStep(5);
         } else if (stillPending) {
-          toast("Confirming your payment, this can take a minute…", {
-            icon: "⏳",
-          });
+          toast("Confirming your payment, this can take a minute…", { icon: "⏳" });
           setPaymentFailed(false);
           setStep(4);
-          // Optional: poll bookingApi.getById every few seconds for up to ~1 min,
-          // re-run the same confirmed-check, and setStep(5) once it flips.
         } else {
-          toast.error(
-            `Payment failed or was not completed. PNR: ${freshBooking?.pnr ?? "-"}. You can retry below.`,
-          );
+          toast.error(`Payment failed or was not completed. PNR: ${freshBooking?.pnr ?? "-"}. You can retry below.`);
           setPaymentFailed(true);
           setStep(4);
         }
-      } catch (err) {
-        toast.error(
-          "Could not verify your payment. Please check My Bookings or contact support.",
-        );
+      } catch {
+        toast.error("Could not verify your payment. Please check My Bookings or contact support.");
         setPaymentFailed(true);
         setStep(4);
       } finally {
         clearPaymentSession(returningBookingId);
-        // Strip bookingId/paymentStatus from the URL without navigating away,
-        // so a page refresh doesn't replay this effect.
         const cleaned = new URLSearchParams(searchParams);
         cleaned.delete("bookingId");
         cleaned.delete("paymentStatus");
-        // The gateway hop dropped the journey from the URL. Put it back so a refresh,
-        // or coming back later, still knows which schedule this is.
         const snap = restoredSnapshotRef.current;
         if (snap?.scheduleId && !cleaned.get("scheduleId")) {
           cleaned.set("scheduleId", snap.scheduleId);
@@ -606,7 +391,6 @@ export default function SeatSelection() {
           cleaned.set("bus", encodeURIComponent(snap.busLabel ?? ""));
           cleaned.set("departure", snap.departure ?? "");
         } else if (!cleaned.get("scheduleId") && returningBookingId) {
-          // no snapshot (new tab / cleared storage): recover what the booking itself knows
           try {
             const b = (await bookingApi.getById(returningBookingId)).data;
             const bk = b?.data ?? b;
@@ -623,20 +407,40 @@ export default function SeatSelection() {
         setResolvingReturn(false);
       }
     })();
-    // Intentionally run only once on mount — this is a one-time redirect
-    // resolution, not something that should re-run on every param change.
+    // one-time redirect resolution
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // ── Fare preview effect ──────────────────────────────────────────────────
+  useEffect(() => {
+    if (booking || step === 5 || selectedSeats.length === 0 || !user) {
+      setQuote(null);
+      return;
+    }
+    const t = setTimeout(() => {
+      bookingApi
+        .quote({
+          scheduleId,
+          fromStationId: Number(fromId),
+          toStationId: Number(toId),
+          bookingSource: "WEB",
+          passengers: selectedSeats.map((s) => ({
+            seatId: s.seatId ?? s.id,
+            passengerName: "Passenger",
+            passengerAge: 30,
+            passengerGender: "male",
+            concessionType: "NONE",
+          })),
+        })
+        .then((r) => setQuote(r.data?.data ?? r.data))
+        .catch(() => setQuote(null));
+    }, 250); // debounce while the user taps seats
+    return () => clearTimeout(t);
+  }, [selectedSeats, booking, step]); // eslint-disable-line react-hooks/exhaustive-deps
+
   // ==========================================================================
   // SECTION 1 — SEAT INVENTORY
-  // Fetch stop sequences from route stops, then load the seat map for the
-  // specific from→to segment so availability is correct for partial journeys.
-  // Skipped entirely while we're still resolving a returning payment redirect
-  // (step will already be 4 or 5, no need to show the seat map underneath).
   // ==========================================================================
-
-  /* ── Resolve stop sequences from route stops ── */
   useEffect(() => {
     if (resolvingReturn) return;
     if (!scheduleId || !fromId || !toId) return;
@@ -646,7 +450,6 @@ export default function SeatSelection() {
         const schedule = res.data?.data ?? res.data;
         const routeId = schedule?.routeId ?? schedule?.route?.id;
         if (!routeId) return;
-
         api.get(`/admin/routes/${routeId}/stops`).then((r) => {
           const stops = r.data?.data ?? r.data ?? [];
           const from = stops.find((s) => s.stationId === fromId);
@@ -659,47 +462,31 @@ export default function SeatSelection() {
   }, [resolvingReturn, scheduleId, fromId, toId]);
 
   const fetchSeats = useCallback(() => {
-    console.log("FETCHING SEATS");
-
+    if (fromStopSeq === null || toStopSeq === null) return;
     getScheduleSeats(scheduleId, fromStopSeq, toStopSeq)
       .then((res) => {
-        console.log("Seat API Full Response:", res);
-        console.log("Seat API Data:", res.data);
-
-        const seats = Array.isArray(res.data)
-          ? res.data
-          : (res.data?.data ?? []);
-
-        console.log("Parsed Seats:", seats);
-
+        const seats = Array.isArray(res.data) ? res.data : res.data?.data ?? [];
         setSeatMap(seats);
+        setSeatError("");
       })
-      .catch((err) => {
-        console.error("Seat API Error:", err);
-        setSeatError("Failed to load seat map.");
-      })
+      .catch(() => setSeatError("Failed to load seat map."))
       .finally(() => setLoadingSeats(false));
   }, [scheduleId, fromStopSeq, toStopSeq]);
+  fetchSeatsRef.current = fetchSeats; // the hold hook polls through this ref
 
   useEffect(() => {
     if (resolvingReturn) return;
-    console.log("fromStopSeq =", fromStopSeq);
-    console.log("toStopSeq =", toStopSeq);
-
-    if (fromStopSeq !== null && toStopSeq !== null) {
-      console.log("Calling fetchSeats()");
-      fetchSeats();
-    }
+    if (fromStopSeq !== null && toStopSeq !== null) fetchSeats();
   }, [resolvingReturn, fetchSeats, fromStopSeq, toStopSeq]);
-  // Coming back to the seat step (e.g. after a failed payment): reload the map so seats
-  // held by this passenger's own unpaid booking show as theirs, not as "locked".
+
+  // coming back to the seat step: reload so own holds show as "mine"
   useEffect(() => {
     if (resolvingReturn || step !== 2) return;
     if (fromStopSeq !== null && toStopSeq !== null) fetchSeats();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [step]);
 
-  /* ── Ask the server for this passenger's unpaid booking on this journey ── */
+  /* ── Unpaid booking of this passenger on this journey ── */
   useEffect(() => {
     if (resolvingReturn || !user || !scheduleId) return;
     let cancelled = false;
@@ -710,9 +497,7 @@ export default function SeatSelection() {
         toStationId: toId || undefined,
       })
       .then((res) => {
-        if (cancelled) return;
-        const data = res.data?.data ?? null;
-        setResumeInfo(data);
+        if (!cancelled) setResumeInfo(res.data?.data ?? null);
       })
       .catch(() => {})
       .finally(() => !cancelled && setResumeChecked(true));
@@ -721,32 +506,25 @@ export default function SeatSelection() {
     };
   }, [resolvingReturn, user, scheduleId, fromId, toId]);
 
-  /* ── Restore mobile + email typed on the earlier attempt (only fills empty fields) ── */
   const contactRestoredRef = useRef(false);
   useEffect(() => {
     if (contactRestoredRef.current || !resumeInfo) return;
     contactRestoredRef.current = true;
-    if (!contact.mobile && !contact.email &&
-        (resumeInfo.contactMobile || resumeInfo.contactEmail)) {
-      setContact({
-        mobile: resumeInfo.contactMobile ?? "",
-        email: resumeInfo.contactEmail ?? "",
-      });
+    if (!contact.mobile && !contact.email && (resumeInfo.contactMobile || resumeInfo.contactEmail)) {
+      setContact({ mobile: resumeInfo.contactMobile ?? "", email: resumeInfo.contactEmail ?? "" });
     }
-    // The timer must show how long the seats are REALLY held (payment extends the
-    // hold), otherwise it hits zero while the seats are still locked.
     if (resumeInfo.resumable && resumeInfo.holdExpiresAt && booking) {
       setLockExpiresAt(resumeInfo.holdExpiresAt);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [resumeInfo]);
 
-  /* ── Put the passenger back where they were: seats + details pre-filled ── */
+  /* ── Pre-fill seats + details from the unpaid booking ── */
   useEffect(() => {
     if (prefilledRef.current || !resumeChecked || loadingSeats) return;
     if (!resumeInfo?.passengers?.length || seatMap.length === 0) return;
     if (selectedSeats.length > 0) {
-      prefilledRef.current = true; // they already have a selection (restored snapshot)
+      prefilledRef.current = true;
       return;
     }
     const seats = [];
@@ -755,8 +533,7 @@ export default function SeatSelection() {
       const seat = seatMap.find((s) => (s.seatId ?? s.id) === p.seatId);
       if (!seat) continue;
       const st = (seat.seatStatus ?? "").toLowerCase();
-      const usable = st === "available" || seat.heldByMe;
-      if (!usable) continue;
+      if (!(st === "available" || seat.heldByMe)) continue;
       seats.push(seat);
       details[seat.id] = {
         name: p.passengerName ?? "",
@@ -768,14 +545,10 @@ export default function SeatSelection() {
     if (seats.length === 0) return;
     setSelectedSeats(seats);
     setPassengerDetails((prev) => ({ ...details, ...prev }));
-    toast("We restored your previous seats and passenger details.", {
-      icon: "↩️",
-    });
+    toast("We restored your previous seats and passenger details.", { icon: "↩️" });
   }, [resumeChecked, resumeInfo, seatMap, loadingSeats, selectedSeats.length]);
 
-  /* ── Keep the selection honest against the latest seat map ──
-     Re-point each selected seat at its current map entry (ids stay in sync),
-     and drop any that somebody else has since taken. */
+  /* ── Keep the selection honest against the latest seat map ── */
   useEffect(() => {
     if (resolvingReturn || step === 5 || seatMap.length === 0) return;
     if (selectedSeats.length === 0) return;
@@ -790,8 +563,7 @@ export default function SeatSelection() {
         continue;
       }
       const st = (cur.seatStatus ?? "").toLowerCase();
-      const takenByOthers =
-        st === "booked" || ((st === "locked" || st === "hold") && !cur.heldByMe);
+      const takenByOthers = st === "booked" || ((st === "locked" || st === "hold") && !cur.heldByMe);
       if (takenByOthers) {
         changed = true;
         continue;
@@ -803,13 +575,9 @@ export default function SeatSelection() {
       kept.push(cur);
     }
     if (!changed) return;
-    if (kept.length < selectedSeats.length) {
-      toast.error("A seat you selected is no longer available.");
-    }
+    if (kept.length < selectedSeats.length) toast.error("A seat you selected is no longer available.");
     setSelectedSeats(kept);
-    if (Object.keys(movedDetails).length) {
-      setPassengerDetails((prev) => ({ ...movedDetails, ...prev }));
-    }
+    if (Object.keys(movedDetails).length) setPassengerDetails((prev) => ({ ...movedDetails, ...prev }));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [seatMap]);
 
@@ -818,63 +586,125 @@ export default function SeatSelection() {
     try {
       sessionStorage.setItem(CONTACT_DRAFT_KEY, JSON.stringify(contact));
     } catch {
-      /* storage full / blocked - not critical */
+      /* not critical */
     }
   }, [contact]);
 
-  // ==========================================================================
-  // SECTION 2 — SEAT MAP GRID COMPUTATION
-  // Builds a 2-D array (rows × cols) from the flat seatMap list so we can
-  // render the physical bus layout with an aisle gap in the middle.
-  // ==========================================================================
+  // ── Flow persistence: save ───────────────────────────────────────────────
+  useEffect(() => {
+    if (resolvingReturn) return;
+    if (step === 5) {
+      sessionStorage.removeItem(FLOW_KEY);
+      return;
+    }
+    const seatIds = selectedSeats.map((s) => s.seatId ?? s.id);
+    const detailsBySeatId = {};
+    selectedSeats.forEach((s) => {
+      detailsBySeatId[s.seatId ?? s.id] = passengerDetails[s.id] ?? {};
+    });
+    try {
+      sessionStorage.setItem(
+        FLOW_KEY,
+        JSON.stringify({
+          step,
+          seatIds,
+          detailsBySeatId,
+          contact,
+          holdId: holdApi.holdId,
+          bookingId: booking?.bookingId ?? booking?.id ?? null,
+        }),
+      );
+    } catch {
+      /* storage blocked */
+    }
+  }, [step, selectedSeats, passengerDetails, contact, holdApi.holdId, booking, resolvingReturn]); // eslint-disable-line react-hooks/exhaustive-deps
 
+  // ── Flow persistence: restore once the seat map + resume lookup are ready ──
+  const flowRestoredRef = useRef(false);
+  useEffect(() => {
+    if (flowRestoredRef.current || resolvingReturn || loadingSeats || seatMap.length === 0 || !user || !resumeChecked) return;
+    flowRestoredRef.current = true;
+    const f = flowRef.current;
+    if (!f?.seatIds?.length || (f.step ?? 2) < 3) return;
+
+    (async () => {
+      try {
+        if (f.bookingId && resumeInfo?.resumable) {
+          // booking already created → payment page
+          const res = await bookingApi.getById(f.bookingId);
+          const b = res.data?.data ?? res.data;
+          const seats = seatMap.filter((s) => f.seatIds.includes(s.seatId ?? s.id));
+          const details = {};
+          seats.forEach((s) => {
+            details[s.id] = f.detailsBySeatId?.[s.seatId ?? s.id] ?? {};
+          });
+          setSelectedSeats(seats);
+          setPassengerDetails((p) => ({ ...p, ...details }));
+          setContact((c) => (c.mobile || c.email ? c : f.contact ?? c));
+          prefilledRef.current = true;
+          setBooking(b);
+          setLockExpiresAt(resumeInfo.holdExpiresAt);
+          setStep(Math.min(f.step, 4));
+          return;
+        }
+        if (f.holdId) {
+          // soft hold still valid?
+          const r = await seatHoldApi.get(f.holdId);
+          const d = r.data?.data ?? r.data;
+          holdApi.apply(d);
+          const seats = seatMap.filter((s) => d.seatIds.includes(s.seatId ?? s.id));
+          if (seats.length !== d.seatIds.length) throw new Error("seats changed");
+          const details = {};
+          seats.forEach((s) => {
+            details[s.id] = f.detailsBySeatId?.[s.seatId ?? s.id] ?? {};
+          });
+          setSelectedSeats(seats);
+          setPassengerDetails((p) => ({ ...p, ...details }));
+          setContact((c) => (c.mobile || c.email ? c : f.contact ?? c));
+          prefilledRef.current = true;
+          setStep(f.step);
+          return;
+        }
+        throw new Error("nothing to restore");
+      } catch {
+        sessionStorage.removeItem(FLOW_KEY);
+        setStep(2);
+        toast("Your seat hold expired while you were away. Please select your seats again.", { icon: "⏱️" });
+      }
+    })();
+  }, [seatMap, loadingSeats, resumeChecked, user, resolvingReturn]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // leaving this screen frees an un-booked hold immediately
+  useEffect(
+    () => () => {
+      if (!bookingRef.current) holdApi.release();
+    },
+    [], // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
+  // ==========================================================================
+  // SECTION 2 — SEAT MAP GRID
+  // ==========================================================================
   const maxRow = seatMap.reduce((m, s) => Math.max(m, s.rowNumber ?? 0), 0);
   const maxCol = seatMap.reduce((m, s) => Math.max(m, s.colNumber ?? 0), 0);
 
-  console.log("========== SEAT DEBUG ==========");
-  console.log("seatMap:", seatMap);
-  console.log("seatMap length:", seatMap.length);
-  console.log("scheduleId:", scheduleId);
-  console.log("fromStopSeq:", fromStopSeq);
-  console.log("toStopSeq:", toStopSeq);
-  console.log("================================");
-
-  // Detect the aisle column by finding the col that has no seat in any
-  // non-last row. This works for 2+2 layouts AND last-row-full layouts.
-  const colsInNonLastRows = new Set(
-    seatMap.filter((s) => s.rowNumber < maxRow).map((s) => s.colNumber),
-  );
+  const colsInNonLastRows = new Set(seatMap.filter((s) => s.rowNumber < maxRow).map((s) => s.colNumber));
   const aisleAfterCol = (() => {
-    for (let c = 2; c < maxCol; c++) {
-      if (!colsInNonLastRows.has(c)) return c; // first gap = aisle column
-    }
-    return Math.floor(maxCol / 2); // fallback
+    for (let c = 2; c < maxCol; c++) if (!colsInNonLastRows.has(c)) return c;
+    return Math.floor(maxCol / 2);
   })();
 
   const grid = Array.from({ length: maxRow }, (_, ri) =>
-    Array.from(
-      { length: maxCol },
-      (_, ci) =>
-        seatMap.find((s) => s.rowNumber === ri + 1 && s.colNumber === ci + 1) ??
-        null,
-    ),
+    Array.from({ length: maxCol }, (_, ci) => seatMap.find((s) => s.rowNumber === ri + 1 && s.colNumber === ci + 1) ?? null),
   );
 
-  /* ── Compute visual display type for one seat ──  new update___*/
   const getDisplayType = (seat) => {
     if (selectedSeats.find((s) => s.id === seat.id)) return "selected";
-
     const status = (seat.seatStatus ?? "").toLowerCase();
-
     if (status === "booked") return "booked";
-    // locked by SOMEONE ELSE; a seat held by this passenger's own unpaid booking
-    // is theirs to pick again
-    if ((status === "locked" || status === "hold") && !seat.heldByMe)
-      return "locked";
-
-    if (seat.isDriverSeat) return "driver"; // NEW
+    if ((status === "locked" || status === "hold") && !seat.heldByMe) return "locked";
+    if (seat.isDriverSeat) return "driver";
     if (seat.isLadiesQuota) return "ladies";
-
     return "available";
   };
 
@@ -882,148 +712,154 @@ export default function SeatSelection() {
   // SECTION 3 — SEAT SELECTION & PASSENGER DETAILS
   // ==========================================================================
 
-  /* ── Toggle seat in/out of selectedSeats ── */
+  // The seat is held on the SERVER the moment it is tapped. If another device got there
+  // first the tap fails with a message and the map refreshes (item 11).
   const handleSeatClick = useCallback(
-    (seat) => {
+    async (seat) => {
       if (!user) {
         setShowLoginGate(true);
         return;
       }
-
+      if (booking) {
+        toast("Seats are reserved for payment. Use “Change seats” to modify them.", { id: "seats-locked" });
+        return;
+      }
       const status = (seat.seatStatus ?? "").toLowerCase();
-      if (status === "booked") return;
+      if (status === "booked" || seat.isDriverSeat) return;
       if (["locked", "hold"].includes(status) && !seat.heldByMe) return;
 
-            // Functional updater prevents stale-closure issues
-      setSelectedSeats((prev) => {
-        // Clicking a selected seat un-selects it
-        if (prev.find((s) => s.id === seat.id)) {
-          return prev.filter((s) => s.id !== seat.id);
-        }
-        // Adding a new seat: enforce the per-booking limit
-        if (prev.length >= MAX_SEATS_PER_BOOKING) {
-          toast.error(
-            `You can book a maximum of ${MAX_SEATS_PER_BOOKING} seats at a time`,
-            { id: "max-seats" },
-          );
-          return prev;
-        }
-        return [...prev, seat];
-      });
+      const exists = selectedSeats.some((s) => s.id === seat.id);
+      if (!exists && selectedSeats.length >= MAX_SEATS_PER_BOOKING) {
+        toast.error(`You can book a maximum of ${MAX_SEATS_PER_BOOKING} seats at a time`, { id: "max-seats" });
+        return;
+      }
+      const prev = selectedSeats;
+      const next = exists ? prev.filter((s) => s.id !== seat.id) : [...prev, seat];
+      setSelectedSeats(next); // instant UI
+      const r = await holdApi.sync(next.map((s) => s.seatId ?? s.id)); // authoritative, atomic
+      if (!r.ok) {
+        setSelectedSeats(prev); // roll back
+        toast.error(r.conflict ? `Seat ${seat.seatLabel} was just taken by another passenger.` : r.error, { id: "hold-fail" });
+      }
     },
-    [user],
+    [user, booking, selectedSeats, holdApi.sync], // eslint-disable-line react-hooks/exhaustive-deps
   );
 
-  /* ── Update a single field for one passenger ── */
-  const updatePassenger = useCallback(
-    (seatId, field, value) =>
-      setPassengerDetails((prev) => ({
-        ...prev,
-        [seatId]: { ...(prev[seatId] ?? {}), [field]: value },
-      })),
-    [],
-  );
+  const handleClearSelection = async () => {
+    if (booking) return;
+    const prev = selectedSeats;
+    setSelectedSeats([]);
+    const r = await holdApi.sync([]); // releases the hold on the server
+    if (!r.ok) setSelectedSeats(prev);
+  };
 
-  /* ── Validate step 2 and advance to step 3 ── */
-  const handleProceedFromSeats = () => {
-    if (selectedSeats.length === 0) {
-      toast.error("Please select at least one seat");
-      return;
-    }
+  const updatePassenger = useCallback((seatId, field, value) => {
+    setPassengerDetails((prev) => ({ ...prev, [seatId]: { ...(prev[seatId] ?? {}), [field]: value } }));
+    setPassengerErrors((prev) => (prev[seatId]?.[field] ? { ...prev, [seatId]: { ...prev[seatId], [field]: "" } } : prev));
+  }, []);
+
+  const handleProceedFromSeats = async () => {
+    if (selectedSeats.length === 0) return toast.error("Please select at least one seat");
+    const errs = {};
     for (const seat of selectedSeats) {
       const d = passengerDetails[seat.id] ?? {};
-      if (!d.name?.trim()) {
-        toast.error(`Enter name for seat ${seat.seatLabel}`);
-        return;
-      }
-      if (!d.gender) {
-        toast.error(`Select gender for seat ${seat.seatLabel}`);
-        return;
-      }
-      if (!d.age) {
-        toast.error(`Enter age for seat ${seat.seatLabel}`);
-        return;
-      }
+      const e = {
+        name: validators.name(d.name, "Passenger name"),
+        age: validators.age(d.age),
+        gender: validators.gender(d.gender),
+      };
+      if (e.name || e.age || e.gender) errs[seat.id] = e;
+    }
+    setPassengerErrors(errs);
+    if (Object.keys(errs).length) return toast.error("Please correct the highlighted passenger details", { id: "pax-invalid" });
+    if (!booking && !holdApi.holdId) {
+      // e.g. restored from an older session
+      const r = await holdApi.sync(selectedSeats.map((s) => s.seatId ?? s.id));
+      if (!r.ok) return toast.error(r.error);
     }
     setStep(3);
   };
 
-  // ==========================================================================
-  // SECTION 4 — CONTACT & EMAIL VALIDATION
-  // ==========================================================================
+  // "Change seats": cancels the UNPAID booking server-side and re-holds the same seats,
+  // so the next Confirm is priced afresh and the amount can never drift (item 14).
+  const handleChangeSeats = async () => {
+    const bid = booking?.bookingId ?? booking?.id ?? resumeInfo?.bookingId;
+    if (!bid) {
+      setStep(2);
+      return;
+    }
+    try {
+      const res = await bookingApi.changeSeats(bid);
+      holdApi.apply(res.data?.data ?? res.data);
+      setBooking(null);
+      setResumeInfo(null);
+      setLockExpiresAt(null);
+      setPaymentFailed(false);
+      setStep(2);
+      fetchSeats();
+      toast.success("You can now change your seats. The fare will be recalculated.");
+    } catch {
+      /* interceptor shows the reason */
+    }
+  };
 
-  const emailRegex =
-    /^[a-zA-Z0-9][a-zA-Z0-9._%+-]*@[a-zA-Z0-9.-]+\.[A-Za-z]{2,}$/;
-
+  // ==========================================================================
+  // SECTION 4 — CONTACT VALIDATION
+  // ==========================================================================
   const handleEmailChange = (e) => {
-    const value = e.target.value;
+    const value = e.target.value.replace(/\s/g, "");
     setContact((p) => ({ ...p, email: value }));
-    setEmailError(
-      value && !emailRegex.test(value.trim())
-        ? "Please enter a valid email address"
-        : "",
-    );
+    setEmailError(validators.email(value));
+  };
+
+  const handleMobileChange = (e) => {
+    const value = filters.digits(e.target.value, 10);
+    setContact((p) => ({ ...p, mobile: value }));
+    setMobileError(value.length === 10 ? validators.mobile(value) : "");
   };
 
   // ==========================================================================
   // SECTION 5 — CREATE BOOKING (step 3 → 4)
-  // POSTs the booking, then locks each selected seat for SEAT_LOCK_MINUTES.
-  // If a booking already exists (user went back), we skip creation and jump
-  // straight to step 4.
   // ==========================================================================
-
   const handleCreateBooking = async () => {
-    if (!contact.mobile || contact.mobile.length < 10) {
-      toast.error("Enter a valid 10-digit mobile number");
-      return;
-    }
-    if (!emailRegex.test(contact.email.trim())) {
-      toast.error("Enter a valid email address");
-      return;
-    }
+    const mErr = validators.mobile(contact.mobile);
+    const eErr = validators.email(contact.email);
+    setMobileError(mErr);
+    setEmailError(eErr);
+    if (mErr) return toast.error(mErr);
+    if (eErr) return toast.error(eErr);
 
-    // ── Unpaid booking already exists for these very seats (missed / failed
-    //    payment, or the user stepped back)? Save any edited passenger details
-    //    onto THAT booking and go on to payment - no new booking, no new PNR.
-    const existing =
-      booking ?? (resumeInfo?.resumable ? resumeInfo : null);
+    // An unpaid booking already exists for these very seats → update it, don't create a new PNR
+    const existing = booking ?? (resumeInfo?.resumable ? resumeInfo : null);
     if (existing?.passengers?.length) {
       const bookedIds = existing.passengers.map((p) => p.seatId).sort();
       const pickedIds = selectedSeats.map((s) => s.seatId ?? s.id).sort();
-      const sameSeats =
-        bookedIds.length === pickedIds.length &&
-        bookedIds.every((id, i) => id === pickedIds[i]);
+      const sameSeats = bookedIds.length === pickedIds.length && bookedIds.every((id, i) => id === pickedIds[i]);
 
       if (sameSeats) {
         setBookingLoading(true);
         try {
-          const res = await bookingApi.updatePassengers(
-            existing.bookingId ?? existing.id,
-            {
-              contactMobile: contact.mobile,
-              contactEmail: contact.email.trim(),
-              passengers: selectedSeats.map((seat) => {
-                const d = passengerDetails[seat.id];
-                return {
-                  seatId: seat.seatId ?? seat.id,
-                  passengerName: d.name.trim(),
-                  passengerAge: Number(d.age),
-                  passengerGender: d.gender,
-                };
-              }),
-            },
-          );
+          const res = await bookingApi.updatePassengers(existing.bookingId ?? existing.id, {
+            contactMobile: contact.mobile,
+            contactEmail: contact.email.trim(),
+            passengers: selectedSeats.map((seat) => {
+              const d = passengerDetails[seat.id];
+              return {
+                seatId: seat.seatId ?? seat.id,
+                passengerName: d.name.trim(),
+                passengerAge: Number(d.age),
+                passengerGender: d.gender,
+              };
+            }),
+          });
           const updated = res.data?.data ?? res.data;
           setBooking(updated);
           setLockExpiresAt(updated.seatHoldExpiresAt ?? null);
+          if (updated.serverTime) holdApi.setSkewMs(new Date(updated.serverTime).getTime() - Date.now());
           setPaymentFailed(false);
           setStep(4);
-        } catch (err) {
-          toast.error(
-            err?.response?.data?.message ??
-              "Could not update passenger details. Please try again.",
-          );
-          // hold gone (or booking no longer editable): start a clean booking next time
+        } catch {
+          // hold gone (or booking no longer editable): start clean
           setBooking(null);
           setResumeInfo(null);
           setLockExpiresAt(null);
@@ -1033,9 +869,6 @@ export default function SeatSelection() {
         }
         return;
       }
-      // Different seats than the unpaid booking: fall through and create a new
-      // booking - the server frees the old unpaid one unless its payment could
-      // still go through (then it says so).
     }
 
     setBookingLoading(true);
@@ -1043,11 +876,10 @@ export default function SeatSelection() {
       const passengers = selectedSeats.map((seat) => {
         const d = passengerDetails[seat.id];
         return {
-          passengerName: d.name,
+          passengerName: d.name.trim(),
           passengerAge: Number(d.age),
           passengerGender: d.gender,
-          // seatId = actual BusSeat entity id (not the inventory row id)
-          seatId: seat.seatId ?? seat.id,
+          seatId: seat.seatId ?? seat.id, // BusSeat entity id, not the inventory row id
           concessionType: "NONE",
         };
       });
@@ -1058,50 +890,31 @@ export default function SeatSelection() {
         toStationId: toId,
         passengers,
         bookingSource: "WEB",
-        // stored on the booking so they come back if the passenger has to rebook
+        holdId: holdApi.holdId, // the server turns the soft hold into the booking's hold
         contactMobile: contact.mobile,
         contactEmail: contact.email.trim(),
       });
-      // const created = res.data?.data ?? res.data;
-      // setBooking(created);
-
-      // const lockExpiry = new Date(
-      //   Date.now() + SEAT_LOCK_MINUTES * 60 * 1000,
-      // ).toISOString();
-      // setLockExpiresAt(lockExpiry);
-
-      // // Lock all selected seats concurrently; allSettled so one failure
-      // // doesn't block the rest
-      // await Promise.allSettled(
-      //   selectedSeats.map((seat) =>
-      //     lockSeatForJourney(
-      //       seat.seatId ?? seat.id,
-      //       scheduleId,
-      //       created.bookingId ?? created.id,
-      //       fromStopSeq,
-      //       toStopSeq,
-      //       lockExpiry,
-      //     ),
-      //   ),
-      // );
 
       const created = res.data?.data ?? res.data;
       setBooking(created);
+      holdApi.setHoldId(null);
       setResumeInfo(null);
-
-      // The server locked the seats inside the booking request and tells us
-      // when the hold ends. The browser never chooses it.
+      // the server decides when the hold ends; learn the clock skew from its response
+      if (created.serverTime) holdApi.setSkewMs(new Date(created.serverTime).getTime() - Date.now());
       setLockExpiresAt(created.seatHoldExpiresAt ?? null);
 
-      toast.success("Booking created! Complete payment within 10 minutes.");
+      toast.success("Booking created! Complete payment before the timer ends.");
       setPaymentFailed(false);
       setStep(4);
-    }catch (err) {
-      toast.error(
-        err?.response?.data?.message ??
-          "Failed to create booking. Please try again.",
-      );
-      fetchSeats(); // a seat may have just been taken: show the current map
+    } catch (err) {
+      const msg = err?.response?.data?.message ?? "";
+      if (/hold has expired|hold.*expired|select your seats again/i.test(msg)) {
+        holdApi.setHoldId(null);
+        holdApi.setExpiresAt(null);
+        setSelectedSeats([]);
+        setStep(2);
+      }
+      fetchSeats(); // show the current map (the interceptor already toasted the reason)
     } finally {
       setBookingLoading(false);
     }
@@ -1110,56 +923,37 @@ export default function SeatSelection() {
   // ==========================================================================
   // SECTION 6 — PAYMENT (step 4)
   // ==========================================================================
-
-  /* ── Handle lock expiry — reset everything and go back to seat map ── */
   const handleLockExpired = useCallback(() => {
-    // Keep what the passenger typed - only the hold is gone. Seats that are still
-    // free stay selected after the map reloads; taken ones are dropped.
-    toast.error(
-      "Your seat hold expired. Please confirm your seats again - your details are saved.",
-      { duration: 6000 },
-    );
+    toast.error("Your seat hold expired. Please confirm your seats again - your details are saved.", { duration: 6000 });
     setBooking(null);
     setResumeInfo(null);
     setLockExpiresAt(null);
+    holdApi.setHoldId(null);
+    holdApi.setExpiresAt(null);
+    setSelectedSeats([]); // seats are free again → must be re-held (details stay in passengerDetails)
     setPaymentFailed(false);
     setStep(2);
     fetchSeats();
-  }, [fetchSeats]);
+  }, [fetchSeats]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  /* ── Initiate payment ──
-     Handles two cases:
-       1. Wallet payment → no gateway involved, direct API call, instant result
-       2. Card/UPI/NetBanking → call initiate, snapshot page state into
-          sessionStorage, then redirect the WHOLE browser to the transactionUrl
-          SBI ePay gave us. There is no modal to open and nothing more to do
-          here — the next thing this component sees is a fresh mount when the
-          bank redirects back (handled by the SECTION 0 effect above).
-     On 402 response → a pending payment already exists; fetch and reuse its
-     transactionUrl instead of creating a duplicate order. ── */
+  const snapshot = (bookingId) =>
+    savePaymentSession(bookingId, {
+      booking, selectedSeats, passengerDetails, contact,
+      scheduleId, fromLabel, toLabel, fromId, toId, date, busLabel, departure,
+    });
+
   const handleInitiatePayment = async () => {
-    if (!paymentMethod) {
-      toast.error("Please select a payment method");
-      return;
-    }
-    if (!booking) {
-      toast.error("Booking not found.");
-      return;
-    }
+    if (!paymentMethod) return toast.error("Please select a payment method");
+    if (!booking) return toast.error("Booking not found.");
     if (initiating) return;
 
     setInitiating(true);
     const bookingId = booking.bookingId ?? booking.id;
 
     try {
-      const res = await paymentApi.initiate({
-        bookingId,
-        paymentMethod
-      
-      });
+      const res = await paymentApi.initiate({ bookingId, paymentMethod });
       const initiated = res.data?.data ?? res.data;
 
-      // ── Case 1: wallet payment (instant, no redirect) ──
       if (paymentMethod === "WALLET") {
         toast.success("Payment successful via wallet! 🎉");
         setLockExpiresAt(null);
@@ -1169,54 +963,21 @@ export default function SeatSelection() {
         return;
       }
 
-      // ── Case 2: redirect to SBI ePay's hosted payment page ──
-      if (!initiated?.transactionUrl) {
-        throw new Error("Payment gateway did not return a redirect URL.");
-      }
+      if (!initiated?.transactionUrl) throw new Error("Payment gateway did not return a redirect URL.");
 
-      savePaymentSession(bookingId, {
-        booking,
-        selectedSeats,
-        passengerDetails,
-        contact,
-        scheduleId,
-        fromLabel,
-        toLabel,
-        fromId,
-        toId,
-        date,
-        busLabel,
-        departure,
-      });
-      console.log("transactionUrl", initiated?.transactionUrl);
-
+      snapshot(bookingId);
       toast.loading("Redirecting to secure payment page…", { duration: 9000 });
       window.location.href = initiated.transactionUrl;
-      // Do not reset `initiating` here — we want the button to stay in its
-      // loading state for the brief moment before the browser navigates away.
+      // keep `initiating` true: the browser is about to leave
     } catch (err) {
-      // 402 = a PENDING payment already exists for this booking;
-      // fetch its transactionUrl and redirect using that instead
+      // 402 = a PENDING payment already exists: reuse its transactionUrl
       if (err?.response?.status === 402) {
         try {
           const existing = await paymentApi.getByBookingId(bookingId);
           const payment = existing.data?.data ?? existing.data;
           if (payment?.transactionUrl) {
             toast("Resuming your previous payment session.", { icon: "ℹ️" });
-            savePaymentSession(bookingId, {
-              booking,
-              selectedSeats,
-              passengerDetails,
-              contact,
-              scheduleId,
-              fromLabel,
-              toLabel,
-              fromId,
-              toId,
-              date,
-              busLabel,
-              departure,
-            });
+            snapshot(bookingId);
             window.location.href = payment.transactionUrl;
             return;
           }
@@ -1224,53 +985,37 @@ export default function SeatSelection() {
           console.error(e);
         }
       }
-
       setInitiating(false);
       setPaymentFailed(true);
-      toast.error(
-        err?.response?.data?.message ??
-          err?.message ??
-          "Failed to initiate payment. Please try again.",
-      );
+      // axios interceptor already showed server errors; only toast client-side failures
+      if (!err?.response) toast.error(err?.message ?? "Failed to initiate payment. Please try again.");
     }
   };
 
   // ==========================================================================
   // SECTION 7 — NAVIGATION GUARDS
   // ==========================================================================
-
-  /* ── Back navigation ──
-     If a booking exists at step 4, intercept and show the abandon modal.
-     Otherwise navigate normally. ── */
   const handleBack = (targetStep) => {
     if (booking && step === 4) {
       abandonTargetRef.current = targetStep;
       setShowAbandon(true);
       return;
     }
-    if (targetStep === "navigate") {
-      navigate(-1);
-    } else {
-      setStep(targetStep);
-    }
+    if (targetStep === "navigate") navigate(-1);
+    else setStep(targetStep);
   };
 
-  /* ── Abandon modal: user chose "Leave Anyway" ── */
   const handleAbandonLeave = () => {
     setShowAbandon(false);
     const target = abandonTargetRef.current;
     abandonTargetRef.current = null;
-
     if (target === "navigate" || target == null) {
       navigate(-1);
       return;
     }
-    // Navigate back within the flow but keep the existing booking & lock intact
-    // so the user can still return and pay within the lock window
     setStep(target);
   };
 
-  /* ── Logout guard — show abandon modal if payment is in progress ── */
   const handleLogout = () => {
     if (booking && step === 4) {
       abandonTargetRef.current = "navigate";
@@ -1281,29 +1026,13 @@ export default function SeatSelection() {
   };
 
   // ==========================================================================
-  // SECTION 8 — TICKET DOWNLOAD
+  // SECTION 8 — TICKET
   // ==========================================================================
-
-  // const downloadTicket = async () => {
-  //   try {
-  //     const canvas = await html2canvas(ticketRef.current, {
-  //       backgroundColor: null,
-  //     });
-  //     const imgData = canvas.toDataURL("image/png");
-  //     const pdf = new jsPDF();
-  //     pdf.addImage(imgData, "PNG", 10, 10, 190, 130);
-  //     pdf.save(`ticket-${booking?.pnr ?? "bus"}.pdf`);
-  //   } catch {
-  //     toast.error("Failed to download ticket. Please try again.");
-  //   }
-  // };
-
-    const downloadTicket = async () => {
+  const downloadTicket = async () => {
     try {
       const bookingId = booking.bookingId ?? booking.id;
       const res = await api.get(`/bookings/${bookingId}/ticket`, { responseType: "blob" });
-      const blobUrl = URL.createObjectURL(new Blob([res.data], { type: "application/pdf" }));
-      window.open(blobUrl, "_blank"); // opens the browser's native PDF viewer — Print and Save both work from there
+      window.open(URL.createObjectURL(new Blob([res.data], { type: "application/pdf" })), "_blank");
     } catch {
       toast.error("Failed to load ticket. Please try again.");
     }
@@ -1312,44 +1041,30 @@ export default function SeatSelection() {
   // ==========================================================================
   // RENDER
   // ==========================================================================
-
-  // While we're verifying a return from SBI ePay, show a lightweight loading
-  // screen instead of the full seat-selection UI (which has nothing useful
-  // to show yet — scheduleId/seatMap etc. haven't loaded).
   if (resolvingReturn) {
     return (
-      <div
-        className="w-full min-h-screen flex flex-col items-center justify-center
-        text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364]"
-      >
+      <div className="w-full min-h-screen flex flex-col items-center justify-center text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364]">
         <Spinner />
         <p className="mt-4 text-gray-300">Confirming your payment…</p>
       </div>
     );
   }
 
+  const timerExpiry = booking ? lockExpiresAt : holdApi.expiresAt;
+
   return (
-    // pt-14 offsets the fixed SeatNavbar height
-    <div
-      className="w-full min-h-screen text-white bg-gradient-to-br
-      from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10"
-    >
-      {/* ── Fixed contextual navbar ── */}
+    <div className="w-full min-h-screen text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10">
       <SeatNavbar user={user} onLogout={handleLogout} />
 
-      {/* ── Booking progress bar ── */}
       <div className="mb-6">
         <ProgressBar currentStep={step} />
       </div>
 
-      {/* ── Modals ── */}
       {showLoginGate && (
         <LoginGateModal
           onClose={() => setShowLoginGate(false)}
           onLogin={() => {
-            const redirect = encodeURIComponent(
-              window.location.pathname + window.location.search,
-            );
+            const redirect = encodeURIComponent(window.location.pathname + window.location.search);
             navigate(`/home/login?redirect=${redirect}`);
           }}
         />
@@ -1365,24 +1080,14 @@ export default function SeatSelection() {
         />
       )}
 
-      {/* ── Three-column layout ── */}
       <div className="flex gap-6">
-        {/* ════════════════════════════════════════════════════════════════
-            LEFT PANEL — Journey summary + selected seats + back button
-        ════════════════════════════════════════════════════════════════ */}
-        <div
-          className="relative w-[240px] shrink-0 rounded-xl overflow-hidden
-          border border-white/20"
-        >
-          <div
-            className="absolute inset-0 bg-center bg-cover"
-            style={{ backgroundImage: `url(${sideBg})` }}
-          />
+        {/* ════════ LEFT PANEL — journey summary ════════ */}
+        <div className="relative w-[240px] shrink-0 rounded-xl overflow-hidden border border-white/20">
+          <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${sideBg})` }} />
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
           <div className="relative z-10 p-5 space-y-3">
             <h3 className="font-semibold text-green-300">Journey Details</h3>
-
             <div>
               <p className="text-xs text-gray-400">From</p>
               <p className="font-semibold uppercase text-sm">{fromLabel}</p>
@@ -1398,56 +1103,40 @@ export default function SeatSelection() {
             <div>
               <p className="text-xs text-gray-400">Date & Time</p>
               <p className="font-semibold text-sm">
-                {formatDate(date)} {formatTime(departure)}
+                {isoToDMY(String(date).slice(0, 10))} {formatTime(departure)}
               </p>
             </div>
 
-            {/* Show selected seats + PNR + fare once seats are chosen */}
             {selectedSeats.length > 0 && (
               <div className="border-t border-white/10 pt-3 space-y-2">
                 <div>
                   <p className="text-xs text-gray-400">Selected Seats</p>
-                  <p className="font-semibold text-green-300 text-sm">
-                    {selectedSeats.map((s) => s.seatLabel).join(", ")}
-                  </p>
+                  <p className="font-semibold text-green-300 text-sm">{selectedSeats.map((s) => s.seatLabel).join(", ")}</p>
                 </div>
                 {booking && (
                   <>
                     <div>
                       <p className="text-xs text-gray-400">PNR</p>
-                      <p className="font-semibold text-orange-300 tracking-wider text-sm">
-                        {booking.pnr}
-                      </p>
+                      <p className="font-semibold text-orange-300 tracking-wider text-sm">{booking.pnr}</p>
                     </div>
                     <div>
                       <p className="text-xs text-gray-400">Total Fare</p>
-                      <p className="font-semibold text-orange-400">
-                        ₹ {totalFare}
-                      </p>
+                      <p className="font-semibold text-orange-400">{formatINR(booking.totalAmountPaid)}</p>
                     </div>
                   </>
                 )}
               </div>
             )}
 
-            {/* Countdown timer shown only at payment step */}
-            {lockExpiresAt && step === 4 && (
-              <div className="pt-2">
-                <p className="text-xs text-gray-400 mb-1">Time remaining</p>
-                <LockTimer
-                  expiresAt={lockExpiresAt}
-                  onExpired={handleLockExpired}
-                />
-              </div>
+            {(step === 3 || step === 4) && timerExpiry && (
+              <LockTimer expiresAt={timerExpiry} skewMs={holdApi.skewMs} onExpired={handleLockExpired} />
             )}
 
-            {/* Back button */}
             {step === 2 && (
               <button
                 type="button"
                 onClick={() => navigate(-1)}
-                className="w-full mt-2 px-3 py-2 rounded-lg bg-white/10
-                  hover:bg-white/20 text-xs text-gray-300 border border-white/10"
+                className="w-full mt-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-gray-300 border border-white/10"
               >
                 ← Back
               </button>
@@ -1456,8 +1145,7 @@ export default function SeatSelection() {
               <button
                 type="button"
                 onClick={() => handleBack(step - 1)}
-                className="w-full mt-2 px-3 py-2 rounded-lg bg-white/10
-                  hover:bg-white/20 text-xs text-gray-300 border border-white/10"
+                className="w-full mt-2 px-3 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-gray-300 border border-white/10"
               >
                 ← Back
               </button>
@@ -1465,20 +1153,24 @@ export default function SeatSelection() {
           </div>
         </div>
 
-        {/* ════════════════════════════════════════════════════════════════
-            MIDDLE PANEL — Interactive seat map
-        ════════════════════════════════════════════════════════════════ */}
+        {/* ════════ MIDDLE PANEL — seat map ════════ */}
         <div className="w-[400px] shrink-0">
-          <div
-            className="relative p-5 border bg-white/10 backdrop-blur-md
-            border-white/20 rounded-xl h-full"
-          >
+          <div className="relative p-5 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl h-full">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-green-300">Select Seats</h3>
               <span className="text-yellow-400 text-xl">🛞</span>
             </div>
 
-            {/* Loading state */}
+            {/* Seats reserved for payment: read-only + Change seats (item 14) */}
+            {booking && step < 5 && (
+              <div className="mb-3 p-3 rounded-lg bg-amber-500/20 text-amber-200 text-xs">
+                Your seats are reserved for payment.{" "}
+                <button type="button" onClick={handleChangeSeats} className="underline font-semibold">
+                  Change seats
+                </button>
+              </div>
+            )}
+
             {loadingSeats && (
               <div className="flex items-center justify-center py-16 text-gray-300">
                 <Spinner />
@@ -1486,22 +1178,15 @@ export default function SeatSelection() {
               </div>
             )}
 
-            {/* Error state */}
             {!loadingSeats && seatError && (
               <div className="py-10 text-center">
                 <p className="text-red-300 text-sm mb-3">{seatError}</p>
-                <button
-                  type="button"
-                  onClick={fetchSeats}
-                  className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20
-                    text-xs text-gray-300"
-                >
+                <button type="button" onClick={fetchSeats} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-xs text-gray-300">
                   Retry
                 </button>
               </div>
             )}
 
-            {/* Seat grid */}
             {!loadingSeats && !seatError && (
               <>
                 <div className="space-y-2 overflow-auto max-h-[500px] pr-1">
@@ -1509,17 +1194,9 @@ export default function SeatSelection() {
                     <div key={ri} className="flex items-center gap-1">
                       {row.map((seat, ci) => (
                         <div key={ci} className="flex items-center">
-                          {/* Aisle gap — only shown when this row has no seat in the aisle column */}
-                          {ci === aisleAfterCol &&
-                            row[aisleAfterCol - 1] === null && (
-                              <div className="w-5" />
-                            )}
+                          {ci === aisleAfterCol && row[aisleAfterCol - 1] === null && <div className="w-5" />}
                           {seat ? (
-                            <SeatIcon
-                              label={seat.seatLabel}
-                              displayType={getDisplayType(seat)}
-                              onClick={() => handleSeatClick(seat)}
-                            />
+                            <SeatIcon label={seat.seatLabel} displayType={getDisplayType(seat)} onClick={() => handleSeatClick(seat)} />
                           ) : (
                             <div className="w-[34px]" />
                           )}
@@ -1529,11 +1206,10 @@ export default function SeatSelection() {
                   ))}
                 </div>
 
-                {/* Legend */}
                 <div className="flex flex-wrap gap-x-4 gap-y-1 mt-5 text-xs">
                   {[
                     { color: "bg-gray-500", label: "Booked" },
-                    { color: "bg-orange-500", label: "Locked" },
+                    { color: "bg-orange-500", label: "Held by someone" },
                     { color: "bg-blue-500", label: "Selected" },
                     { color: "border border-white/40", label: "Available" },
                     { color: "bg-purple-500", label: "Ladies" },
@@ -1545,16 +1221,9 @@ export default function SeatSelection() {
                   ))}
                 </div>
 
-                {/* Guest prompt */}
                 {!user && (
                   <p className="mt-4 text-xs text-orange-300 text-center">
-                    <span
-                      className="underline cursor-pointer"
-                      onClick={() => setShowLoginGate(true)}
-                    >
-                      Login
-                    </span>{" "}
-                    to select seats
+                    <span className="underline cursor-pointer" onClick={() => setShowLoginGate(true)}>Login</span> to select seats
                   </p>
                 )}
               </>
@@ -1562,29 +1231,19 @@ export default function SeatSelection() {
           </div>
         </div>
 
-        {/* ════════════════════════════════════════════════════════════════
-            RIGHT PANEL — Step-specific content
-        ════════════════════════════════════════════════════════════════ */}
-        <div
-          className="flex-1 border bg-white/10 backdrop-blur-md
-          border-white/20 rounded-xl p-6 min-h-[400px]"
-        >
-          {/* ── STEP 2: Passenger Details ── */}
+        {/* ════════ RIGHT PANEL — step content ════════ */}
+        <div className="flex-1 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl p-6 min-h-[400px]">
+          {/* ── STEP 2: Passenger details ── */}
           {step === 2 &&
             (selectedSeats.length === 0 ? (
-              // Empty state — no seat selected yet
-              <div
-                className="flex flex-col items-center justify-center
-                h-full gap-3 text-gray-400 py-20"
-              >
+              <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 py-20">
                 <span className="text-5xl">💺</span>
                 <p className="text-lg">Click a seat on the map to begin</p>
               </div>
             ) : (
               <>
                 <h3 className="font-semibold text-green-300 mb-4">
-                  Passenger Details ({selectedSeats.length} seat
-                  {selectedSeats.length > 1 ? "s" : ""})
+                  Passenger Details ({selectedSeats.length} seat{selectedSeats.length > 1 ? "s" : ""})
                 </h3>
 
                 <div className="overflow-auto">
@@ -1592,120 +1251,84 @@ export default function SeatSelection() {
                     <thead>
                       <tr className="bg-white/10 text-gray-300">
                         <th className="p-2 text-left">Seat</th>
-                        <th className="p-2 text-left">Full Name *</th>
-                        <th className="p-2 text-left">Gender *</th>
-                        <th className="p-2 text-left">Age *</th>
+                        <th className="p-2 text-left">Full Name <span className="text-red-400">*</span></th>
+                        <th className="p-2 text-left">Gender <span className="text-red-400">*</span></th>
+                        <th className="p-2 text-left">Age <span className="text-red-400">*</span></th>
                       </tr>
                     </thead>
                     <tbody>
-                      {selectedSeats.map((seat) => (
-                        <tr key={seat.id} className="border-t border-white/10">
-                          <td className="p-2 font-semibold text-green-300">
-                            {seat.seatLabel}
-                          </td>
+                      {selectedSeats.map((seat) => {
+                        const e = passengerErrors[seat.id] ?? {};
+                        return (
+                          <tr key={seat.id} className="border-t border-white/10 align-top">
+                            <td className="p-2 font-semibold text-green-300">{seat.seatLabel}</td>
 
-                          {/* Name — letters, spaces, hyphens and dots only */}
-                          <td className="p-2">
-                            <input
-                              value={passengerDetails[seat.id]?.name ?? ""}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(
-                                  /[^a-zA-Z\s.-]/g,
-                                  "",
-                                );
-                                updatePassenger(seat.id, "name", value);
-                              }}
-                              placeholder="Full name"
-                              className="w-full px-2 py-1 rounded bg-white/10
-                                border border-white/20 outline-none text-sm"
-                            />
-                          </td>
+                            <td className="p-2">
+                              <input
+                                value={passengerDetails[seat.id]?.name ?? ""}
+                                maxLength={100}
+                                disabled={!!booking}
+                                onChange={(ev) => updatePassenger(seat.id, "name", filters.name(ev.target.value))}
+                                placeholder="Full name"
+                                className={`w-full px-2 py-1 rounded bg-white/10 border outline-none text-sm ${e.name ? "border-red-400" : "border-white/20"}`}
+                              />
+                              <FieldError>{e.name}</FieldError>
+                            </td>
 
-                          {/* Gender */}
-                          <td className="p-2">
-                            <select
-                              value={passengerDetails[seat.id]?.gender ?? ""}
-                              onChange={(e) =>
-                                updatePassenger(
-                                  seat.id,
-                                  "gender",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full rounded bg-white/20 border
-                                border-white/30 text-white text-sm py-1"
-                            >
-                              <option value="" className="text-black bg-white">
-                                Select
-                              </option>
-                              <option
-                                value="male"
-                                className="text-black bg-white"
+                            <td className="p-2">
+                              <select
+                                value={passengerDetails[seat.id]?.gender ?? ""}
+                                disabled={!!booking}
+                                onChange={(ev) => updatePassenger(seat.id, "gender", ev.target.value)}
+                                className={`w-full rounded bg-white/20 border text-white text-sm py-1 ${e.gender ? "border-red-400" : "border-white/30"}`}
                               >
-                                Male
-                              </option>
-                              <option
-                                value="female"
-                                className="text-black bg-white"
-                              >
-                                Female
-                              </option>
-                              <option
-                                value="other"
-                                className="text-black bg-white"
-                              >
-                                Other
-                              </option>
-                              <option
-                                value="prefer_not_to_say"
-                                className="text-black bg-white"
-                              >
-                                Prefer not to say
-                              </option>
-                            </select>
-                          </td>
+                                <option value="" className="text-black bg-white">Select</option>
+                                <option value="male" className="text-black bg-white">Male</option>
+                                <option value="female" className="text-black bg-white">Female</option>
+                                <option value="other" className="text-black bg-white">Other</option>
+                                <option value="prefer_not_to_say" className="text-black bg-white">Prefer not to say</option>
+                              </select>
+                              <FieldError>{e.gender}</FieldError>
+                            </td>
 
-                          {/* Age — numeric 1-120 only */}
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              min="1"
-                              max="120"
-                              value={passengerDetails[seat.id]?.age ?? ""}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/\D/g, "");
-                                if (
-                                  value === "" ||
-                                  (Number(value) >= 1 && Number(value) <= 120)
-                                ) {
-                                  updatePassenger(seat.id, "age", value);
-                                }
-                              }}
-                              placeholder="Age"
-                              className="w-full px-2 py-1 rounded bg-white/10
-                                border border-white/20 outline-none text-sm"
-                            />
-                          </td>
-                        </tr>
-                      ))}
+                            <td className="p-2">
+                              <input
+                                value={passengerDetails[seat.id]?.age ?? ""}
+                                type="text"
+                                inputMode="numeric"
+                                maxLength={3}
+                                disabled={!!booking}
+                                onKeyDown={blockNumberKeys}
+                                onChange={(ev) => updatePassenger(seat.id, "age", filters.digits(ev.target.value, 3))}
+                                placeholder="Age"
+                                className={`w-full px-2 py-1 rounded bg-white/10 border outline-none text-sm ${e.age ? "border-red-400" : "border-white/20"}`}
+                              />
+                              <FieldError>{e.age}</FieldError>
+                            </td>
+                          </tr>
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
 
+                {/* live fare preview */}
+                {!booking && quote && <div className="mt-4 max-w-sm"><FareSummary f={quote} title="Estimated fare" /></div>}
+
                 <div className="flex justify-between mt-5">
                   <button
                     type="button"
-                    onClick={() => setSelectedSeats([])}
-                    className="px-4 py-2 rounded-lg bg-red-500/80
-                      hover:bg-red-600 text-sm"
+                    onClick={handleClearSelection}
+                    disabled={!!booking || holdApi.busy}
+                    className="px-4 py-2 rounded-lg bg-red-500/80 hover:bg-red-600 text-sm disabled:opacity-50"
                   >
                     Clear Selection
                   </button>
                   <button
                     type="button"
                     onClick={handleProceedFromSeats}
-                    className="px-5 py-2 rounded-lg bg-green-500
-                      hover:bg-green-600 font-semibold text-sm"
+                    disabled={holdApi.busy}
+                    className="px-5 py-2 rounded-lg bg-green-500 hover:bg-green-600 font-semibold text-sm disabled:opacity-60"
                   >
                     Continue →
                   </button>
@@ -1713,113 +1336,77 @@ export default function SeatSelection() {
               </>
             ))}
 
-          {/* ── STEP 3: Contact Details ── */}
+          {/* ── STEP 3: Contact details ── */}
           {step === 3 && (
             <>
-              <h3 className="font-semibold text-green-300 mb-1">
-                Contact Details
-              </h3>
-              <p className="text-xs text-gray-400 mb-5">
-                Your ticket confirmation will be sent here
-              </p>
+              <h3 className="font-semibold text-green-300 mb-1">Contact Details</h3>
+              <p className="text-xs text-gray-400 mb-5">Your ticket confirmation will be sent here</p>
 
               <div className="space-y-4 max-w-sm">
-                {/* Mobile */}
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">
-                    Mobile Number *
+                  <label className="text-xs text-gray-300 mb-1 block">
+                    Mobile Number <span className="text-red-400">*</span>
                   </label>
-                  <div
-                    className="flex items-center border border-white/20
-                    rounded-xl overflow-hidden"
-                  >
-                    <span
-                      className="px-3 py-2.5 bg-white/10 text-sm
-                      text-gray-300 border-r border-white/20 select-none"
-                    >
-                      +91
-                    </span>
+                  <div className={`flex items-center border rounded-xl overflow-hidden ${mobileError ? "border-red-400" : "border-white/20"}`}>
+                    <span className="px-3 py-2.5 bg-white/10 text-sm text-gray-300 border-r border-white/20 select-none">+91</span>
                     <input
                       type="tel"
+                      inputMode="numeric"
                       maxLength={10}
                       placeholder="10-digit number"
                       value={contact.mobile}
-                      onChange={(e) =>
-                        setContact((p) => ({
-                          ...p,
-                          mobile: e.target.value.replace(/\D/g, ""),
-                        }))
-                      }
-                      className="w-full px-3 py-2.5 bg-transparent text-sm
-                        outline-none"
+                      onChange={handleMobileChange}
+                      className="w-full px-3 py-2.5 bg-transparent text-sm outline-none"
                     />
                   </div>
+                  <FieldError>{mobileError}</FieldError>
                 </div>
 
-                {/* Email */}
                 <div>
-                  <label className="text-xs text-gray-400 mb-1 block">
-                    Email Address *
+                  <label className="text-xs text-gray-300 mb-1 block">
+                    Email Address <span className="text-red-400">*</span>
                   </label>
                   <input
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     placeholder="your@email.com"
                     value={contact.email}
                     onChange={handleEmailChange}
-                    className="w-full px-3 py-2.5 border border-white/20
-                      rounded-xl bg-white/10 text-sm outline-none"
+                    className={`w-full px-3 py-2.5 border rounded-xl bg-white/10 text-sm outline-none ${emailError ? "border-red-400" : "border-white/20"}`}
                   />
-                  {emailError && (
-                    <p className="text-red-400 text-xs mt-1">{emailError}</p>
-                  )}
+                  <FieldError>{emailError}</FieldError>
                 </div>
               </div>
 
-              {/* Booking summary */}
-              <div
-                className="mt-6 p-4 rounded-xl bg-white/5 border
-                border-white/10 text-sm space-y-2 max-w-sm"
-              >
-                <h4 className="text-gray-300 font-medium mb-2">
-                  Booking Summary
-                </h4>
+              {/* Booking summary + fare */}
+              <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10 text-sm space-y-2 max-w-sm">
+                <h4 className="text-gray-300 font-medium mb-2">Booking Summary</h4>
                 {selectedSeats.map((seat) => {
                   const d = passengerDetails[seat.id] ?? {};
                   return (
                     <div key={seat.id} className="flex justify-between text-xs">
-                      <span className="text-gray-400">
-                        {d.name} ({d.gender}, {d.age} yrs)
-                      </span>
-                      <span className="text-green-300">
-                        Seat {seat.seatLabel}
-                      </span>
+                      <span className="text-gray-400">{d.name} ({d.gender}, {d.age} yrs)</span>
+                      <span className="text-green-300">Seat {seat.seatLabel}</span>
                     </div>
                   );
                 })}
               </div>
+              <div className="max-w-sm mt-4">
+                <FareSummary f={booking ?? quote} title={booking ? "Fare Breakdown" : "Estimated fare"} />
+              </div>
 
               <div className="flex justify-between mt-6">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="px-4 py-2 rounded-lg bg-white/10
-                    hover:bg-white/20 text-sm"
-                >
+                <button type="button" onClick={() => setStep(2)} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm">
                   ← Back
                 </button>
                 <button
                   type="button"
                   onClick={handleCreateBooking}
-                  disabled={bookingLoading || !!emailError}
-                  className="px-5 py-2 rounded-lg bg-green-500
-                    hover:bg-green-600 font-semibold text-sm
-                    disabled:opacity-60 disabled:cursor-not-allowed
-                    flex items-center gap-2"
+                  disabled={bookingLoading || !!emailError || !!mobileError}
+                  className="px-5 py-2 rounded-lg bg-green-500 hover:bg-green-600 font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2"
                 >
                   {bookingLoading && <Spinner />}
-                  {bookingLoading
-                    ? "Creating Booking…"
-                    : "Confirm & Proceed to Payment →"}
+                  {bookingLoading ? "Creating Booking…" : "Confirm & Proceed to Payment →"}
                 </button>
               </div>
             </>
@@ -1829,211 +1416,105 @@ export default function SeatSelection() {
           {step === 4 && (
             <>
               <div className="flex items-center justify-between mb-4">
-                <h3 className="font-semibold text-green-300">
-                  Select Payment Method
-                </h3>
-                {lockExpiresAt && (
-                  <LockTimer
-                    expiresAt={lockExpiresAt}
-                    onExpired={handleLockExpired}
-                  />
-                )}
+                <h3 className="font-semibold text-green-300">Select Payment Method</h3>
               </div>
 
-              {/* Failed / cancelled payment banner */}
               {paymentFailed && (
-                <div
-                  className="mb-4 p-3 rounded-lg bg-red-500/20
-                  border border-red-400/40 text-sm text-red-300
-                  flex items-start gap-2"
-                >
+                <div className="mb-4 p-3 rounded-lg bg-red-500/20 border border-red-400/40 text-sm text-red-300 flex items-start gap-2">
                   <span className="text-lg">⚠️</span>
                   <div>
                     <p className="font-semibold">Payment failed or cancelled</p>
-                    <p className="text-xs text-red-400 mt-0.5">
+                    <p className="text-xs text-red-300 mt-0.5">
                       Select a payment method and try again. Your booking (PNR:{" "}
-                      <span className="font-mono font-semibold">
-                        {booking?.pnr}
-                      </span>
-                      ) is still active.
+                      <span className="font-mono font-semibold">{booking?.pnr}</span>) is still active.
                     </p>
+                    {/* Goes through "Change seats" so the old priced booking is cancelled and the fare is rebuilt */}
                     <button
                       type="button"
-                      onClick={() => setStep(2)}
-                      className="mt-2 px-3 py-1 rounded-md bg-white/10
-                        hover:bg-white/20 text-xs text-white border border-white/20"
+                      onClick={handleChangeSeats}
+                      className="mt-2 px-3 py-1 rounded-md bg-white/10 hover:bg-white/20 text-xs text-white border border-white/20"
                     >
-                      ✏️ Edit passenger details
+                      ✏️ Edit passenger details / seats
                     </button>
                   </div>
                 </div>
               )}
 
-              {/* Payment method selection cards */}
               <div className="grid grid-cols-2 max-w-md gap-4 mb-6">
-                {[
-                  {
-                    key: "PHONEPE",
-                    icon: "📱",
-                    label: "Pay with PhonePe",
-                    sub: "UPI, Cards, Net Banking",
-                  },
-                  {/* {
-                    key: "WALLET",
-                    icon: "👛",
-                    label: "APSTS Wallet",
-                    sub: "Use your wallet balance",
-                  }, */}
-                ].map(({ key, icon, label, sub }) => (
-                  <div
-                    key={key}
-                    onClick={() => setPaymentMethod(key)}
-                    className={`p-4 border rounded-xl cursor-pointer transition-all select-none ${
-                      paymentMethod === key
-                        ? "bg-green-500/30 border-green-400"
-                        : "bg-white/10 border-white/20 hover:bg-white/20"
-                    }`}
-                  >
-                    <div className="text-xl mb-1">{icon}</div>
-                    <div className="font-semibold text-sm">{label}</div>
-                    <div className="text-xs text-gray-400">{sub}</div>
-                  </div>
-                ))}
+                {[{ key: "PHONEPE", icon: "📱", label: "Pay with PhonePe", sub: "UPI, Cards, Net Banking" }].map(
+                  ({ key, icon, label, sub }) => (
+                    <div
+                      key={key}
+                      onClick={() => setPaymentMethod(key)}
+                      className={`p-4 border rounded-xl cursor-pointer transition-all select-none ${
+                        paymentMethod === key ? "bg-green-500/30 border-green-400" : "bg-white/10 border-white/20 hover:bg-white/20"
+                      }`}
+                    >
+                      <div className="text-xl mb-1">{icon}</div>
+                      <div className="font-semibold text-sm">{label}</div>
+                      <div className="text-xs text-gray-400">{sub}</div>
+                    </div>
+                  ),
+                )}
               </div>
 
-              {/* Note: unlike Razorpay, choosing UPI/Card/NetBanking here only
-                  sets our own preferred payMode hint sent to SBI ePay's Order
-                  Creation API — the bank's own hosted page still lets the
-                  customer pick/change the exact method once redirected. */}
+              <FareSummary f={booking} />
 
-              {/* Fare breakdown */}
-              {booking && (
-                <div
-                  className="p-4 rounded-xl bg-white/5 border
-                  border-white/10 text-sm space-y-1.5 mb-5"
-                >
-                  <h4 className="text-gray-300 font-medium mb-2">
-                    Fare Breakdown
-                  </h4>
-                  <div className="flex justify-between text-gray-400">
-                    <span>Base Fare</span>
-                    <span>
-                      ₹ {Number(booking.baseFareTotal ?? 0).toFixed(2)}
-                    </span>
-                  </div>
-                  {Number(booking.reservationFeeTotal) > 0 && (
-                    <div className="flex justify-between text-gray-400">
-                      <span>Reservation Fee</span>
-                      <span>
-                        ₹ {Number(booking.reservationFeeTotal).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  {Number(booking.gstAmount) > 0 && (
-                    <div className="flex justify-between text-gray-400">
-                      <span>GST</span>
-                      <span>₹ {Number(booking.gstAmount).toFixed(2)}</span>
-                    </div>
-                  )}
-                  {Number(booking.concessionDiscountTotal) > 0 && (
-                    <div className="flex justify-between text-green-400">
-                      <span>Concession Discount</span>
-                      <span>
-                        - ₹ {Number(booking.concessionDiscountTotal).toFixed(2)}
-                      </span>
-                    </div>
-                  )}
-                  <div
-                    className="flex justify-between font-semibold text-white
-                    border-t border-white/10 pt-2 mt-2"
+              <div className="flex justify-between items-center gap-2 flex-wrap">
+                <div className="flex gap-2">
+                  <button type="button" onClick={() => handleBack(3)} className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm">
+                    ← Back
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleChangeSeats}
+                    className="px-4 py-2 rounded-lg bg-white/10 hover:bg-white/20 text-sm"
                   >
-                    <span>Total Amount</span>
-                    <span className="text-green-400">₹ {totalFare}</span>
-                  </div>
+                    ✏️ Change seats
+                  </button>
                 </div>
-              )}
 
-              <div className="flex justify-between items-center">
-                <button
-                  type="button"
-                  onClick={() => handleBack(3)}
-                  className="px-4 py-2 rounded-lg bg-white/10
-                    hover:bg-white/20 text-sm"
-                >
-                  ← Back
-                </button>
-
-                {/* Pay button — disabled only while API call / redirect is
-                    in flight. For gateway methods, a successful click means
-                    the browser is about to navigate away entirely. */}
                 <button
                   type="button"
                   onClick={handleInitiatePayment}
                   disabled={initiating}
-                  className="px-5 py-2 rounded-lg font-semibold text-sm
-                    disabled:opacity-60 disabled:cursor-not-allowed
-                    flex items-center gap-2 bg-orange-500
-                    hover:bg-orange-600 transition-colors"
+                  className="px-5 py-2 rounded-lg font-semibold text-sm disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-2 bg-orange-500 hover:bg-orange-600 transition-colors"
                 >
                   {initiating && <Spinner />}
                   {initiating
                     ? "Redirecting to secure payment page…"
                     : paymentFailed
-                      ? `↻ Retry Payment ₹ ${totalFare}`
-                      : `Pay ₹ ${totalFare}`}
+                      ? `↻ Retry Payment ${formatINR(booking?.totalAmountPaid)}`
+                      : `Pay ${formatINR(booking?.totalAmountPaid)}`}
                 </button>
               </div>
             </>
           )}
 
-          {/* ── STEP 5: Confirmed Ticket ── */}
+          {/* ── STEP 5: Confirmed ticket ── */}
           {step === 5 && (
             <div className="flex flex-col items-center">
               <div className="flex items-center gap-2 text-green-400 mb-4">
-                <svg
-                  className="w-6 h-6"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M5 13l4 4L19 7"
-                  />
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
                 </svg>
-                <span className="text-xl font-semibold">
-                  Booking Confirmed!
-                </span>
+                <span className="text-xl font-semibold">Booking Confirmed!</span>
               </div>
 
-              {/* Printable / downloadable ticket card */}
               <div
                 ref={ticketRef}
-                className="w-full max-w-md rounded-2xl overflow-hidden
-                  shadow-2xl bg-gradient-to-br from-[#0f2027] via-[#203a43]
-                  to-[#2c5364] border border-white/20"
+                className="w-full max-w-md rounded-2xl overflow-hidden shadow-2xl bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] border border-white/20"
               >
-                <div
-                  className="py-3 text-center bg-green-500 font-semibold
-                  tracking-wide"
-                >
-                  🎟 APSTS Bus Ticket
-                </div>
+                <div className="py-3 text-center bg-green-500 font-semibold tracking-wide">🎟 APSTS Bus Ticket</div>
 
                 <div className="p-5 space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-gray-400">PNR</span>
-                    <span className="font-bold tracking-widest text-orange-300">
-                      {booking?.pnr}
-                    </span>
+                    <span className="font-bold tracking-widest text-orange-300">{booking?.pnr}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Route</span>
-                    <span className="uppercase text-right">
-                      {fromLabel} → {toLabel}
-                    </span>
+                    <span className="uppercase text-right">{fromLabel} → {toLabel}</span>
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Service</span>
@@ -2041,129 +1522,49 @@ export default function SeatSelection() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-gray-400">Date</span>
-                    <span>
-                      {formatDate(date)} {formatTime(departure)}
-                    </span>
+                    <span>{isoToDMY(String(date).slice(0, 10))} {formatTime(departure)}</span>
                   </div>
-
-                  {/* Passengers — prefer booking.passengers (server data),
-                      fall back to local selectedSeats state ── */}
-                  {/* <div className="border-t border-white/10 pt-3">
-                    <p className="text-gray-400 mb-2">Passengers</p>
-                    {(booking?.passengers ?? selectedSeats).map((p, i) => {
-                      const name   = p.passengerName   ?? passengerDetails[p.id]?.name;
-                      const gender = p.passengerGender ?? passengerDetails[p.id]?.gender;
-                      const age    = p.passengerAge    ?? passengerDetails[p.id]?.age;
-                      const label  = p.seatLabel       ?? selectedSeats[i]?.seatLabel;
-                      return (
-                        <div key={i} className="flex justify-between text-xs mt-1">
-                          <span>{name} ({gender}, {age} yrs)</span>
-                          <span className="text-green-300">Seat {label}</span>
-                        </div>
-                      );
-                    })}
-                  </div> */}
 
                   <div className="border-t border-white/10 pt-3">
                     <p className="text-gray-400 mb-2">Passengers</p>
                     {(booking?.passengers ?? []).map((p) => (
-                      <div
-                        key={p.reservationId}
-                        className="flex justify-between text-xs mt-1"
-                      >
-                        <span>
-                          {p.passengerName} ({p.passengerGender},{" "}
-                          {p.passengerAge} yrs)
-                        </span>
-                        <span className="text-green-300">
-                          Seat {p.seatLabel}
-                        </span>
+                      <div key={p.reservationId} className="flex justify-between text-xs mt-1">
+                        <span>{p.passengerName} ({p.passengerGender}, {p.passengerAge} yrs)</span>
+                        <span className="text-green-300">Seat {p.seatLabel}</span>
                       </div>
                     ))}
                   </div>
 
-                  <div className="flex justify-between border-t border-white/10 pt-3">
-                    <span className="text-gray-400">Total Paid</span>
-                    <span className="text-green-400 font-semibold">
-                      ₹ {totalFare}
-                    </span>
-                  </div>
+                  <FareSummary f={booking} title="Payment summary" />
+
                   <div className="flex justify-between">
                     <span className="text-gray-400">Status</span>
-                    <span
-                      className={`font-semibold ${
-                        booking?.bookingStatus === "CONFIRMED"
-                          ? "text-green-400"
-                          : "text-yellow-400"
-                      }`}
-                    >
+                    <span className={`font-semibold ${booking?.bookingStatus === "CONFIRMED" ? "text-green-400" : "text-yellow-400"}`}>
                       {booking?.bookingStatus}
                     </span>
                   </div>
 
-                  {/* QR code for conductor verification
-                  <div className="flex justify-center mt-4">
-                    <QRCodeCanvas
-                      value={JSON.stringify({
-                        pnr:        booking?.pnr,
-                        scheduleId,
-                        seats:      selectedSeats.map((s) => s.seatLabel),
-                        amount:     booking?.totalAmountPaid,
-                      })}
-                      size={100}
-                      bgColor="transparent"
-                      fgColor="#ffffff"
-                    />
-                  </div>
-                  <p className="text-center text-xs text-gray-400 mt-2">
-                    Show this QR to the conductor for verification
-                  </p>*/}
-                  {/* QR codes for conductor verification — one per passenger,
-                      since each seat is validated/boarded independently */}
                   <div className="border-t border-white/10 pt-3 mt-3">
                     {(booking?.passengers ?? []).map((p) => (
-                      <div
-                        key={p.reservationId}
-                        className="flex flex-col items-center mt-4"
-                      >
-                        <QRCodeCanvas
-                          value={p.qrCodeHash}
-                          size={100}
-                          bgColor="transparent"
-                          fgColor="#ffffff"
-                        />
-                        <p className="text-xs mt-1">
-                          {p.passengerName} — Seat {p.seatLabel}
-                        </p>
-                        {p.reservationStatus === "BOARDED" && (
-                          <span className="text-green-400 text-xs mt-0.5">
-                            ✓ Boarded
-                          </span>
-                        )}
+                      <div key={p.reservationId} className="flex flex-col items-center mt-4">
+                        <QRCodeCanvas value={p.qrCodeHash} size={100} bgColor="transparent" fgColor="#ffffff" />
+                        <p className="text-xs mt-1">{p.passengerName} — Seat {p.seatLabel}</p>
+                        {p.reservationStatus === "BOARDED" && <span className="text-green-400 text-xs mt-0.5">✓ Boarded</span>}
                       </div>
                     ))}
                   </div>
-                  <p className="text-center text-xs text-gray-400 mt-2">
-                    Show your QR to the conductor for verification
-                  </p>
+                  <p className="text-center text-xs text-gray-400 mt-2">Show your QR to the conductor for verification</p>
                 </div>
               </div>
 
-              {/* Post-booking actions */}
               <div className="flex gap-4 mt-6">
-                <button
-                  type="button"
-                  onClick={downloadTicket}
-                  className="px-5 py-2 bg-green-500 hover:bg-green-600
-                    rounded-lg font-semibold text-sm"
-                >
+                <button type="button" onClick={downloadTicket} className="px-5 py-2 bg-green-500 hover:bg-green-600 rounded-lg font-semibold text-sm">
                   ⬇ Download PDF
                 </button>
                 <button
                   type="button"
                   onClick={() => navigate("/user/my-bookings")}
-                  className="px-5 py-2 bg-white/10 hover:bg-white/20
-                    border border-white/20 rounded-lg text-sm"
+                  className="px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm"
                 >
                   View My Bookings
                 </button>
@@ -2171,9 +1572,7 @@ export default function SeatSelection() {
             </div>
           )}
         </div>
-        {/* end RIGHT PANEL */}
       </div>
-      {/* end three-column layout */}
     </div>
   );
 }

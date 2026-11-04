@@ -4,29 +4,30 @@ import faqImg from "../../assets/faq.png";
 
 const TAB_ORDER = ["booking", "payment", "cancellation", "refund", "account", "travel", "grievance"];
 
-const TAB_STYLE = {
-  booking:      "bg-yellow-400 text-black",
-  cancellation: "bg-[#1f3c4d] text-white",
-  refund:       "bg-orange-500 text-white",
-  payment:      "bg-[#1f3c4d] text-white",
-};
+// One clear active style for every tab; inactive tabs get a visible hover (item 19)
+const ACTIVE_TAB = "bg-yellow-400 text-black shadow-md scale-105";
+const INACTIVE_TAB = "bg-[#2c4a5a] text-white hover:bg-[#3b6176]";
+
+// Same order the admin panel uses: position, then id as the tie-breaker (item 18)
+const byPosition = (a, b) => (a.position ?? 0) - (b.position ?? 0) || (a.faqId ?? 0) - (b.faqId ?? 0);
 
 function FAQ() {
   const [activeTab, setActiveTab] = useState("booking");
-  const [faqMap,    setFaqMap]    = useState({});
-  const [loading,   setLoading]   = useState(true);
+  const [faqMap, setFaqMap] = useState({});
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     cmsApi.getAllFaqs()
       .then((res) => {
         const all = res.data?.data ?? res.data ?? [];
-        // group by category
         const map = {};
-        all.forEach((f) => { 
+        all.forEach((f) => {
           const cat = f.category?.toLowerCase();
+          if (!cat) return;
           if (!map[cat]) map[cat] = [];
           map[cat].push(f);
         });
+        Object.values(map).forEach((list) => list.sort(byPosition));
         setFaqMap(map);
       })
       .catch(console.error)
@@ -44,10 +45,8 @@ function FAQ() {
   return (
     <div className="py-16 px-10 bg-[#f3f6f9]">
       <div className="text-center mb-8">
-        <h2 className="text-3xl font-bold text-gray-800">
-          Frequently Asked Questions
-        </h2>
-        <p className="text-gray-500 text-sm">Everything you need to know</p>
+        <h2 className="text-3xl font-bold text-gray-800">Frequently Asked Questions</h2>
+        <p className="text-gray-600 text-sm">Everything you need to know</p>
       </div>
 
       {/* Tabs */}
@@ -56,8 +55,9 @@ function FAQ() {
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
+            aria-pressed={currentTab === tab}
             className={`px-5 py-2 rounded-full text-sm capitalize font-medium transition
-              ${currentTab === tab ? (TAB_STYLE[tab] ?? "bg-yellow-400 text-black") : "bg-[#2c4a5a] text-white"}`}
+              ${currentTab === tab ? ACTIVE_TAB : INACTIVE_TAB}`}
           >
             {tab}
           </button>
@@ -68,29 +68,23 @@ function FAQ() {
       <div className="grid md:grid-cols-2 gap-10 items-center">
         <div className="space-y-4">
           {loading ? (
-            <p className="text-gray-400 text-sm">Loading…</p>
+            <p className="text-gray-500 text-sm">Loading…</p>
           ) : items.length === 0 ? (
-            <p className="text-gray-400 text-sm">No FAQs in this category yet.</p>
+            <p className="text-gray-500 text-sm">No FAQs in this category yet.</p>
           ) : (
             items.map((item) => (
               <div key={item.faqId} className="bg-white p-5 rounded-xl shadow-sm border">
                 <h3 className="font-semibold text-gray-800">{item.question}</h3>
-                <p className="text-sm text-gray-500 mt-2">{item.answer}</p>
+                <p className="text-sm text-gray-600 mt-2">{item.answer}</p>
               </div>
             ))
           )}
         </div>
-       <div className="flex justify-center">
-  <div className="w-64 h-64 bg-gradient-to-br from-green-100 to-green-200 
-    rounded-2xl flex items-center justify-center">
-    {/* <span className="text-6xl">❓</span> */}
-    <img
-          src={faqImg}
-          alt="faq Image"
-          className="object-contain w-25 h-25 md:w-80 md:h-80"
-        />
-  </div>
-</div>
+        <div className="flex justify-center">
+          <div className="w-64 h-64 bg-gradient-to-br from-green-100 to-green-200 rounded-2xl flex items-center justify-center">
+            <img src={faqImg} alt="FAQ" className="object-contain w-25 h-25 md:w-80 md:h-80" />
+          </div>
+        </div>
       </div>
     </div>
   );

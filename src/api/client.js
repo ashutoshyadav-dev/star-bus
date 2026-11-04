@@ -198,11 +198,15 @@ api.interceptors.response.use(
     // Show a toast with the server's error message.
     // We deliberately skip toasts for 401 because the user will either be
     // silently refreshed or redirected to login — no toast needed.
-    if (error.response?.status !== 401) {
-      const message =
-        error.response?.data?.message ||
-        error.response?.data?.error ||
-        "Something went wrong. Please try again.";
+   if (error.response?.status !== 401 && !originalRequest?.skipErrorToast) {
+      const d = error.response?.data;
+      const fieldMsg = d?.data && typeof d.data === "object" && !Array.isArray(d.data)
+        ? Object.values(d.data).filter((x) => typeof x === "string")[0] : null;
+      const message = (d?.message && d.message !== "Validation failed" ? d.message : fieldMsg)
+        || d?.message || d?.error
+        || (error.code === "ECONNABORTED" ? "The server took too long to respond." :
+            !error.response ? "Cannot reach the server. Check your internet connection." :
+            "Something went wrong. Please try again.");
       toast.error(message);
     }
 

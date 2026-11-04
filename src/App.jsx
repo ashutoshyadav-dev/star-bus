@@ -259,25 +259,48 @@ function GuestRoute({ children }) {
 // ── Public Website wrapper ──────────────────────────────────────────────────
 
 // const MAIN_PAGES = ["/ap", "/ap/our-history", "/ap/routes"];
-const MAIN_PAGES = ["/home"];
+// const MAIN_PAGES = ["/home"];
 
+
+// function WebsiteLayout() {
+//   const { pathname } = useLocation();
+//   const isMain = MAIN_PAGES.includes(pathname);
+//   // Seat selection has its own top bar (with its own Login / Register button);
+//   // rendering the site navbar as well showed two login buttons stacked on top of each other.
+//   const hideSiteNavbar = pathname.startsWith("/home/seat-selection");
+
+//   return (
+//     <div className="flex flex-col min-h-screen bg-white">
+//       {!hideSiteNavbar && <Navbar />}
+
+//       <main className="flex-grow">
+//         <Outlet />
+//       </main>
+
+//       {isMain ? <Footer /> : <InnerFooter />}
+//     </div>
+//   );
+// }
+
+const MAIN_PAGES = ["/home"];   // pages that get the full Footer; all others get InnerFooter
+const BOOKING_FLOW_PREFIXES = ["/home/buses", "/home/seat-selection"];
+const HIDE_CHROME_ON_ALL_HOME_PAGES = false;   // set true to also hide it on FAQ, Helpdesk, etc.
 
 function WebsiteLayout() {
   const { pathname } = useLocation();
+  const { user } = useAuth();
   const isMain = MAIN_PAGES.includes(pathname);
-  // Seat selection has its own top bar (with its own Login / Register button);
-  // rendering the site navbar as well showed two login buttons stacked on top of each other.
-  const hideSiteNavbar = pathname.startsWith("/home/seat-selection");
+
+  const roleClass = user ? classifyRole(user?.roles ?? []) : null;
+  const isPassengerOrCounter = !!user && roleClass !== "admin" && roleClass !== "duty_staff";   // passenger + counter
+  const inBookingFlow = BOOKING_FLOW_PREFIXES.some((p) => pathname.startsWith(p));
+  const hideChrome = isPassengerOrCounter && (inBookingFlow || HIDE_CHROME_ON_ALL_HOME_PAGES);
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
-      {!hideSiteNavbar && <Navbar />}
-
-      <main className="flex-grow">
-        <Outlet />
-      </main>
-
-      {isMain ? <Footer /> : <InnerFooter />}
+      {!hideChrome && <Navbar />}
+      <main className="flex-grow"><Outlet /></main>
+      {!hideChrome && (isMain ? <Footer /> : <InnerFooter />)}
     </div>
   );
 }

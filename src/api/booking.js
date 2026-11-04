@@ -16,6 +16,8 @@ export const bookingApi = {
   adminCancel:    (id, data)   => api.post(`/bookings/admin/${id}/cancel`, data),
    adminSearch:        (q)          => api.get('/bookings/admin/search', { params: { q, limit: 10 } }),
      downloadTicketUrl: (bookingId) => `${api.defaults.baseURL}/bookings/${bookingId}/ticket`,
+     quote:       (data) => api.post('/bookings/quote', data, { skipErrorToast: true }),
+  changeSeats: (id)   => api.post(`/bookings/${id}/change-seats`),
 }
 
 export const paymentApi = {
