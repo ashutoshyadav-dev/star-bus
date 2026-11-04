@@ -267,7 +267,8 @@ function WebsiteLayout() {
   const isMain = MAIN_PAGES.includes(pathname);
   // Seat selection has its own top bar (with its own Login / Register button);
   // rendering the site navbar as well showed two login buttons stacked on top of each other.
-  const hideSiteNavbar = pathname.startsWith("/home/seat-selection");
+ const hideSiteNavbar = false;
+  const hideFooter = pathname.includes("/seat-selection");
 
   return (
     <div className="flex flex-col min-h-screen bg-white">
@@ -342,6 +343,8 @@ function AppRoutes() {
 
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="book-ticket" element={<BookTicket />} />
+        <Route path="buses" element={<BusList />} />
+<Route path="seat-selection" element={<SeatSelection />} />
         <Route path="schedule" element={<Schedules />} />
         <Route path="my-bookings" element={<MyBookings />} />
         <Route path="booking/:id" element={<BookingDetails />} />

@@ -1335,7 +1335,7 @@ export default function SeatSelection() {
       from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10"
     >
       {/* ── Fixed contextual navbar ── */}
-      <SeatNavbar user={user} onLogout={handleLogout} />
+      
 
       {/* ── Booking progress bar ── */}
       <div className="mb-6">
@@ -1366,13 +1366,12 @@ export default function SeatSelection() {
       )}
 
       {/* ── Three-column layout ── */}
-      <div className="flex gap-6">
+      <div className="flex flex-col xl:flex-row gap-6">
         {/* ════════════════════════════════════════════════════════════════
             LEFT PANEL — Journey summary + selected seats + back button
         ════════════════════════════════════════════════════════════════ */}
         <div
-          className="relative w-[240px] shrink-0 rounded-xl overflow-hidden
-          border border-white/20"
+          className="relative w-full xl:w-[240px] shrink-0 rounded-xl overflow-hidden border border-white/20"
         >
           <div
             className="absolute inset-0 bg-center bg-cover"
@@ -1468,7 +1467,7 @@ export default function SeatSelection() {
         {/* ════════════════════════════════════════════════════════════════
             MIDDLE PANEL — Interactive seat map
         ════════════════════════════════════════════════════════════════ */}
-        <div className="w-[400px] shrink-0">
+        <div className="w-full xl:w-[400px] shrink-0">
           <div
             className="relative p-5 border bg-white/10 backdrop-blur-md
             border-white/20 rounded-xl h-full"
@@ -1565,265 +1564,267 @@ export default function SeatSelection() {
         {/* ════════════════════════════════════════════════════════════════
             RIGHT PANEL — Step-specific content
         ════════════════════════════════════════════════════════════════ */}
-        <div
-          className="flex-1 border bg-white/10 backdrop-blur-md
-          border-white/20 rounded-xl p-6 min-h-[400px]"
-        >
-          {/* ── STEP 2: Passenger Details ── */}
-          {step === 2 &&
-            (selectedSeats.length === 0 ? (
-              // Empty state — no seat selected yet
-              <div
-                className="flex flex-col items-center justify-center
-                h-full gap-3 text-gray-400 py-20"
-              >
-                <span className="text-5xl">💺</span>
-                <p className="text-lg">Click a seat on the map to begin</p>
+      
+<div className="w-full min-w-0 flex-1 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl p-6 min-h-[400px]">
+
+  {/* ── STEP 2: Passenger Details ── */}
+  {step === 2 &&
+    (selectedSeats.length === 0 ? (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 py-20">
+        <span className="text-5xl">💺</span>
+        <p className="text-lg">Click a seat on the map to begin</p>
+      </div>
+    ) : (
+      <>
+        <h3 className="font-semibold text-green-300 mb-4">
+          Passenger Details ({selectedSeats.length} seat
+          {selectedSeats.length > 1 ? "s" : ""})
+        </h3>
+
+        <div className="w-full min-w-0 space-y-4">
+          {selectedSeats.map((seat) => (
+            <div
+              key={seat.id}
+              className="w-full min-w-0 p-4 rounded-xl border border-white/20 bg-white/5"
+            >
+              <div className="mb-4">
+                <span className="text-sm font-semibold text-green-300">
+                  Seat {seat.seatLabel}
+                </span>
               </div>
-            ) : (
-              <>
-                <h3 className="font-semibold text-green-300 mb-4">
-                  Passenger Details ({selectedSeats.length} seat
-                  {selectedSeats.length > 1 ? "s" : ""})
-                </h3>
 
-                <div className="overflow-auto">
-                  <table className="w-full text-sm border border-white/20">
-                    <thead>
-                      <tr className="bg-white/10 text-gray-300">
-                        <th className="p-2 text-left">Seat</th>
-                        <th className="p-2 text-left">Full Name *</th>
-                        <th className="p-2 text-left">Gender *</th>
-                        <th className="p-2 text-left">Age *</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedSeats.map((seat) => (
-                        <tr key={seat.id} className="border-t border-white/10">
-                          <td className="p-2 font-semibold text-green-300">
-                            {seat.seatLabel}
-                          </td>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
-                          {/* Name — letters, spaces, hyphens and dots only */}
-                          <td className="p-2">
-                            <input
-                              value={passengerDetails[seat.id]?.name ?? ""}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(
-                                  /[^a-zA-Z\s.-]/g,
-                                  "",
-                                );
-                                updatePassenger(seat.id, "name", value);
-                              }}
-                              placeholder="Full name"
-                              className="w-full px-2 py-1 rounded bg-white/10
-                                border border-white/20 outline-none text-sm"
-                            />
-                          </td>
-
-                          {/* Gender */}
-                          <td className="p-2">
-                            <select
-                              value={passengerDetails[seat.id]?.gender ?? ""}
-                              onChange={(e) =>
-                                updatePassenger(
-                                  seat.id,
-                                  "gender",
-                                  e.target.value,
-                                )
-                              }
-                              className="w-full rounded bg-white/20 border
-                                border-white/30 text-white text-sm py-1"
-                            >
-                              <option value="" className="text-black bg-white">
-                                Select
-                              </option>
-                              <option
-                                value="male"
-                                className="text-black bg-white"
-                              >
-                                Male
-                              </option>
-                              <option
-                                value="female"
-                                className="text-black bg-white"
-                              >
-                                Female
-                              </option>
-                              <option
-                                value="other"
-                                className="text-black bg-white"
-                              >
-                                Other
-                              </option>
-                              <option
-                                value="prefer_not_to_say"
-                                className="text-black bg-white"
-                              >
-                                Prefer not to say
-                              </option>
-                            </select>
-                          </td>
-
-                          {/* Age — numeric 1-120 only */}
-                          <td className="p-2">
-                            <input
-                              type="number"
-                              min="1"
-                              max="120"
-                              value={passengerDetails[seat.id]?.age ?? ""}
-                              onChange={(e) => {
-                                const value = e.target.value.replace(/\D/g, "");
-                                if (
-                                  value === "" ||
-                                  (Number(value) >= 1 && Number(value) <= 120)
-                                ) {
-                                  updatePassenger(seat.id, "age", value);
-                                }
-                              }}
-                              placeholder="Age"
-                              className="w-full px-2 py-1 rounded bg-white/10
-                                border border-white/20 outline-none text-sm"
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                <div className="flex justify-between mt-5">
-                  <button
-                    type="button"
-                    onClick={() => setSelectedSeats([])}
-                    className="px-4 py-2 rounded-lg bg-red-500/80
-                      hover:bg-red-600 text-sm"
-                  >
-                    Clear Selection
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleProceedFromSeats}
-                    className="px-5 py-2 rounded-lg bg-green-500
-                      hover:bg-green-600 font-semibold text-sm"
-                  >
-                    Continue →
-                  </button>
-                </div>
-              </>
-            ))}
-
-          {/* ── STEP 3: Contact Details ── */}
-          {step === 3 && (
-            <>
-              <h3 className="font-semibold text-green-300 mb-1">
-                Contact Details
-              </h3>
-              <p className="text-xs text-gray-400 mb-5">
-                Your ticket confirmation will be sent here
-              </p>
-
-              <div className="space-y-4 max-w-sm">
-                {/* Mobile */}
-                <div>
-                  <label className="text-xs text-gray-400 mb-1 block">
-                    Mobile Number *
-                  </label>
-                  <div
-                    className="flex items-center border border-white/20
-                    rounded-xl overflow-hidden"
-                  >
-                    <span
-                      className="px-3 py-2.5 bg-white/10 text-sm
-                      text-gray-300 border-r border-white/20 select-none"
-                    >
-                      +91
-                    </span>
-                    <input
-                      type="tel"
-                      maxLength={10}
-                      placeholder="10-digit number"
-                      value={contact.mobile}
-                      onChange={(e) =>
-                        setContact((p) => ({
-                          ...p,
-                          mobile: e.target.value.replace(/\D/g, ""),
-                        }))
-                      }
-                      className="w-full px-3 py-2.5 bg-transparent text-sm
-                        outline-none"
-                    />
-                  </div>
-                </div>
-
-                {/* Email */}
-                <div>
-                  <label className="text-xs text-gray-400 mb-1 block">
-                    Email Address *
+                {/* Full Name */}
+                <div className="min-w-0">
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Full Name *
                   </label>
                   <input
-                    type="email"
-                    placeholder="your@email.com"
-                    value={contact.email}
-                    onChange={handleEmailChange}
-                    className="w-full px-3 py-2.5 border border-white/20
-                      rounded-xl bg-white/10 text-sm outline-none"
+                    value={passengerDetails[seat.id]?.name ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(
+                        /[^a-zA-Z\s.-]/g,
+                        "",
+                      );
+                      updatePassenger(seat.id, "name", value);
+                    }}
+                    placeholder="Full name"
+                    className="w-full min-w-0 px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 outline-none text-sm focus:border-green-400"
                   />
-                  {emailError && (
-                    <p className="text-red-400 text-xs mt-1">{emailError}</p>
-                  )}
                 </div>
-              </div>
 
-              {/* Booking summary */}
-              <div
-                className="mt-6 p-4 rounded-xl bg-white/5 border
-                border-white/10 text-sm space-y-2 max-w-sm"
-              >
-                <h4 className="text-gray-300 font-medium mb-2">
-                  Booking Summary
-                </h4>
-                {selectedSeats.map((seat) => {
-                  const d = passengerDetails[seat.id] ?? {};
-                  return (
-                    <div key={seat.id} className="flex justify-between text-xs">
-                      <span className="text-gray-400">
-                        {d.name} ({d.gender}, {d.age} yrs)
-                      </span>
-                      <span className="text-green-300">
-                        Seat {seat.seatLabel}
-                      </span>
-                    </div>
-                  );
-                })}
-              </div>
+                {/* Gender */}
+                <div className="min-w-0">
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Gender *
+                  </label>
+                  <select
+                    value={passengerDetails[seat.id]?.gender ?? ""}
+                    onChange={(e) =>
+                      updatePassenger(
+                        seat.id,
+                        "gender",
+                        e.target.value,
+                      )
+                    }
+                    className="w-full min-w-0 px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm outline-none focus:border-green-400"
+                  >
+                    <option value="" className="text-black bg-white">
+                      Select Gender
+                    </option>
+                    <option value="male" className="text-black bg-white">
+                      Male
+                    </option>
+                    <option value="female" className="text-black bg-white">
+                      Female
+                    </option>
+                    <option value="other" className="text-black bg-white">
+                      Other
+                    </option>
+                    <option value="prefer_not_to_say" className="text-black bg-white">
+                      Prefer not to say
+                    </option>
+                  </select>
+                </div>
 
-              <div className="flex justify-between mt-6">
-                <button
-                  type="button"
-                  onClick={() => setStep(2)}
-                  className="px-4 py-2 rounded-lg bg-white/10
-                    hover:bg-white/20 text-sm"
-                >
-                  ← Back
-                </button>
-                <button
-                  type="button"
-                  onClick={handleCreateBooking}
-                  disabled={bookingLoading || !!emailError}
-                  className="px-5 py-2 rounded-lg bg-green-500
-                    hover:bg-green-600 font-semibold text-sm
-                    disabled:opacity-60 disabled:cursor-not-allowed
-                    flex items-center gap-2"
-                >
-                  {bookingLoading && <Spinner />}
-                  {bookingLoading
-                    ? "Creating Booking…"
-                    : "Confirm & Proceed to Payment →"}
-                </button>
+                {/* Age */}
+                <div className="min-w-0 sm:col-span-2">
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Age *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={passengerDetails[seat.id]?.age ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (
+                        value === "" ||
+                        (Number(value) >= 1 && Number(value) <= 120)
+                      ) {
+                        updatePassenger(seat.id, "age", value);
+                      }
+                    }}
+                    placeholder="Enter age"
+                    className="w-full min-w-0 px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 outline-none text-sm focus:border-green-400"
+                  />
+                </div>
+
               </div>
-            </>
-          )}
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between items-center gap-3 mt-6 pt-4 border-t border-white/10">
+          <button
+            type="button"
+            onClick={() => setSelectedSeats([])}
+            className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-lg bg-red-500/80 hover:bg-red-600 text-sm font-medium transition-colors"
+          >
+            Clear Selection
+          </button>
+
+          <button
+            type="button"
+            onClick={handleProceedFromSeats}
+            className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-sm font-semibold transition-colors"
+          >
+            Continue →
+          </button>
+        </div>
+      </>
+    ))}
+
+
+            
+
+
+{/* ── STEP 3: Contact Details ── */}
+{step === 3 && (
+  <>
+    <h3 className="font-semibold text-green-300 mb-1">
+      Contact Details
+    </h3>
+    <p className="text-xs text-gray-400 mb-5">
+      Your ticket confirmation will be sent here
+    </p>
+
+    {/* Contact Form */}
+    <div className="w-full grid grid-cols-2 gap-4">
+
+      {/* Mobile */}
+      <div className="w-full min-w-0">
+        <label className="text-xs text-gray-400 mb-2 block">
+          Mobile Number *
+        </label>
+
+        <div className="flex w-full items-center border border-white/20 rounded-xl overflow-hidden focus-within:border-green-400">
+          <span className="px-3 py-3 bg-white/10 text-sm text-gray-300 border-r border-white/20 select-none">
+            +91
+          </span>
+
+          <input
+            type="tel"
+            maxLength={10}
+            placeholder="10-digit number"
+            value={contact.mobile}
+            onChange={(e) =>
+              setContact((p) => ({
+                ...p,
+                mobile: e.target.value.replace(/\D/g, ""),
+              }))
+            }
+            className="w-full min-w-0 px-3 py-3 bg-transparent text-sm outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Email */}
+      <div className="w-full min-w-0">
+        <label className="text-xs text-gray-400 mb-2 block">
+          Email Address *
+        </label>
+
+        <input
+          type="email"
+          placeholder="your@email.com"
+          value={contact.email}
+          onChange={handleEmailChange}
+          className="w-full min-w-0 px-3 py-3 border border-white/20 rounded-xl bg-white/10 text-sm outline-none focus:border-green-400"
+        />
+
+        {emailError && (
+          <p className="text-red-400 text-xs mt-1">
+            {emailError}
+          </p>
+        )}
+      </div>
+    </div>
+
+    {/* Booking Summary */}
+    <div className="w-full mt-6 p-4 rounded-xl bg-white/5 border border-white/10 text-sm">
+      <h4 className="text-gray-300 font-medium mb-3">
+        Booking Summary
+      </h4>
+
+      <div className="space-y-3">
+        {selectedSeats.map((seat) => {
+          const d = passengerDetails[seat.id] ?? {};
+
+          return (
+            <div
+              key={seat.id}
+              className="flex flex-wrap justify-between items-center gap-2 text-xs border-b border-white/10 pb-2 last:border-0 last:pb-0"
+            >
+              <span className="text-gray-300">
+                {d.name} ({d.gender}, {d.age} yrs)
+              </span>
+
+              <span className="text-green-300 whitespace-nowrap">
+                Seat {seat.seatLabel}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+
+    
+
+{/* Navigation Buttons */}
+<div className="flex justify-between items-center gap-3 mt-8 pt-5 border-t border-white/10">
+
+  <button
+    type="button"
+    onClick={() => setStep(2)}
+    className="inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap shrink-0 px-4 py-2 rounded-lg border border-white/25 bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+  >
+    <span>←</span>
+    <span>Back</span>
+  </button>
+
+  <button
+    type="button"
+    onClick={handleCreateBooking}
+    disabled={bookingLoading || !!emailError}
+    className="inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap shrink-0 px-4 py-2 rounded-lg bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    {bookingLoading && <Spinner />}
+    <span>
+      {bookingLoading ? "Creating Booking..." : "Confirm & Proceed"}
+    </span>
+    {!bookingLoading && <span>→</span>}
+  </button>
+
+</div>
+
+
+  </>
+)}
+
 
           {/* ── STEP 4: Payment ── */}
           {step === 4 && (

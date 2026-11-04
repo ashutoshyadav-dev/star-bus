@@ -398,7 +398,11 @@ function BusList() {
       toStopSequence:   sch.toStopSequence,           // new: needed for seat inventory segment query
       fare:             sch.fare ?? 0,                // new: pre-calculated by backend
     });
-    navigate(`/home/seat-selection?${params.toString()}`);
+   const seatSelectionPath = window.location.pathname.startsWith("/user")
+  ? "/user/seat-selection"
+  : "/home/seat-selection";
+
+navigate(`${seatSelectionPath}?${params.toString()}`);
   };
 
   return (
