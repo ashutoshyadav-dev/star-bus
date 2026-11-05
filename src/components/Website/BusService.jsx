@@ -407,7 +407,7 @@ function BusService() {
           <div>
             <h2 className="text-xl font-bold text-blue-700">Find Your Bus</h2>
             <p className="text-gray-500">
-              Choose your stations and travel date to see live schedules
+              Choose your stations and travel date to see live schedules 
             </p>
           </div>
         </div>

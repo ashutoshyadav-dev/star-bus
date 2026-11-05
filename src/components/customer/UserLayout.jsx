@@ -23,7 +23,7 @@ function Sidebar({ isOpen }) {
 
   return (
     <div
-      className={`h-screen fixed top-14 left-0 text-white p-4 transition-all duration-300 z-20
+      className={`h-screen fixed top-[52px] bottom-0 left-0 text-white p-4 transition-all duration-300 z-20 overflow-y-auto
         bg-gradient-to-b from-[#081935] via-[#0F2D2F] to-[#163F2D]
         ${isOpen ? "w-60" : "w-16"}`}
     >
@@ -185,7 +185,15 @@ export default function UserLayout() {
   const navigate = useNavigate();
   const [isOpen, setIsOpen] = useState(true);
 
-  const noPaddingRoutes = ["/user/book-ticket", "/user/search-results"];
+  const noPaddingRoutes = [
+  "/user/book-ticket",
+  "/user/search-results",
+  "/user/buses",
+  "/user/seat-selection",
+];
+const isFullWidthPage =
+  pathname === "/user/buses" ||
+  pathname === "/user/seat-selection";
   const isNoPadding = noPaddingRoutes.some((r) => pathname.includes(r));
 
   const handleLogout = async () => {
@@ -203,9 +211,17 @@ export default function UserLayout() {
           user={user}
           onLogout={handleLogout}
         />
-        <div className={isNoPadding ? "pt-14" : "pt-14 p-6"}>
-          <Outlet />
-        </div>
+       <div
+  className={
+    isFullWidthPage
+      ? "pt-[52px]"
+      : isNoPadding
+      ? "pt-14"
+      : "pt-14 p-6"
+  }
+>
+  <Outlet />
+</div>
       </div>
     </div>
   );

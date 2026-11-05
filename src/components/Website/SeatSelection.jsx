@@ -1053,8 +1053,18 @@ export default function SeatSelection() {
   const timerExpiry = booking ? lockExpiresAt : holdApi.expiresAt;
 
   return (
-    <div className="w-full min-h-screen text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10">
-      <SeatNavbar user={user} onLogout={handleLogout} />
+
+    // <div className="w-full min-h-screen text-white bg-gradient-to-br from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10">
+    //   <SeatNavbar user={user} onLogout={handleLogout} />
+
+    // pt-14 offsets the fixed SeatNavbar height
+    <div
+      className="w-full min-h-screen text-white bg-gradient-to-br
+      from-[#0f2027] via-[#203a43] to-[#2c5364] px-6 pt-20 pb-10"
+    >
+      {/* ── Fixed contextual navbar ── */}
+      
+
 
       <div className="mb-6">
         <ProgressBar currentStep={step} />
@@ -1080,10 +1090,25 @@ export default function SeatSelection() {
         />
       )}
 
-      <div className="flex gap-6">
+
+      {/* <div className="flex gap-6">
         {/* ════════ LEFT PANEL — journey summary ════════ */}
-        <div className="relative w-[240px] shrink-0 rounded-xl overflow-hidden border border-white/20">
-          <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${sideBg})` }} />
+        {/* <div className="relative w-[240px] shrink-0 rounded-xl overflow-hidden border border-white/20">
+          <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${sideBg})` }} /> */} */}
+
+      {/* ── Three-column layout ── */}
+      <div className="flex flex-col xl:flex-row gap-6">
+        {/* ════════════════════════════════════════════════════════════════
+            LEFT PANEL — Journey summary + selected seats + back button
+        ════════════════════════════════════════════════════════════════ */}
+        <div
+          className="relative w-full xl:w-[240px] shrink-0 rounded-xl overflow-hidden border border-white/20"
+        >
+          <div
+            className="absolute inset-0 bg-center bg-cover"
+            style={{ backgroundImage: `url(${sideBg})` }}
+          />
+
           <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" />
 
           <div className="relative z-10 p-5 space-y-3">
@@ -1153,9 +1178,20 @@ export default function SeatSelection() {
           </div>
         </div>
 
+
         {/* ════════ MIDDLE PANEL — seat map ════════ */}
-        <div className="w-[400px] shrink-0">
-          <div className="relative p-5 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl h-full">
+        {/* <div className="w-[400px] shrink-0">
+          <div className="relative p-5 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl h-full"> */}
+
+        {/* ════════════════════════════════════════════════════════════════
+            MIDDLE PANEL — Interactive seat map
+        ════════════════════════════════════════════════════════════════ */}
+        <div className="w-full xl:w-[400px] shrink-0">
+          <div
+            className="relative p-5 border bg-white/10 backdrop-blur-md
+            border-white/20 rounded-xl h-full"
+          >
+
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold text-green-300">Select Seats</h3>
               <span className="text-yellow-400 text-xl">🛞</span>
@@ -1231,8 +1267,9 @@ export default function SeatSelection() {
           </div>
         </div>
 
+
         {/* ════════ RIGHT PANEL — step content ════════ */}
-        <div className="flex-1 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl p-6 min-h-[400px]">
+        {/* <div className="flex-1 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl p-6 min-h-[400px]">
           {/* ── STEP 2: Passenger details ── */}
           {step === 2 &&
             (selectedSeats.length === 0 ? (
@@ -1374,12 +1411,65 @@ export default function SeatSelection() {
                     onChange={handleEmailChange}
                     className={`w-full px-3 py-2.5 border rounded-xl bg-white/10 text-sm outline-none ${emailError ? "border-red-400" : "border-white/20"}`}
                   />
-                  <FieldError>{emailError}</FieldError>
-                </div>
+                  <FieldError>{emailError}</FieldError> */}
+
+        {/* ════════════════════════════════════════════════════════════════
+            RIGHT PANEL — Step-specific content
+        ════════════════════════════════════════════════════════════════ */}
+      
+<div className="w-full min-w-0 flex-1 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl p-6 min-h-[400px]">
+
+  {/* ── STEP 2: Passenger Details ── */}
+  {step === 2 &&
+    (selectedSeats.length === 0 ? (
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 py-20">
+        <span className="text-5xl">💺</span>
+        <p className="text-lg">Click a seat on the map to begin</p>
+      </div>
+    ) : (
+      <>
+        <h3 className="font-semibold text-green-300 mb-4">
+          Passenger Details ({selectedSeats.length} seat
+          {selectedSeats.length > 1 ? "s" : ""})
+        </h3>
+
+        <div className="w-full min-w-0 space-y-4">
+          {selectedSeats.map((seat) => (
+            <div
+              key={seat.id}
+              className="w-full min-w-0 p-4 rounded-xl border border-white/20 bg-white/5"
+            >
+              <div className="mb-4">
+                <span className="text-sm font-semibold text-green-300">
+                  Seat {seat.seatLabel}
+                </span>
               </div>
 
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                {/* Full Name */}
+                <div className="min-w-0">
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Full Name *
+                  </label>
+                  <input
+                    value={passengerDetails[seat.id]?.name ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(
+                        /[^a-zA-Z\s.-]/g,
+                        "",
+                      );
+                      updatePassenger(seat.id, "name", value);
+                    }}
+                    placeholder="Full name"
+                    className="w-full min-w-0 px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 outline-none text-sm focus:border-green-400"
+                  />
+
+                </div>
+
+
               {/* Booking summary + fare */}
-              <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10 text-sm space-y-2 max-w-sm">
+              {/* <div className="mt-6 p-4 rounded-xl bg-white/5 border border-white/10 text-sm space-y-2 max-w-sm">
                 <h4 className="text-gray-300 font-medium mb-2">Booking Summary</h4>
                 {selectedSeats.map((seat) => {
                   const d = passengerDetails[seat.id] ?? {};
@@ -1407,10 +1497,220 @@ export default function SeatSelection() {
                 >
                   {bookingLoading && <Spinner />}
                   {bookingLoading ? "Creating Booking…" : "Confirm & Proceed to Payment →"}
-                </button>
+                </button> */}
+
+                {/* Gender */}
+                <div className="min-w-0">
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Gender *
+                  </label>
+                  <select
+                    value={passengerDetails[seat.id]?.gender ?? ""}
+                    onChange={(e) =>
+                      updatePassenger(
+                        seat.id,
+                        "gender",
+                        e.target.value,
+                      )
+                    }
+                    className="w-full min-w-0 px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 text-white text-sm outline-none focus:border-green-400"
+                  >
+                    <option value="" className="text-black bg-white">
+                      Select Gender
+                    </option>
+                    <option value="male" className="text-black bg-white">
+                      Male
+                    </option>
+                    <option value="female" className="text-black bg-white">
+                      Female
+                    </option>
+                    <option value="other" className="text-black bg-white">
+                      Other
+                    </option>
+                    <option value="prefer_not_to_say" className="text-black bg-white">
+                      Prefer not to say
+                    </option>
+                  </select>
+                </div>
+
+                {/* Age */}
+                <div className="min-w-0 sm:col-span-2">
+                  <label className="block text-xs text-gray-400 mb-2">
+                    Age *
+                  </label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="120"
+                    value={passengerDetails[seat.id]?.age ?? ""}
+                    onChange={(e) => {
+                      const value = e.target.value.replace(/\D/g, "");
+                      if (
+                        value === "" ||
+                        (Number(value) >= 1 && Number(value) <= 120)
+                      ) {
+                        updatePassenger(seat.id, "age", value);
+                      }
+                    }}
+                    placeholder="Enter age"
+                    className="w-full min-w-0 px-3 py-2.5 rounded-lg bg-white/10 border border-white/20 outline-none text-sm focus:border-green-400"
+                  />
+                </div>
+
+
               </div>
-            </>
-          )}
+            </div>
+          ))}
+        </div>
+
+        {/* Navigation Buttons */}
+        <div className="flex justify-between items-center gap-3 mt-6 pt-4 border-t border-white/10">
+          <button
+            type="button"
+            onClick={() => setSelectedSeats([])}
+            className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-lg bg-red-500/80 hover:bg-red-600 text-sm font-medium transition-colors"
+          >
+            Clear Selection
+          </button>
+
+          <button
+            type="button"
+            onClick={handleProceedFromSeats}
+            className="inline-flex items-center justify-center whitespace-nowrap px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-sm font-semibold transition-colors"
+          >
+            Continue →
+          </button>
+        </div>
+      </>
+    ))}
+
+
+            
+
+
+{/* ── STEP 3: Contact Details ── */}
+{step === 3 && (
+  <>
+    <h3 className="font-semibold text-green-300 mb-1">
+      Contact Details
+    </h3>
+    <p className="text-xs text-gray-400 mb-5">
+      Your ticket confirmation will be sent here
+    </p>
+
+    {/* Contact Form */}
+    <div className="w-full grid grid-cols-2 gap-4">
+
+      {/* Mobile */}
+      <div className="w-full min-w-0">
+        <label className="text-xs text-gray-400 mb-2 block">
+          Mobile Number *
+        </label>
+
+        <div className="flex w-full items-center border border-white/20 rounded-xl overflow-hidden focus-within:border-green-400">
+          <span className="px-3 py-3 bg-white/10 text-sm text-gray-300 border-r border-white/20 select-none">
+            +91
+          </span>
+
+          <input
+            type="tel"
+            maxLength={10}
+            placeholder="10-digit number"
+            value={contact.mobile}
+            onChange={(e) =>
+              setContact((p) => ({
+                ...p,
+                mobile: e.target.value.replace(/\D/g, ""),
+              }))
+            }
+            className="w-full min-w-0 px-3 py-3 bg-transparent text-sm outline-none"
+          />
+        </div>
+      </div>
+
+      {/* Email */}
+      <div className="w-full min-w-0">
+        <label className="text-xs text-gray-400 mb-2 block">
+          Email Address *
+        </label>
+
+        <input
+          type="email"
+          placeholder="your@email.com"
+          value={contact.email}
+          onChange={handleEmailChange}
+          className="w-full min-w-0 px-3 py-3 border border-white/20 rounded-xl bg-white/10 text-sm outline-none focus:border-green-400"
+        />
+
+        {emailError && (
+          <p className="text-red-400 text-xs mt-1">
+            {emailError}
+          </p>
+        )}
+      </div>
+    </div>
+
+    {/* Booking Summary */}
+    <div className="w-full mt-6 p-4 rounded-xl bg-white/5 border border-white/10 text-sm">
+      <h4 className="text-gray-300 font-medium mb-3">
+        Booking Summary
+      </h4>
+
+      <div className="space-y-3">
+        {selectedSeats.map((seat) => {
+          const d = passengerDetails[seat.id] ?? {};
+
+          return (
+            <div
+              key={seat.id}
+              className="flex flex-wrap justify-between items-center gap-2 text-xs border-b border-white/10 pb-2 last:border-0 last:pb-0"
+            >
+              <span className="text-gray-300">
+                {d.name} ({d.gender}, {d.age} yrs)
+              </span>
+
+              <span className="text-green-300 whitespace-nowrap">
+                Seat {seat.seatLabel}
+              </span>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+
+    
+
+{/* Navigation Buttons */}
+<div className="flex justify-between items-center gap-3 mt-8 pt-5 border-t border-white/10">
+
+  <button
+    type="button"
+    onClick={() => setStep(2)}
+    className="inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap shrink-0 px-4 py-2 rounded-lg border border-white/25 bg-white/10 text-white text-sm font-medium hover:bg-white/20 transition-colors"
+  >
+    <span>←</span>
+    <span>Back</span>
+  </button>
+
+  <button
+    type="button"
+    onClick={handleCreateBooking}
+    disabled={bookingLoading || !!emailError}
+    className="inline-flex flex-row items-center justify-center gap-2 whitespace-nowrap shrink-0 px-4 py-2 rounded-lg bg-green-500 text-white text-sm font-semibold hover:bg-green-600 transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+  >
+    {bookingLoading && <Spinner />}
+    <span>
+      {bookingLoading ? "Creating Booking..." : "Confirm & Proceed"}
+    </span>
+    {!bookingLoading && <span>→</span>}
+  </button>
+
+</div>
+
+
+  </>
+)}
+
 
           {/* ── STEP 4: Payment ── */}
           {step === 4 && (

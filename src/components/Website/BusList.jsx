@@ -407,7 +407,11 @@ export default function BusList() {
       routeId: sch.routeId, routeName: encodeURIComponent(sch.routeName ?? ""),
       fromStopSequence: sch.fromStopSequence, toStopSequence: sch.toStopSequence, fare: sch.fare ?? 0,
     });
-    navigate(`/home/seat-selection?${params.toString()}`);
+   const seatSelectionPath = window.location.pathname.startsWith("/user")
+  ? "/user/seat-selection"
+  : "/home/seat-selection";
+
+navigate(`${seatSelectionPath}?${params.toString()}`);
   };
 
   const home = user ? (classifyRole(user?.roles ?? []) === "counter" ? "/counter/dashboard" : "/user/dashboard") : "/home";

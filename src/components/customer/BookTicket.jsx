@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import {
@@ -6,7 +7,6 @@ import {
   FiArrowRight,
 } from "react-icons/fi";
 
-import bgroad from "../../assets/bgroad.jpeg";
 import { stationApi } from "../../api/station";
 
 export default function BookTicket() {
@@ -29,8 +29,6 @@ export default function BookTicket() {
 
   const [error, setError] = useState("");
   const [searching, setSearching] = useState(false);
-
-
 
   useEffect(() => {
     document.title = "Book Ticket | APSTS Passenger Portal";
@@ -87,7 +85,7 @@ export default function BookTicket() {
     setSearching(true);
 
     navigate(
-      `/home/buses?from=${fromStationId}&to=${toStationId}&date=${date}`
+      `/user/buses?from=${fromStationId}&to=${toStationId}&date=${date}`
     );
     setTimeout(() => setSearching(false), 500);
   };
@@ -97,42 +95,27 @@ export default function BookTicket() {
   ───────────────────────────────────────────── */
 
   return (
-    <div
-      className="min-h-[calc(100vh-80px)] bg-cover bg-center relative overflow-hidden"
-      style={{
-        backgroundImage: `
-          linear-gradient(
-            120deg,
-            rgba(2,27,43,0.92) 20%,
-            rgba(10,60,76,0.88) 60%,
-            rgba(15,81,50,0.90) 100%
-          ),
-          url(${bgroad})
-        `,
-      }}
-    >
-      {/* Overlay */}
-      <div className="absolute inset-0 bg-black/30 backdrop-blur-[2px]" />
+    <div className="h-[calc(100vh-56px)] w-full bg-white overflow-hidden relative">
 
-      <div className="relative z-10 flex items-center justify-center min-h-[calc(100vh-80px)] px-4 py-10">
+      <div className="relative z-10 flex items-center justify-center h-full px-6 py-4 overflow-hidden">
 
         <div className="w-full max-w-6xl grid lg:grid-cols-2 gap-10 items-center">
 
           {/* LEFT CONTENT */}
-          <div className="text-white">
+          <div className="text-gray-800">
 
-            <p className="uppercase tracking-[4px] text-green-400 text-sm mb-3">
+            <p className="uppercase tracking-[4px] text-green-600 text-sm mb-3">
               APSTS ONLINE BOOKING
             </p>
 
             <h1 className="text-5xl font-bold leading-tight mb-5">
               Book Your Bus Journey
-              <span className="block text-green-400">
+              <span className="block text-green-600">
                 Fast • Secure • Easy
               </span>
             </h1>
 
-            <p className="text-gray-300 text-lg leading-relaxed max-w-xl">
+            <p className="text-gray-600 text-lg leading-relaxed max-w-xl">
               Search buses, select seats, make secure payments,
               and download your ticket instantly.
             </p>
@@ -147,7 +130,7 @@ export default function BookTicket() {
               ].map((item) => (
                 <div
                   key={item}
-                  className="px-4 py-2 rounded-full bg-white/10 border border-white/20 text-sm"
+                  className="px-4 py-2 rounded-full bg-gray-100 border border-gray-200 text-gray-700 text-sm"
                 >
                   ✨ {item}
                 </div>
@@ -156,10 +139,10 @@ export default function BookTicket() {
           </div>
 
           {/* SEARCH CARD */}
-          <div className="backdrop-blur-xl bg-white/10 border border-white/20 rounded-3xl shadow-2xl p-8 text-white">
+          <div className="bg-gradient-to-br from-[#081935] via-[#0F2D2F] to-[#163F2D] border border-gray-200 rounded-[28px] shadow-2xl p-5 lg:p-6 text-white">
 
             {/* HEADER */}
-            <div className="mb-6">
+            <div className="mb-4">
               <h2 className="text-3xl font-bold text-green-400">
                 Search Buses
               </h2>
@@ -170,7 +153,7 @@ export default function BookTicket() {
             </div>
 
             {/* FROM */}
-            <div className="mb-5">
+            <div className="mb-4">
 
               <label className="text-sm text-gray-300 mb-2 block">
                 From Station
@@ -207,7 +190,7 @@ export default function BookTicket() {
             </div>
 
             {/* TO */}
-            <div className="mb-5">
+            <div className="mb-4">
 
               <label className="text-sm text-gray-300 mb-2 block">
                 To Station
@@ -250,7 +233,7 @@ export default function BookTicket() {
             </div>
 
             {/* DATE */}
-            <div className="mb-6">
+            <div className="mb-4">
 
               <label className="text-sm text-gray-300 mb-2 block">
                 Journey Date
@@ -282,7 +265,7 @@ export default function BookTicket() {
             <button
               onClick={handleSearch}
               disabled={loadingStations || searching}
-              className="w-full flex items-center justify-center gap-3 py-4 rounded-xl bg-orange-500 hover:bg-orange-600 transition-all duration-300 font-semibold text-lg shadow-lg disabled:opacity-60"
+              className="w-full flex items-center justify-center gap-3 py-3 rounded-xl bg-orange-500 hover:bg-orange-600 transition-all duration-300 font-semibold text-lg shadow-lg disabled:opacity-60"
             >
               {searching ? (
                 <>
