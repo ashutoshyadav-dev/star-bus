@@ -8,8 +8,9 @@ import DateField from "../common/DateField";
 import { validators, filters } from "../../utils/validators";
 import { validateDob, todayISO, isoToDMY } from "../../utils/dateUtils";
 import { ID_PROOF_LABELS, GENDER_LABELS, label } from "../../utils/labels";
+import profilrAvtar from "../../assets/profileAvtar.jpg"
 
-const FALLBACK_AVATAR = "https://images.unsplash.com/photo-1500648767791-00dcc994a43e";
+const FALLBACK_AVATAR = profilrAvtar;
 
 export default function Profile() {
   const queryClient = useQueryClient();

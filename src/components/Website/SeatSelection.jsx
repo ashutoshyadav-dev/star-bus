@@ -377,6 +377,8 @@ export default function SeatSelection() {
         setStep(4);
       } finally {
         clearPaymentSession(returningBookingId);
+        flowRestoredRef.current = true;          // the old saved flow (step 4 + old hold) must NOT be restored now
+        try { sessionStorage.removeItem(FLOW_KEY); } catch { /* ignore */ }
         const cleaned = new URLSearchParams(searchParams);
         cleaned.delete("bookingId");
         cleaned.delete("paymentStatus");
@@ -550,7 +552,7 @@ export default function SeatSelection() {
 
   /* ── Keep the selection honest against the latest seat map ── */
   useEffect(() => {
-    if (resolvingReturn || step === 5 || seatMap.length === 0) return;
+    if (resolvingReturn || step === 5 || booking || seatMap.length === 0) return;
     if (selectedSeats.length === 0) return;
     let changed = false;
     const kept = [];
@@ -624,6 +626,7 @@ export default function SeatSelection() {
   useEffect(() => {
     if (flowRestoredRef.current || resolvingReturn || loadingSeats || seatMap.length === 0 || !user || !resumeChecked) return;
     flowRestoredRef.current = true;
+    if (isReturningPayment || step === 5 || bookingRef.current) return;   // confirmed / returned from gateway: nothing to restore
     const f = flowRef.current;
     if (!f?.seatIds?.length || (f.step ?? 2) < 3) return;
 
@@ -1091,11 +1094,6 @@ export default function SeatSelection() {
       )}
 
 
-      {/* <div className="flex gap-6">
-        {/* ════════ LEFT PANEL — journey summary ════════ */}
-        {/* <div className="relative w-[240px] shrink-0 rounded-xl overflow-hidden border border-white/20">
-          <div className="absolute inset-0 bg-center bg-cover" style={{ backgroundImage: `url(${sideBg})` }} /> */} */}
-
       {/* ── Three-column layout ── */}
       <div className="flex flex-col xl:flex-row gap-6">
         {/* ════════════════════════════════════════════════════════════════
@@ -1269,149 +1267,6 @@ export default function SeatSelection() {
 
 
         {/* ════════ RIGHT PANEL — step content ════════ */}
-        {/* <div className="flex-1 border bg-white/10 backdrop-blur-md border-white/20 rounded-xl p-6 min-h-[400px]">
-          {/* ── STEP 2: Passenger details ── */}
-          {step === 2 &&
-            (selectedSeats.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full gap-3 text-gray-400 py-20">
-                <span className="text-5xl">💺</span>
-                <p className="text-lg">Click a seat on the map to begin</p>
-              </div>
-            ) : (
-              <>
-                <h3 className="font-semibold text-green-300 mb-4">
-                  Passenger Details ({selectedSeats.length} seat{selectedSeats.length > 1 ? "s" : ""})
-                </h3>
-
-                <div className="overflow-auto">
-                  <table className="w-full text-sm border border-white/20">
-                    <thead>
-                      <tr className="bg-white/10 text-gray-300">
-                        <th className="p-2 text-left">Seat</th>
-                        <th className="p-2 text-left">Full Name <span className="text-red-400">*</span></th>
-                        <th className="p-2 text-left">Gender <span className="text-red-400">*</span></th>
-                        <th className="p-2 text-left">Age <span className="text-red-400">*</span></th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {selectedSeats.map((seat) => {
-                        const e = passengerErrors[seat.id] ?? {};
-                        return (
-                          <tr key={seat.id} className="border-t border-white/10 align-top">
-                            <td className="p-2 font-semibold text-green-300">{seat.seatLabel}</td>
-
-                            <td className="p-2">
-                              <input
-                                value={passengerDetails[seat.id]?.name ?? ""}
-                                maxLength={100}
-                                disabled={!!booking}
-                                onChange={(ev) => updatePassenger(seat.id, "name", filters.name(ev.target.value))}
-                                placeholder="Full name"
-                                className={`w-full px-2 py-1 rounded bg-white/10 border outline-none text-sm ${e.name ? "border-red-400" : "border-white/20"}`}
-                              />
-                              <FieldError>{e.name}</FieldError>
-                            </td>
-
-                            <td className="p-2">
-                              <select
-                                value={passengerDetails[seat.id]?.gender ?? ""}
-                                disabled={!!booking}
-                                onChange={(ev) => updatePassenger(seat.id, "gender", ev.target.value)}
-                                className={`w-full rounded bg-white/20 border text-white text-sm py-1 ${e.gender ? "border-red-400" : "border-white/30"}`}
-                              >
-                                <option value="" className="text-black bg-white">Select</option>
-                                <option value="male" className="text-black bg-white">Male</option>
-                                <option value="female" className="text-black bg-white">Female</option>
-                                <option value="other" className="text-black bg-white">Other</option>
-                                <option value="prefer_not_to_say" className="text-black bg-white">Prefer not to say</option>
-                              </select>
-                              <FieldError>{e.gender}</FieldError>
-                            </td>
-
-                            <td className="p-2">
-                              <input
-                                value={passengerDetails[seat.id]?.age ?? ""}
-                                type="text"
-                                inputMode="numeric"
-                                maxLength={3}
-                                disabled={!!booking}
-                                onKeyDown={blockNumberKeys}
-                                onChange={(ev) => updatePassenger(seat.id, "age", filters.digits(ev.target.value, 3))}
-                                placeholder="Age"
-                                className={`w-full px-2 py-1 rounded bg-white/10 border outline-none text-sm ${e.age ? "border-red-400" : "border-white/20"}`}
-                              />
-                              <FieldError>{e.age}</FieldError>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* live fare preview */}
-                {!booking && quote && <div className="mt-4 max-w-sm"><FareSummary f={quote} title="Estimated fare" /></div>}
-
-                <div className="flex justify-between mt-5">
-                  <button
-                    type="button"
-                    onClick={handleClearSelection}
-                    disabled={!!booking || holdApi.busy}
-                    className="px-4 py-2 rounded-lg bg-red-500/80 hover:bg-red-600 text-sm disabled:opacity-50"
-                  >
-                    Clear Selection
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleProceedFromSeats}
-                    disabled={holdApi.busy}
-                    className="px-5 py-2 rounded-lg bg-green-500 hover:bg-green-600 font-semibold text-sm disabled:opacity-60"
-                  >
-                    Continue →
-                  </button>
-                </div>
-              </>
-            ))}
-
-          {/* ── STEP 3: Contact details ── */}
-          {step === 3 && (
-            <>
-              <h3 className="font-semibold text-green-300 mb-1">Contact Details</h3>
-              <p className="text-xs text-gray-400 mb-5">Your ticket confirmation will be sent here</p>
-
-              <div className="space-y-4 max-w-sm">
-                <div>
-                  <label className="text-xs text-gray-300 mb-1 block">
-                    Mobile Number <span className="text-red-400">*</span>
-                  </label>
-                  <div className={`flex items-center border rounded-xl overflow-hidden ${mobileError ? "border-red-400" : "border-white/20"}`}>
-                    <span className="px-3 py-2.5 bg-white/10 text-sm text-gray-300 border-r border-white/20 select-none">+91</span>
-                    <input
-                      type="tel"
-                      inputMode="numeric"
-                      maxLength={10}
-                      placeholder="10-digit number"
-                      value={contact.mobile}
-                      onChange={handleMobileChange}
-                      className="w-full px-3 py-2.5 bg-transparent text-sm outline-none"
-                    />
-                  </div>
-                  <FieldError>{mobileError}</FieldError>
-                </div>
-
-                <div>
-                  <label className="text-xs text-gray-300 mb-1 block">
-                    Email Address <span className="text-red-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    inputMode="email"
-                    placeholder="your@email.com"
-                    value={contact.email}
-                    onChange={handleEmailChange}
-                    className={`w-full px-3 py-2.5 border rounded-xl bg-white/10 text-sm outline-none ${emailError ? "border-red-400" : "border-white/20"}`}
-                  />
-                  <FieldError>{emailError}</FieldError> */}
 
         {/* ════════════════════════════════════════════════════════════════
             RIGHT PANEL — Step-specific content
@@ -1867,6 +1722,13 @@ export default function SeatSelection() {
                   className="px-5 py-2 bg-white/10 hover:bg-white/20 border border-white/20 rounded-lg text-sm"
                 >
                   View My Bookings
+                </button>
+                <button
+                  type="button"
+                  onClick={() => navigate("/user/dashboard")}
+                  className="px-5 py-2 bg-blue-500/80 hover:bg-blue-500 rounded-lg text-sm font-semibold"
+                >
+                  Go to Dashboard
                 </button>
               </div>
             </div>

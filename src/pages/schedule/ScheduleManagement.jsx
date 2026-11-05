@@ -17,6 +17,7 @@ import toast from "react-hot-toast";
 import { useMutation, useQuery, useQueryClient } from "react-query";
 import { useNavigate } from "react-router-dom";
 import { getAllSchedules, toggleScheduleBooking } from "../../api/schedule";
+import routeImage from "../../assets/routeImage.png"
 
 const STATUS_COLORS = {
   scheduled: "bg-blue-100 text-blue-700",
@@ -105,7 +106,7 @@ export default function ScheduleManagement() {
       <div className="flex justify-between items-center flex-wrap gap-4 mb-6">
         <div className="flex items-center gap-3">
           <img
-            src="https://cdn-icons-png.flaticon.com/512/3448/3448339.png"
+            src={routeImage}
             className="w-12 h-12"
             alt=""
           />

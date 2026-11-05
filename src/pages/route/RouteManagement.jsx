@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { getAllRoutes, suspendRoute, activateRoute } from "../../api/route";
 import toast from "react-hot-toast";
 import { format } from "date-fns";
+import routeImage from "../../assets/routeImage.png"
 
 // Keys are lowercase to match backend RouteStatus enum
 const STATUS_COLORS = {
@@ -111,7 +112,7 @@ useEffect(() => {
       <div className="flex flex-col gap-4 mb-6">
         <div className="flex justify-between items-center flex-wrap gap-3">
           <div className="flex items-center gap-3">
-            <img src="https://cdn-icons-png.flaticon.com/512/3448/3448339.png" className="w-12 h-12" alt="" />
+            <img src={routeImage} className="w-12 h-12" alt="" />
             <div>
               <h2 className="text-2xl font-semibold">Route Management</h2>
               <p className="text-sm text-gray-400">{routes.length} routes • {filtered.length} shown</p>
